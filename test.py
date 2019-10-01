@@ -1,11 +1,49 @@
 from __future__ import division
 from pyomo.environ import *
-#from pyomo.core.expr  import current as EXPR
-#import numpy as np
-import math
 import csv
+import sys
+import cloudpickle
+import pdb
+import time
 import random
 model = AbstractModel()
+
+###########
+##SOLVERS##
+###########
+
+CPLEX_SOLVER = 0
+XPRESS_SOLVER = 0
+GUROBI_SOLVER = 1
+
+if CPLEX_SOLVER == 1:
+    print("Solver: CPLEX")
+if XPRESS_SOLVER == 1:
+    print("Solver: Xpress")
+if GUROBI_SOLVER == 1:
+    print("Solver: Gurobi")
+
+#Note! Only one solver can be activated!
+if CPLEX_SOLVER + XPRESS_SOLVER + GUROBI_SOLVER > 1:
+    sys.exit("ERROR! Only one solver can be activated!")
+
+##########
+##MODULE##
+##########
+
+ModelName = 'py_big'
+
+WRITE_LP = 0 #Set to 1 if LP-file should be written and saved
+
+EMISSION_CAP = 0 #Set to 1 if an absolute emission cap should be used (required significantly more memory!)
+
+if WRITE_LP == 1:
+    print("Will write LP-file...")
+
+if EMISSION_CAP ==1:
+	print("Absolute emission cap in each scenario...")
+else:
+	print("No absolute emission cap...")
 
 ########
 ##SETS##
@@ -17,52 +55,45 @@ print("Declaring sets...")
 
 #Supply technology sets
 model.Generator = Set(ordered=True, initialize = ['Coal','HydroReg','Solar','Wind','Bio']) #g
-model.Technology = Set(ordered=True, initialize = ['Fossil','Hydro','RES']) #t
+model.Technology = Set(ordered=True, initialize = ['Fossil','Hydro_reg','Solar','Wind_onshr','Bio']) #t
 model.Storage =  Set(initialize = ['Liion','HydroPump']) #b
 
 #Temporal sets
 model.Period = Set(initialize = [1,2,3,4,5,6,7,8,9], ordered=True) #i
-model.Operationalhour = Set(initialize = [1,2,3,4,5], ordered=True) #h
-model.Season = Set(initialize = ['winter','summer'], ordered=True) #s
+model.Operationalhour = Set(initialize = [1,2,3,4,5,6,7,8,9,10,11,12], ordered=True) #h
+model.Season = Set(initialize = ['winter','summer','peak'], ordered=True) #s
 
 #Spatial sets
 model.Node = Set(ordered=True, initialize = ['Germany','Denmark']) #n
 model.DirectionalLink = Set(dimen=2, within=model.Node*model.Node, ordered=True, initialize = [('Germany','Denmark'),('Denmark','Germany')]) #a
-
+model.TransmissionType = Set(ordered=True, initialize = ['HVAC','HVDC'])
 #Stochastic sets
 model.Scenario = Set(initialize = ['sce1','sce2','sce3','sce4','sce5'], ordered=True) #w
 
 #Subsets
-model.GeneratorsOfTechnology=Set(dimen=2, initialize = [('Fossil','Coal'),('Hydro','HydroReg'),('RES','Solar'),('RES','Wind'),('RES','Bio')]) #(t,g) for all t in T, g in G_t
+model.GeneratorsOfTechnology=Set(dimen=2, initialize = [('Fossil','Coal'),('Hydro_reg','HydroReg'),('Solar','Solar'),('Wind_onshr','Wind'),('Bio','Bio')]) #(t,g) for all t in T, g in G_t
 model.GeneratorsOfNode = Set(dimen=2, initialize = [('Germany','Coal'),('Germany','HydroReg'),('Germany','Solar'),('Germany','Wind'),('Denmark','Wind'),('Denmark','Bio')]) #,('Denmark','Coal'),('Denmark','Solar') #(n,g) for all n in N, g in G_n
-model.ThermalGenerators = Set(within=model.Generator, initialize = ['Coal','Bio']) #g_
+model.TransmissionTypeOfDirectionalLink = Set(dimen=3) #(n1,n2,t) for all (n1,n2) in L, t in T
+model.ThermalGenerators = Set(within=model.Generator, initialize = ['Coal','Bio']) #g_thermal
 model.RegHydroGenerator = Set(within=model.Generator, initialize = ['HydroReg']) #g_reghyd
 model.HydroGenerator = Set(within=model.Generator, initialize = ['HydroReg']) #g_hyd
 model.StoragesOfNode = Set(dimen=2, initialize = [('Germany','Liion'),('Germany','HydroPump')]) #(n,b) for all n in N, b in B_n
 model.DependentStorage = Set(within=model.Storage, initialize = ['Liion']) #b_dagger
-model.HoursOfSeason = Set(dimen=2, initialize = [('winter',1),('winter',2),('winter',3),('winter',4),('winter',5),('summer',1),('summer',2),('summer',3),('summer',4),('summer',5)], ordered=True) #(s,h) for all s in S, h in H_s
-#model.FirstHoursOfSeason = Set(within=model.Operationalhour, initialize=[1])
-#model.FirstHoursOfPeakSeason = Set(within=model.Operationalhour, initialize=[6])
+model.HoursOfSeason = Set(dimen=2, initialize = [('winter',1),('winter',2),('winter',3),('winter',4),('winter',5),('summer',6),('summer',7),('summer',8),('summer',9),('summer',10),('peak',11),('peak',12)], ordered=True) #(s,h) for all s in S, h in H_s
+model.FirstHoursOfRegSeason = Set(within=model.Operationalhour, ordered=True, initialize=[1,6])
+model.FirstHoursOfPeakSeason = Set(within=model.Operationalhour, ordered=True, initialize=[11])
 
 print("Constructing sub sets...")
 
 #Build arc subsets
 
-def NodesIn_init(model, node):
+def NodesLinked_init(model, node):
     retval = []
     for (i,j) in model.DirectionalLink:
         if j == node:
             retval.append(i)
     return retval
-model.NodesIn = Set(model.Node, initialize=NodesIn_init)
-
-def NodesOut_init(model, node):
-    retval = []
-    for (i,j) in model.DirectionalLink:
-        if i == node:
-            retval.append(j)
-    return retval
-model.NodesOut = Set(model.Node, initialize=NodesOut_init)
+model.NodesLinked = Set(model.Node, initialize=NodesLinked_init)
 
 def BidirectionalArc_init(model):
     retval = []
@@ -71,11 +102,6 @@ def BidirectionalArc_init(model):
             retval.append((i,j))
     return retval
 model.BidirectionalArc = Set(dimen=2, initialize=BidirectionalArc_init, ordered=True) #l
-
-#instance = model.create_instance()
-#instance.NodesOut.pprint()
-#instance.BidirectionalArc.pprint()
-#import pdb; pdb.set_trace()
 
 ##############
 ##PARAMETERS##
@@ -87,80 +113,183 @@ print("Declaring parameters...")
 
 #Scaling
 
-model.discountrate = Param(initialize=0.05)
+model.discountrate = Param(initialize=0.05) #NB! Hard-coded
+model.WACC = Param(initialize=0.05) #NB! Hard-coded
 model.LeapYearsInvestment = Param(initialize=5)
 model.operationalDiscountrate = Param(initialize=0.05, mutable=True)
-model.sceProbab = Param(model.Scenario, initialize=0.2)
-model.seasScale = Param(model.Season, initialize=876)
-model.lengthSeason = Param(model.Season, initialize=5)
-#model.lengthPeakSeason = Param(initialize=5)
+model.sceProbab = Param(model.Scenario, mutable=True, initialize=0.2)
+model.seasScale = Param(model.Season, initialize=876, mutable=True)
+model.lengthRegSeason = Param(initialize=5) #NB! Hard-coded
+model.lengthPeakSeason = Param(initialize=2) #NB! Hard-coded
 
 #Cost
 
-model.genInvCost = Param(model.Generator, model.Period, initialize=2183752.0)
-model.transmissionInvCost = Param(model.BidirectionalArc, model.Period, initialize=353750.0)
-model.storPWInvCost = Param(model.Storage, model.Period, initialize=100000.0)
-model.storENInvCost = Param(model.Storage, model.Period, initialize=100000.0)
-model.genMargCost = Param(model.Generator, model.Period, initialize=25.0)
-model.genCO2factor = Param(model.Generator, model.Period, initialize=0.8)
-model.nodeLostLoadCost = Param(model.Node, model.Period, default=22000.0)
-model.CO2cap = Param(model.Period, default=210000000.0)
+model.genCapitalCost = Param(model.Generator, model.Period, default=0, mutable=True, initialize=10)
+model.transmissionTypeCapitalCost = Param(model.TransmissionType, model.Period, default=0, mutable=True, initialize=10)
+model.storPWCapitalCost = Param(model.Storage, model.Period, default=0, mutable=True, initialize=10)
+model.storENCapitalCost = Param(model.Storage, model.Period, default=0, mutable=True, initialize=10)
+model.genFixedOMCost = Param(model.Generator, model.Period, default=0, mutable=True, initialize=10)
+model.transmissionTypeFixedOMCost = Param(model.TransmissionType, model.Period, default=0, mutable=True, initialize=10)
+model.storPWFixedOMCost = Param(model.Storage, model.Period, default=0, mutable=True, initialize=10)
+model.storENFixedOMCost = Param(model.Storage, model.Period, default=0, mutable=True, initialize=10)
+model.genInvCost = Param(model.Generator, model.Period, default=9000000, mutable=True)
+model.transmissionInvCost = Param(model.BidirectionalArc, model.Period, default=3000000, mutable=True)
+model.storPWInvCost = Param(model.Storage, model.Period, default=1000000, mutable=True)
+model.storENInvCost = Param(model.Storage, model.Period, default=800000, mutable=True)
+model.transmissionLength = Param(model.BidirectionalArc, default=0, mutable=True, initialize=10)
+model.genVariableOMCost = Param(model.Generator, default=0.0, mutable=True, initialize=1)
+model.genFuelCost = Param(model.Generator, model.Period, default=0.0, mutable=True, initialize=1)
+model.genMargCost = Param(model.Generator, model.Period, default=600, mutable=True, initialize=1)
+model.genCO2TypeFactor = Param(model.Generator, default=0.0, mutable=True, initialize=100)
+model.nodeLostLoadCost = Param(model.Node, model.Period, default=100000.0)
+model.CO2price = Param(model.Period, default=0.0, mutable=True, initialize=100)
+model.CCSCostTSFix = Param(initialize=1149873.72) #NB! Hard-coded
+model.CCSCostTSVariable = Param(model.Period, default=0.0, mutable=True, initialize=100)
+model.CCSRemFrac = Param(initialize=0.9)
 
 #Node dependent technology limitations
 
-model.genInitCap = Param(model.GeneratorsOfNode, model.Period, default=100.0, mutable=True)
-model.transmissionInitCap = Param(model.BidirectionalArc, model.Period, default=100.0)
-model.storPWInitCap = Param(model.StoragesOfNode, model.Period, default=100.0)
-model.storENInitCap = Param(model.StoragesOfNode, model.Period, default=100.0)
-model.genMaxBuiltCap = Param(model.Node, model.Technology, model.Period, default=200000.0, mutable=True)
+model.genRefInitCap = Param(model.GeneratorsOfNode, default=100, mutable=True)
+model.genScaleInitCap = Param(model.Generator, model.Period, default=100, mutable=True)
+model.genInitCap = Param(model.GeneratorsOfNode, model.Period, default=100, mutable=True)
+model.transmissionInitCap = Param(model.BidirectionalArc, model.Period, default=100, mutable=True)
+model.storPWInitCap = Param(model.StoragesOfNode, model.Period, default=100, mutable=True)
+model.storENInitCap = Param(model.StoragesOfNode, model.Period, default=100, mutable=True)
+model.genMaxBuiltCap = Param(model.Node, model.Technology, model.Period, default=10000.0, mutable=True)
 model.transmissionMaxBuiltCap = Param(model.BidirectionalArc, model.Period, default=20000.0, mutable=True)
-model.storPWMaxBuiltCap = Param(model.StoragesOfNode, model.Period, default=50000.0, mutable=True)
-model.storENMaxBuiltCap = Param(model.StoragesOfNode, model.Period, default=50000.0, mutable=True)
-model.genMaxInstalledCapRaw = Param(model.Node, model.Technology, default=100000.0, mutable=True)
-model.genMaxInstalledCap = Param(model.Node, model.Technology, model.Period, default=0.0, mutable=True)
-model.transmissionMaxInstalledCap = Param(model.BidirectionalArc, model.Period, default=1500.0, mutable=True)
-model.storPWMaxInstalledCap = Param(model.StoragesOfNode, model.Period, default=0.0, mutable=True)
+model.storPWMaxBuiltCap = Param(model.StoragesOfNode, model.Period, default=500000.0, mutable=True)
+model.storENMaxBuiltCap = Param(model.StoragesOfNode, model.Period, default=500000.0, mutable=True)
+model.genMaxInstalledCapRaw = Param(model.Node, model.Technology, default=1000000.0, mutable=True)
+model.genMaxInstalledCap = Param(model.Node, model.Technology, model.Period, default=1000000.0, mutable=True)
+model.transmissionMaxInstalledCapRaw = Param(model.BidirectionalArc, model.Period, default=1000000.0)
+model.transmissionMaxInstalledCap = Param(model.BidirectionalArc, model.Period, default=1000000.0, mutable=True)
+model.storPWMaxInstalledCap = Param(model.StoragesOfNode, model.Period, default=100000.0, mutable=True)
 model.storPWMaxInstalledCapRaw = Param(model.StoragesOfNode, default=100000.0, mutable=True)
-model.storENMaxInstalledCap = Param(model.StoragesOfNode, model.Period, default=0.0, mutable=True)
+model.storENMaxInstalledCap = Param(model.StoragesOfNode, model.Period, default=100000.0, mutable=True)
 model.storENMaxInstalledCapRaw = Param(model.StoragesOfNode, default=100000.0, mutable=True)
 
 #Type dependent technology limitations
 
-model.genLifetime = Param(model.Generator, default=10.0)
-model.transmissionLifetime = Param(model.BidirectionalArc, default=20.0)
-model.storageLifetime = Param(model.Storage, default=10.0)
-model.lineEfficiency = Param(model.DirectionalLink, default=0.97)
-model.storageChargeEff = Param(model.Storage, default=0.9)
-model.storageDischargeEff = Param(model.Storage, default=0.9)
-model.genRampUpCap = Param(model.ThermalGenerators, default=0.1)
-model.storageDiscToCharRatio = Param(model.Storage, default=1.0)
-model.storagePowToEnergy = Param(model.DependentStorage, default=1.0)
+model.genLifetime = Param(model.Generator, default=10.0, mutable=True)
+model.transmissionLifetime = Param(model.BidirectionalArc, default=20.0, mutable=True)
+model.storageLifetime = Param(model.Storage, default=10.0, mutable=True)
+model.genEfficiency = Param(model.Generator, model.Period, default=0.9, mutable=True)
+model.lineEfficiency = Param(model.DirectionalLink, default=0.97, mutable=True)
+model.storageChargeEff = Param(model.Storage, default=0.9, mutable=True)
+model.storageDischargeEff = Param(model.Storage, default=0.9, mutable=True)
+model.storageBleedEff = Param(model.Storage, default=1.0, mutable=True)
+model.genRampUpCap = Param(model.ThermalGenerators, default=0.5, mutable=True)
+model.storageDiscToCharRatio = Param(model.Storage, default=1.0, mutable=True) #NB! Hard-coded
+model.storagePowToEnergy = Param(model.DependentStorage, default=1.0, mutable=True)
 
 #Stochastic input
 
-model.sloadRaw = Param(model.Node, model.HoursOfSeason, model.Scenario, default=15000.0)
-model.sloadAdjustment = Param(model.Node, model.Period, default=0.0, mutable=True)
-model.sload = Param(model.Node, model.HoursOfSeason, model.Period, model.Scenario, default=0.0, mutable=True)
-model.genCapAvailTypeRaw = Param(model.Generator, default=0.8, mutable=True) 
-model.genCapAvailStochRaw = Param(model.GeneratorsOfNode, model.HoursOfSeason, model.Scenario, default=0.8, mutable=True)
-model.genCapAvail = Param(model.GeneratorsOfNode, model.HoursOfSeason, model.Period, model.Scenario, default=0.0, mutable=True)
-model.maxRegHydroGenRaw = Param(model.Node, model.HoursOfSeason, model.Scenario, default=1000.0, mutable=True)
-model.maxRegHydroGen = Param(model.Node, model.Season, model.Period, model.Scenario, default=0.0, mutable=True)
-model.maxHydroNode = Param(model.Node, default=100000.0, mutable=True)
-model.storOperationalInit = Param(model.Storage, default=0.5, mutable=True) #Percentage of installed energy capacity 
+model.sloadRaw = Param(model.Node, model.Operationalhour,  model.Scenario, default=15000.0, mutable=True)
+model.sloadAnnualDemand = Param(model.Node, model.Period, default=150000000.0, mutable=True)
+model.sload = Param(model.Node, model.Operationalhour, model.Period, model.Scenario, default=0.0, mutable=True)
+model.genCapAvailTypeRaw = Param(model.Generator, default=1.0, mutable=True) 
+model.genCapAvailStochRaw = Param(model.GeneratorsOfNode, model.Operationalhour, model.Scenario, default=1.0, mutable=True)
+model.genCapAvail = Param(model.GeneratorsOfNode, model.Operationalhour, model.Scenario, default=1.0, mutable=True)
+model.maxRegHydroGenRaw = Param(model.Node, model.HoursOfSeason, model.Scenario, default=1.0, mutable=True)
+model.maxRegHydroGen = Param(model.Node, model.Season, model.Period, model.Scenario, default=100000.0, mutable=True)
+model.maxHydroNode = Param(model.Node, default=1000000.0, mutable=True)
+model.storOperationalInit = Param(model.Storage, default=0.0, mutable=True) #Percentage of installed energy capacity initially
+
+if EMISSION_CAP==1:
+	model.CO2cap = Param(model.Period, default=5000.0, mutable=True)
 
 print("Constructing parameter values...")
 
-#Build operational discount rate
+def prepSceProbab_rule(model):
+	#Build an equiprobable probability distribution for scenarios
+
+	for sce in model.Scenario:
+		model.sceProbab[sce] = value(1/len(model.Scenario))
+
+model.build_SceProbab = BuildAction(rule=prepSceProbab_rule)
+
+def prepInvCost_rule(model):
+	#Build investment cost for generators, storages and transmission. Annual cost is calculated for the lifetime of the generator and discounted for a year.
+	#Then cost is discounted for the investment period (or the remaining lifetime). CCS generators has additional fixed costs depending on emissions. 
+
+	#Generator 
+	for g in model.Generator:
+		for i in model.Period:
+			costperyear=(model.WACC/(1+model.WACC-((1+model.WACC)**(1-model.genLifetime[g]))))*model.genCapitalCost[g,i]+model.genFixedOMCost[g,i]
+			costperperiod=costperyear*1000*(1-(1+model.discountrate)**-(min(value((9-i+1)*5), value(model.genLifetime[g]))))/(1-(1/(1+model.discountrate)))
+			if ('CCS',g) in model.GeneratorsOfTechnology:
+				costperperiod+=model.CCSCostTSFix*model.CCSRemFrac*model.genCO2TypeFactor[g]*(3.6/model.genEfficiency[g,i])
+			model.genInvCost[g,i]=costperperiod
+
+	#Storage
+	for b in model.Storage:
+		for i in model.Period:
+			costperyearPW=(model.WACC/(1+model.WACC-((1+model.WACC)**(1-model.storageLifetime[b]))))*model.storPWCapitalCost[b,i]+model.storPWFixedOMCost[b,i]
+			costperperiodPW=costperyearPW*1000*(1-(1+model.discountrate)**-(min(value((9-i+1)*5), value(model.storageLifetime[b]))))/(1-(1/(1+model.discountrate)))
+			model.storPWInvCost[b,i]=costperperiodPW
+			costperyearEN=(model.WACC/(1+model.WACC-((1+model.WACC)**(1-model.storageLifetime[b]))))*model.storENCapitalCost[b,i]+model.storENFixedOMCost[b,i]
+			costperperiodEN=costperyearEN*1000*(1-(1+model.discountrate)**-(min(value((9-i+1)*5), value(model.storageLifetime[b]))))/(1-(1/(1+model.discountrate)))
+			model.storENInvCost[b,i]=costperperiodEN
+
+	#Transmission
+	for (n1,n2) in model.BidirectionalArc:
+		for i in model.Period:
+			for t in model.TransmissionType:
+				if (n1,n2,t) in model.TransmissionTypeOfDirectionalLink:
+					costperyear=(model.WACC/(1+model.WACC-((1+model.WACC)**(1-model.transmissionLifetime[n1,n2]))))*model.transmissionLength[n1,n2]*model.transmissionTypeCapitalCost[t,i]+model.transmissionTypeFixedOMCost[t,i]
+					costperperiod=costperyear*(1-(1+model.discountrate)**-(min(value((9-i+1)*5), value(model.transmissionLifetime[n1,n2]))))/(1-(1/(1+model.discountrate)))
+					model.transmissionInvCost[n1,n2,i]=costperperiod
+
+model.build_InvCost = BuildAction(rule=prepInvCost_rule)
+
+def prepOperationalCostGen_rule(model):
+	#Build generator short term marginal costs
+
+	for g in model.Generator:
+		for i in model.Period:
+			if ('CCS',g) in model.GeneratorsOfTechnology:
+				costperenergyunit=(3.6/model.genEfficiency[g,i])*(model.genFuelCost[g,i]+(1-model.CCSRemFrac)*model.genCO2TypeFactor[g]*model.CO2price[i])+ \
+				(3.6/model.genEfficiency[g,i])*(model.CCSRemFrac*model.genCO2TypeFactor[g]*model.CCSCostTSVariable[i])+ \
+				model.genVariableOMCost[g]
+			else:
+				costperenergyunit=(3.6/model.genEfficiency[g,i])*(model.genFuelCost[g,i]+model.genCO2TypeFactor[g]*model.CO2price[i])+ \
+				model.genVariableOMCost[g]
+			model.genMargCost[g,i]=costperenergyunit
+
+model.build_OperationalCostGen = BuildAction(rule=prepOperationalCostGen_rule)
+
+def prepInitialCapacityNodeGen_rule(model):
+	#Build initial capacity for generator type in node
+
+	for (n,g) in model.GeneratorsOfNode:
+		for i in model.Period:
+			if model.genInitCap[n,g,i] == 0:
+				model.genInitCap[n,g,i] = model.genRefInitCap[n,g]*(1-model.genScaleInitCap[g,i])
+
+model.build_InitialCapacityNodeGen = BuildAction(rule=prepInitialCapacityNodeGen_rule)
+
+def prepInitialCapacityTransmission_rule(model):
+	#Build initial capacity for transmission lines to ensure initial capacity is the upper installation bound if infeasible
+
+	for (n1,n2) in model.BidirectionalArc:
+		for i in model.Period:
+			if value(model.transmissionMaxInstalledCapRaw[n1,n2,i]) <= value(model.transmissionInitCap[n1,n2,i]):
+				model.transmissionMaxInstalledCap[n1,n2,i] = model.transmissionInitCap[n1,n2,i]
+			else:
+				model.transmissionMaxInstalledCap[n1,n2,i] = model.transmissionMaxInstalledCapRaw[n1,n2,i]
+
+model.build_InitialCapacityTransmission = BuildAction(rule=prepInitialCapacityTransmission_rule)
 
 def prepOperationalDiscountrate_rule(model):
+	#Build operational discount rate
+
     model.operationalDiscountrate = sum((1+model.discountrate)**(-j) for j in list(range(0,value(model.LeapYearsInvestment))))
 
-model.build_operationalDiscountrate = BuildAction(rule=prepOperationalDiscountrate_rule)    
-
-#Build resource limit (installed limit) for all periods. Avoid infeasibility if installed limit lower than initially installed cap. 
+model.build_operationalDiscountrate = BuildAction(rule=prepOperationalDiscountrate_rule)     
 
 def prepGenMaxInstalledCap_rule(model):
+	#Build resource limit (installed limit) for all periods. Avoid infeasibility if installed limit lower than initially installed cap.
+
     for t in model.Technology:
         for n in model.Node:
             for i in model.Period:
@@ -171,27 +300,27 @@ def prepGenMaxInstalledCap_rule(model):
                     
 model.build_genMaxInstalledCap = BuildAction(rule=prepGenMaxInstalledCap_rule)
 
-#Build installed limit (resource limit) for storEN
-
 def storENMaxInstalledCap_rule(model):
+	#Build installed limit (resource limit) for storEN
+
     for (n,b) in model.StoragesOfNode:
         for i in model.Period:
             model.storENMaxInstalledCap[n,b,i]=model.storENMaxInstalledCapRaw[n,b]
 
 model.build_storENMaxInstalledCap = BuildAction(rule=storENMaxInstalledCap_rule)
 
-#Build installed limit (resource limit) for storPW
-
 def storPWMaxInstalledCap_rule(model):
+	#Build installed limit (resource limit) for storPW
+
     for (n,b) in model.StoragesOfNode:
         for i in model.Period:
             model.storPWMaxInstalledCap[n,b,i]=model.storPWMaxInstalledCapRaw[n,b]
 
 model.build_storPWMaxInstalledCap = BuildAction(rule=storPWMaxInstalledCap_rule)
 
-#Build hydrolimits for all periods
-
 def prepRegHydro_rule(model):
+	#Build hydrolimits for all periods
+
     for n in model.Node:
         for s in model.Season:
             for i in model.Period:
@@ -200,28 +329,40 @@ def prepRegHydro_rule(model):
 
 model.build_maxRegHydroGen = BuildAction(rule=prepRegHydro_rule)
 
-#Build generator availability for all periods
-
 def prepGenCapAvail_rule(model):
+	#Build generator availability for all periods
+
     for (n,g) in model.GeneratorsOfNode:
-        for i in model.Period:
-            for (s,h) in model.HoursOfSeason:
-                for w in model.Scenario:
-                    if model.genCapAvailTypeRaw[g] == 0:
-                        model.genCapAvail[n,g,s,h,i,w]=model.genCapAvailStochRaw[n,g,s,h,w]
-                    else:
-                        model.genCapAvail[n,g,s,h,i,w]=model.genCapAvailTypeRaw[g]                        
+    	for h in model.Operationalhour:
+            for s in model.Scenario:
+                if model.genCapAvailTypeRaw[g] == 0:
+                    model.genCapAvail[n,g,h,s]=model.genCapAvailStochRaw[n,g,h,s]
+                else:
+                    model.genCapAvail[n,g,h,s]=model.genCapAvailTypeRaw[g]                        
 
 model.build_genCapAvail = BuildAction(rule=prepGenCapAvail_rule)
 
-#Build load profiles for all periods
-
 def prepSload_rule(model):
+	#Build load profiles for all periods
+
     for n in model.Node:
-        for (s,h) in model.HoursOfSeason:
-            for sce in model.Scenario:
-                for i in model.Period:
-                    model.sload[n,s,h,i,sce]=model.sloadRaw[n,s,h,sce]+random.randint(-4800,5000)
+        nodeaverageload = 0
+        for h in model.Operationalhour:
+            if value(h) < value(model.FirstHoursOfRegSeason[-1] + model.lengthRegSeason):
+                for sce in model.Scenario:
+                    nodeaverageload += model.sloadRaw[n,h,sce].value
+        nodeaverageload = nodeaverageload / value((model.FirstHoursOfRegSeason[-1] + model.lengthRegSeason - 1) * len(model.Scenario))
+        for i in model.Period:
+            hourlyadjustment = value(model.sloadAnnualDemand[n,i].value / 8760) - value(nodeaverageload)
+            for h in model.Operationalhour:
+                for sce in model.Scenario:
+                    if value(model.sloadRaw[n,h,sce].value + hourlyadjustment) > 0:
+                        model.sload[n,h,i,sce] = model.sloadRaw[n,h,sce]+random.randint(0,20000)
+                    else:
+                        print(n)
+                        print(h)
+                        print(sce)
+                        print('Adjusted load is negative')
 
 model.build_sload = BuildAction(rule=prepSload_rule)
 
@@ -241,12 +382,12 @@ model.genInvCap = Var(model.GeneratorsOfNode, model.Period, domain=NonNegativeRe
 model.transmisionInvCap = Var(model.BidirectionalArc, model.Period, domain=NonNegativeReals)
 model.storPWInvCap = Var(model.StoragesOfNode, model.Period, domain=NonNegativeReals)
 model.storENInvCap = Var(model.StoragesOfNode, model.Period, domain=NonNegativeReals)
-model.genOperational = Var(model.GeneratorsOfNode, model.HoursOfSeason, model.Period, model.Scenario, domain=NonNegativeReals)
-model.storOperational = Var(model.StoragesOfNode, model.HoursOfSeason, model.Period, model.Scenario, domain=NonNegativeReals)
-model.transmisionOperational = Var(model.DirectionalLink, model.HoursOfSeason, model.Period, model.Scenario, domain=NonNegativeReals) #flow
-model.storCharge = Var(model.StoragesOfNode, model.HoursOfSeason, model.Period, model.Scenario, domain=NonNegativeReals)
-model.storDischarge = Var(model.StoragesOfNode, model.HoursOfSeason, model.Period, model.Scenario, domain=NonNegativeReals)
-model.loadShed = Var(model.Node, model.HoursOfSeason, model.Period, model.Scenario, domain=NonNegativeReals)
+model.genOperational = Var(model.GeneratorsOfNode, model.Operationalhour, model.Period, model.Scenario, domain=NonNegativeReals)
+model.storOperational = Var(model.StoragesOfNode, model.Operationalhour, model.Period, model.Scenario, domain=NonNegativeReals)
+model.transmisionOperational = Var(model.DirectionalLink, model.Operationalhour, model.Period, model.Scenario, domain=NonNegativeReals) #flow
+model.storCharge = Var(model.StoragesOfNode, model.Operationalhour, model.Period, model.Scenario, domain=NonNegativeReals)
+model.storDischarge = Var(model.StoragesOfNode, model.Operationalhour, model.Period, model.Scenario, domain=NonNegativeReals)
+model.loadShed = Var(model.Node, model.Operationalhour, model.Period, model.Scenario, domain=NonNegativeReals)
 model.genInstalledCap = Var(model.GeneratorsOfNode, model.Period, domain=NonNegativeReals)
 model.transmisionInstalledCap = Var(model.BidirectionalArc, model.Period, domain=NonNegativeReals)
 model.storPWInstalledCap = Var(model.StoragesOfNode, model.Period, domain=NonNegativeReals)
@@ -264,11 +405,11 @@ def multiplier_rule(model,period):
 model.discount_multiplier=Expression(model.Period, rule=multiplier_rule)
 
 def shed_component_rule(model,i):
-    return sum(model.operationalDiscountrate*model.seasScale[s]*model.sceProbab[w]*model.nodeLostLoadCost[n,i]*model.loadShed[n,s,h,i,w] for n in model.Node for w in model.Scenario for (s,h) in model.HoursOfSeason)
+    return sum(model.operationalDiscountrate*model.seasScale[s]*model.sceProbab[w]*model.nodeLostLoadCost[n,i]*model.loadShed[n,h,i,w] for n in model.Node for w in model.Scenario for (s,h) in model.HoursOfSeason)
 model.shedcomponent=Expression(model.Period,rule=shed_component_rule)
 
 def operational_cost_rule(model,i):
-    return sum(model.operationalDiscountrate*model.seasScale[s]*model.sceProbab[w]*model.genMargCost[g,i]*model.genOperational[n,g,s,h,i,w] for (n,g) in model.GeneratorsOfNode for (s,h) in model.HoursOfSeason for w in model.Scenario)
+    return sum(model.operationalDiscountrate*model.seasScale[s]*model.sceProbab[w]*model.genMargCost[g,i]*model.genOperational[n,g,h,i,w] for (n,g) in model.GeneratorsOfNode for (s,h) in model.HoursOfSeason for w in model.Scenario)
 model.operationalcost=Expression(model.Period,rule=operational_cost_rule)
 
 #############
@@ -286,74 +427,76 @@ model.Obj = Objective(rule=Obj_rule, sense=minimize)
 ##CONSTRAINTS##
 ###############
 
-def FlowBalance_rule(model, n, s, h, i, w):
-    return sum(model.genOperational[n,g,s,h,i,w] for g in model.Generator if (n,g) in model.GeneratorsOfNode) \
-    + sum((model.storageDischargeEff[b]*model.storDischarge[n,b,s,h,i,w]-model.storCharge[n,b,s,h,i,w]) for b in model.Storage if (n,b) in model.StoragesOfNode) \
-    + sum((model.lineEfficiency[inflow,n]*model.transmisionOperational[inflow,n,s,h,i,w]) for inflow in model.NodesIn[n] ) \
-    - sum((model.transmisionOperational[n,outflow,s,h,i,w]) for outflow in model.NodesOut[n] ) \
-    - model.sload[n,s,h,i,w] + model.loadShed[n,s,h,i,w] \
-    == 0
-model.FlowBalance = Constraint(model.Node, model.HoursOfSeason, model.Period, model.Scenario, rule=FlowBalance_rule)
+def FlowBalance_rule(model, n, h, i, w):
+    return sum(model.genOperational[n,g,h,i,w] for g in model.Generator if (n,g) in model.GeneratorsOfNode) \
+        + sum((model.storageDischargeEff[b]*model.storDischarge[n,b,h,i,w]-model.storCharge[n,b,h,i,w]) for b in model.Storage if (n,b) in model.StoragesOfNode) \
+        + sum((model.lineEfficiency[link,n]*model.transmisionOperational[link,n,h,i,w] - model.transmisionOperational[n,link,h,i,w]) for link in model.NodesLinked[n]) \
+        - model.sload[n,h,i,w] + model.loadShed[n,h,i,w] \
+        == 0
+model.FlowBalance = Constraint(model.Node, model.Operationalhour, model.Period, model.Scenario, rule=FlowBalance_rule)
 
 #################################################################
 
-def genMaxProd_rule(model, n, g, s, h, i, w):
-        return model.genOperational[n,g,s,h,i,w] - model.genCapAvail[n,g,s,h,i,w]*model.genInstalledCap[n,g,i] <= 0
-model.maxGenProduction = Constraint(model.GeneratorsOfNode, model.HoursOfSeason, model.Period, model.Scenario, rule=genMaxProd_rule)
+def genMaxProd_rule(model, n, g, h, i, w):
+        return model.genOperational[n,g,h,i,w] - model.genCapAvail[n,g,h,w]*model.genInstalledCap[n,g,i] <= 0
+model.maxGenProduction = Constraint(model.GeneratorsOfNode, model.Operationalhour, model.Period, model.Scenario, rule=genMaxProd_rule)
 
 #################################################################
 
-def ramping_rule(model, n, g, s, h, i, w):
-    if h==1:
+def ramping_rule(model, n, g, h, i, w):
+    if h in model.FirstHoursOfRegSeason or h in model.FirstHoursOfPeakSeason:
         return Constraint.Skip
     else:
         if g in model.ThermalGenerators:
-            return model.genOperational[n,g,s,h,i,w]-model.genOperational[n,g,s,(h-1),i,w] - model.genRampUpCap[g]*model.genInstalledCap[n,g,i] <= 0   #
+            return model.genOperational[n,g,h,i,w]-model.genOperational[n,g,(h-1),i,w] - model.genRampUpCap[g]*model.genInstalledCap[n,g,i] <= 0   #
         else:
             return Constraint.Skip
-model.ramping = Constraint(model.GeneratorsOfNode, model.HoursOfSeason, model.Period, model.Scenario, rule=ramping_rule)
+model.ramping = Constraint(model.GeneratorsOfNode, model.Operationalhour, model.Period, model.Scenario, rule=ramping_rule)
 
 #################################################################
 
-def storage_energy_balance_rule(model, n, b, s, h, i, w):
-    if h==1:
-        return model.storOperationalInit[b]*model.storENInstalledCap[n,b,i] + model.storageChargeEff[b]*model.storCharge[n,b,s,h,i,w]-model.storDischarge[n,b,s,h,i,w]-model.storOperational[n,b,s,h,i,w] == 0   #
+def storage_energy_balance_rule(model, n, b, h, i, w):
+    if h in model.FirstHoursOfRegSeason or h in model.FirstHoursOfPeakSeason:
+        return model.storOperationalInit[b]*model.storENInstalledCap[n,b,i] + model.storageChargeEff[b]*model.storCharge[n,b,h,i,w]-model.storDischarge[n,b,h,i,w]-model.storOperational[n,b,h,i,w] == 0   #
     else:
-        return model.storOperational[n,b,s,(h-1),i,w] + model.storageChargeEff[b]*model.storCharge[n,b,s,h,i,w]-model.storDischarge[n,b,s,h,i,w]-model.storOperational[n,b,s,h,i,w] == 0   #
-model.storage_energy_balance = Constraint(model.StoragesOfNode, model.HoursOfSeason, model.Period, model.Scenario, rule=storage_energy_balance_rule)
+        return model.storageBleedEff[b]*model.storOperational[n,b,(h-1),i,w] + model.storageChargeEff[b]*model.storCharge[n,b,h,i,w]-model.storDischarge[n,b,h,i,w]-model.storOperational[n,b,h,i,w] == 0   #
+model.storage_energy_balance = Constraint(model.StoragesOfNode, model.Operationalhour, model.Period, model.Scenario, rule=storage_energy_balance_rule)
 
 #################################################################
 
-def storage_seasonal_net_zero_balance_rule(model, n, b, s, h, i, w):
-    if h==1:
-        return model.storOperational[n,b,s,h+value(model.lengthSeason[s])-1,i,w] - model.storOperationalInit[b]*model.storENInstalledCap[n,b,i] == 0  #
+
+def storage_seasonal_net_zero_balance_rule(model, n, b, h, i, w):
+    if h in model.FirstHoursOfRegSeason:
+        return model.storOperational[n,b,h+value(model.lengthRegSeason)-1,i,w] - model.storOperationalInit[b]*model.storENInstalledCap[n,b,i] == 0  #
+    elif h in model.FirstHoursOfPeakSeason:
+        return model.storOperational[n,b,h+value(model.lengthPeakSeason)-1,i,w] - model.storOperationalInit[b]*model.storENInstalledCap[n,b,i] == 0  #
     else:
         return Constraint.Skip
-model.storage_seasonal_net_zero_balance = Constraint(model.StoragesOfNode, model.HoursOfSeason, model.Period, model.Scenario, rule=storage_seasonal_net_zero_balance_rule)
+model.storage_seasonal_net_zero_balance = Constraint(model.StoragesOfNode, model.Operationalhour, model.Period, model.Scenario, rule=storage_seasonal_net_zero_balance_rule)
 
 #################################################################
 
-def storage_operational_cap_rule(model, n, b, s, h, i, w):
-    return model.storOperational[n,b,s,h,i,w] - model.storENInstalledCap[n,b,i]  <= 0   #
-model.storage_operational_cap = Constraint(model.StoragesOfNode, model.HoursOfSeason, model.Period, model.Scenario, rule=storage_operational_cap_rule)
+def storage_operational_cap_rule(model, n, b, h, i, w):
+    return model.storOperational[n,b,h,i,w] - model.storENInstalledCap[n,b,i]  <= 0   #
+model.storage_operational_cap = Constraint(model.StoragesOfNode, model.Operationalhour, model.Period, model.Scenario, rule=storage_operational_cap_rule)
 
 #################################################################
 
-def storage_power_discharg_cap_rule(model, n, b, s, h, i, w):
-    return model.storDischarge[n,b,s,h,i,w] - model.storageDiscToCharRatio[b]*model.storPWInstalledCap[n,b,i] <= 0   #
-model.storage_power_discharg_cap = Constraint(model.StoragesOfNode, model.HoursOfSeason, model.Period, model.Scenario, rule=storage_power_discharg_cap_rule)
+def storage_power_discharg_cap_rule(model, n, b, h, i, w):
+    return model.storDischarge[n,b,h,i,w] - model.storageDiscToCharRatio[b]*model.storPWInstalledCap[n,b,i] <= 0   #
+model.storage_power_discharg_cap = Constraint(model.StoragesOfNode, model.Operationalhour, model.Period, model.Scenario, rule=storage_power_discharg_cap_rule)
 
 #################################################################
 
-def storage_power_charg_cap_rule(model, n, b, s, h, i, w):
-    return model.storCharge[n,b,s,h,i,w] - model.storPWInstalledCap[n,b,i] <= 0   #
-model.storage_power_charg_cap = Constraint(model.StoragesOfNode, model.HoursOfSeason, model.Period, model.Scenario, rule=storage_power_charg_cap_rule)
+def storage_power_charg_cap_rule(model, n, b, h, i, w):
+    return model.storCharge[n,b,h,i,w] - model.storPWInstalledCap[n,b,i] <= 0   #
+model.storage_power_charg_cap = Constraint(model.StoragesOfNode, model.Operationalhour, model.Period, model.Scenario, rule=storage_power_charg_cap_rule)
 
 #################################################################
 
 def hydro_gen_limit_rule(model, n, g, s, i, w):
     if g in model.RegHydroGenerator:
-        return sum(model.genOperational[n,g,s,h,i,w] for h in model.Operationalhour if (s,h) in model.HoursOfSeason) - model.maxRegHydroGen[n,s,i,w] <= 0
+        return sum(model.genOperational[n,g,h,i,w] for h in model.Operationalhour if (s,h) in model.HoursOfSeason) - model.maxRegHydroGen[n,s,i,w] <= 0
     else:
         return Constraint.Skip  #
 model.hydro_gen_limit = Constraint(model.GeneratorsOfNode, model.Season, model.Period, model.Scenario, rule=hydro_gen_limit_rule)
@@ -361,32 +504,32 @@ model.hydro_gen_limit = Constraint(model.GeneratorsOfNode, model.Season, model.P
 #################################################################
 
 def hydro_node_limit_rule(model, n, i):
-    return sum(model.genOperational[n,g,s,h,i,w]*model.seasScale[s]*model.sceProbab[w] for g in model.HydroGenerator if (n,g) in model.GeneratorsOfNode for (s,h) in model.HoursOfSeason for w in model.Scenario) - model.maxHydroNode[n] <= 0   #
+    return sum(model.genOperational[n,g,h,i,w]*model.seasScale[s]*model.sceProbab[w] for g in model.HydroGenerator if (n,g) in model.GeneratorsOfNode for (s,h) in model.HoursOfSeason for w in model.Scenario) - model.maxHydroNode[n] <= 0   #
 model.hydro_node_limit = Constraint(model.Node, model.Period, rule=hydro_node_limit_rule)
 
-#################################################################
-
-def transmission_cap_rule(model, n1, n2, s, h, i, w):
-    if (n1,n2) in model.DirectionalLink and (n1,n2) in model.BidirectionalArc:
-        return (model.transmisionOperational[(n1,n2),s,h,i,w]  - model.transmisionInstalledCap[(n1,n2),i] <= 0)
-    elif (n1,n2) in model.DirectionalLink and (n2,n1) in model.BidirectionalArc:
-        return (model.transmisionOperational[(n1,n2),s,h,i,w]  - model.transmisionInstalledCap[(n2,n1),i] <= 0)
-    else:
-        return Constraint.Skip
-model.transmission_cap = Constraint(model.DirectionalLink, model.HoursOfSeason, model.Period, model.Scenario, rule=transmission_cap_rule)
 
 #################################################################
 
-def emission_cap_rule(model, i, w):
-    return sum(model.seasScale[s]*model.genCO2factor[g,i]*model.genOperational[n,g,s,h,i,w] for (n,g) in model.GeneratorsOfNode for (s,h) in model.HoursOfSeason) - model.CO2cap[i] <= 0   #
-model.emission_cap = Constraint(model.Period, model.Scenario, rule=emission_cap_rule)
+def transmission_cap_rule(model, n1, n2, h, i, w):
+    if (n1,n2) in model.BidirectionalArc:
+        return model.transmisionOperational[(n1,n2),h,i,w]  - model.transmisionInstalledCap[(n1,n2),i] <= 0
+    elif (n2,n1) in model.BidirectionalArc:
+        return model.transmisionOperational[(n1,n2),h,i,w]  - model.transmisionInstalledCap[(n2,n1),i] <= 0
+model.transmission_cap = Constraint(model.DirectionalLink, model.Operationalhour, model.Period, model.Scenario, rule=transmission_cap_rule)
+
+#################################################################
+
+if EMISSION_CAP==1:
+	def emission_cap_rule(model, i, w):
+	    return sum(model.seasScale[s]*model.genCO2TypeFactor[g]*(3.6/model.genEfficiency[g,i])*model.genOperational[n,g,h,i,w] for (n,g) in model.GeneratorsOfNode for (s,h) in model.HoursOfSeason)/1000000 - model.CO2cap[i] <= 0   #
+	model.emission_cap = Constraint(model.Period, model.Scenario, rule=emission_cap_rule)
 
 #################################################################
 
 def lifetime_rule_gen(model, n, g, i):
     startPeriod=1
     if value(1+i-(model.genLifetime[g]/model.LeapYearsInvestment))>startPeriod:
-        startPeriod=math.floor(1+i-model.genLifetime[g]/model.LeapYearsInvestment)
+        startPeriod=value(1+i-model.genLifetime[g]/model.LeapYearsInvestment)
     return sum(model.genInvCap[n,g,j]  for j in model.Period if j>=startPeriod and j<=i )- model.genInstalledCap[n,g,i] + model.genInitCap[n,g,i]== 0   #
 model.installedCapDefinitionGen = Constraint(model.GeneratorsOfNode, model.Period, rule=lifetime_rule_gen)
 
@@ -394,8 +537,8 @@ model.installedCapDefinitionGen = Constraint(model.GeneratorsOfNode, model.Perio
 
 def lifetime_rule_storEN(model, n, b, i):
     startPeriod=1
-    if math.floor(1+i-model.storageLifetime[b]*(1/model.LeapYearsInvestment))>startPeriod:
-        startPeriod=math.floor(1+i-model.storageLifetime[b]/model.LeapYearsInvestment)
+    if value(1+i-model.storageLifetime[b]*(1/model.LeapYearsInvestment))>startPeriod:
+        startPeriod=value(1+i-model.storageLifetime[b]/model.LeapYearsInvestment)
     return sum(model.storENInvCap[n,b,j]  for j in model.Period if j>=startPeriod and j<=i )- model.storENInstalledCap[n,b,i] + model.storENInitCap[n,b,i]== 0   #
 model.installedCapDefinitionStorEN = Constraint(model.StoragesOfNode, model.Period, rule=lifetime_rule_storEN)
 
@@ -403,8 +546,8 @@ model.installedCapDefinitionStorEN = Constraint(model.StoragesOfNode, model.Peri
 
 def lifetime_rule_storPOW(model, n, b, i):
     startPeriod=1
-    if math.floor(1+i-model.storageLifetime[b]*(1/model.LeapYearsInvestment))>startPeriod:
-        startPeriod=math.floor(1+i-model.storageLifetime[b]/model.LeapYearsInvestment)
+    if value(1+i-model.storageLifetime[b]*(1/model.LeapYearsInvestment))>startPeriod:
+        startPeriod=value(1+i-model.storageLifetime[b]/model.LeapYearsInvestment)
     return sum(model.storPWInvCap[n,b,j]  for j in model.Period if j>=startPeriod and j<=i )- model.storPWInstalledCap[n,b,i] + model.storPWInitCap[n,b,i]== 0   #
 model.installedCapDefinitionStorPOW = Constraint(model.StoragesOfNode, model.Period, rule=lifetime_rule_storPOW)
 
@@ -412,8 +555,8 @@ model.installedCapDefinitionStorPOW = Constraint(model.StoragesOfNode, model.Per
 
 def lifetime_rule_trans(model, n1, n2, i):
     startPeriod=1
-    if math.floor(1+i-model.transmissionLifetime[n1,n2]*(1/model.LeapYearsInvestment))>startPeriod:
-        startPeriod=math.floor(1+i-model.transmissionLifetime[n1,n2]/model.LeapYearsInvestment)
+    if value(1+i-model.transmissionLifetime[n1,n2]*(1/model.LeapYearsInvestment))>startPeriod:
+        startPeriod=value(1+i-model.transmissionLifetime[n1,n2]/model.LeapYearsInvestment)
     return sum(model.transmisionInvCap[n1,n2,j]  for j in model.Period if j>=startPeriod and j<=i )- model.transmisionInstalledCap[n1,n2,i] + model.transmissionInitCap[n1,n2,i] == 0   #
 model.installedCapDefinitionTrans = Constraint(model.BidirectionalArc, model.Period, rule=lifetime_rule_trans)
 
@@ -469,7 +612,7 @@ model.installed_storage_energy_cap = Constraint(model.StoragesOfNode, model.Peri
 
 def power_energy_relate_rule(model, n, b, i):
     if b in model.DependentStorage:
-        return model.storPWInstalledCap[n,b,i] - model.storagePowToEnergy[b]*model.storENInstalledCap[n,b,i] <= 0   #
+        return model.storPWInstalledCap[n,b,i] - model.storagePowToEnergy[b]*model.storENInstalledCap[n,b,i] == 0   #
     else:
         return Constraint.Skip
 model.power_energy_relate = Constraint(model.StoragesOfNode, model.Period, rule=power_energy_relate_rule)
@@ -484,13 +627,20 @@ print("Objective and constraints read...")
 
 print("Building instance...")
 
-instance = model.create_instance()
+start = time.time()
+
+instance = model.create_instance() #, report_timing=True)
 instance.dual = Suffix(direction=Suffix.IMPORT) #Make sure the dual value is collected into solver results (if solver supplies dual information)
 
-#instance.genCapAvail.pprint()
+end = time.time()
+print("Building instance took [sec]:")
+print(end - start)
+
 #import pdb; pdb.set_trace()
+#instance.installed_storage_power_cap.pprint()
 
 print("----------------------Problem Statistics---------------------")
+print("")
 print("Nodes: "+ str(len(instance.Node)))
 print("Lines: "+str(len(instance.BidirectionalArc)))
 print("")
@@ -504,35 +654,53 @@ print("Scenarios: "+str(len(instance.Scenario)))
 print("TotalOperationalHoursPerScenario: "+str(len(instance.Operationalhour)))
 print("TotalOperationalHoursPerInvYear: "+str(len(instance.Operationalhour)*len(instance.Scenario)))
 print("Seasons: "+str(len(instance.Season)))
-for s in instance.Season:
-    print("LengthOfSeason "+str(s)+": "+str(value(instance.lengthSeason[s])))
+print("RegularSeasons: "+str(len(instance.FirstHoursOfRegSeason)))
+print("LengthOfRegSeason: "+str(value(instance.lengthRegSeason)))
+print("PeakSeasons: "+str(len(instance.FirstHoursOfPeakSeason)))
+print("LengthOfPeakSeason: "+str(value(instance.lengthPeakSeason)))
+print("") 
+print("Discount rate: "+str(value(instance.discountrate))) 
+print("Operational discount scale: "+str(value(instance.operationalDiscountrate)))
 print("--------------------------------------------------------------")
 
 print("Solving...")
 
-opt = SolverFactory('gurobi', solver_io='python', Verbose=True)
-opt.options["Crossover"]=0
-opt.options["Method"]=2
-results = opt.solve(instance, tee=True) #keepfiles=True
+if CPLEX_SOLVER == 1:
+    opt = SolverFactory("cplex", Verbose=True)
+    opt.options["lpmethod"] = 4
+    opt.options["barrier crossover"] = -1
+    #instance.display('outputs_cplex.txt')
+if XPRESS_SOLVER == 1:
+    opt = SolverFactory("xpress") #Verbose=True
+    opt.options["defaultAlg"] = 4
+    opt.options["crossover"] = 0
+    opt.options["lpLog"] = 1
+    #instance.display('outputs_xpress.txt')
+if GUROBI_SOLVER == 1:
+    opt = SolverFactory('gurobi', Verbose=True)
+    opt.options["Crossover"]=0
+    opt.options["Method"]=2
+
+results = opt.solve(instance, tee=True)#, logfile='logfile.log')#, keepfiles=True, symbolic_solver_labels=True)
 #instance.display('outputs_gurobi.txt')
-instance.emission_cap.pprint()
-import pdb; pdb.set_trace()
+
+#import pdb; pdb.set_trace()
+
 ###########
 ##RESULTS##
 ###########
-
 
 print("Writing results to .csv...")
 
 f = open('results_output_gen.csv', 'w', newline='')
 writer = csv.writer(f)
-writer.writerow(["Node,GeneratorType,Period,genInvCap_MW,genInstalledCap_MW,genExpectedCapacityFactor,DiscountedInvestmentCost_EuroPerMW,genExpectedAnnualProduction_GWh"])
+writer.writerow(["Node,GeneratorType,Period,genInvCap_MW,genInstalledCap_MW,genExpectedCapacityFactor,DiscountedInvestmentCost_Euro,genExpectedAnnualProduction_GWh"])
 for (n,g) in instance.GeneratorsOfNode:
     for i in instance.Period:
         my_string=str(n)+","+str(g)+","+str(value(2010+(i-1)*5))+","+str(value(instance.genInvCap[n,g,i]))+","+str(value(instance.genInstalledCap[n,g,i]))+","+ \
-        str(value(sum(instance.sceProbab[w]*instance.seasScale[s]*instance.genOperational[n,g,s,h,i,w] for (s,h) in instance.HoursOfSeason for w in instance.Scenario)/(instance.genInstalledCap[n,g,i]*8760) if instance.genInstalledCap[n,g,i] != 0 else 0))+","+ \
+        str(value(sum(instance.sceProbab[w]*instance.seasScale[s]*instance.genOperational[n,g,h,i,w] for (s,h) in instance.HoursOfSeason for w in instance.Scenario)/(instance.genInstalledCap[n,g,i]*8760) if instance.genInstalledCap[n,g,i] != 0 else 0))+","+ \
         str(value(instance.discount_multiplier[i]*instance.genInvCap[n,g,i]*instance.genInvCost[g,i]))+","+ \
-        str(value(sum(instance.seasScale[s]*instance.sceProbab[w]*instance.genOperational[n,g,s,h,i,w]/1000 for (s,h) in instance.HoursOfSeason for w in instance.Scenario)))  
+        str(value(sum(instance.seasScale[s]*instance.sceProbab[w]*instance.genOperational[n,g,h,i,w]/1000 for (s,h) in instance.HoursOfSeason for w in instance.Scenario)))  
         writer.writerow([my_string])
 f.close()
 
@@ -544,8 +712,8 @@ for (n,b) in instance.StoragesOfNode:
         my_string=str(n)+","+str(b)+","+str(value(2010+(i-1)*5))+","+str(value(instance.storPWInvCap[n,b,i]))+","+str(value(instance.storPWInstalledCap[n,b,i]))+","+ \
         str(value(instance.storENInvCap[n,b,i]))+","+str(value(instance.storENInstalledCap[n,b,i]))+","+ \
         str(value(instance.discount_multiplier[i]*(instance.storPWInvCap[n,b,i]*instance.storPWInvCost[b,i] + instance.storENInvCap[n,b,i]*instance.storENInvCost[b,i])))+","+ \
-        str(value(sum(instance.sceProbab[w]*instance.seasScale[s]*(instance.storDischarge[n,b,s,h,i,w] - instance.storCharge[n,b,s,h,i,w])/1000 for (s,h) in instance.HoursOfSeason for w in instance.Scenario)))+","+ \
-        str(value(sum(instance.sceProbab[w]*instance.seasScale[s]*((1 - instance.storageDischargeEff[b])*instance.storDischarge[n,b,s,h,i,w] + (1 - instance.storageChargeEff[b])*instance.storCharge[n,b,s,h,i,w])/1000 for (s,h) in instance.HoursOfSeason for w in instance.Scenario)))
+        str(value(sum(instance.sceProbab[w]*instance.seasScale[s]*instance.storDischarge[n,b,h,i,w]/1000 for (s,h) in instance.HoursOfSeason for w in instance.Scenario)))+","+ \
+        str(value(sum(instance.sceProbab[w]*instance.seasScale[s]*((1 - instance.storageDischargeEff[b])*instance.storDischarge[n,b,h,i,w] + (1 - instance.storageChargeEff[b])*instance.storCharge[n,b,h,i,w])/1000 for (s,h) in instance.HoursOfSeason for w in instance.Scenario)))
         writer.writerow([my_string])
 f.close()
 
@@ -556,43 +724,53 @@ for (n1,n2) in instance.BidirectionalArc:
     for i in instance.Period:
         my_string=str(n1)+","+str(n2)+","+str(value(2010+(i-1)*5))+","+str(value(instance.transmisionInvCap[n1,n2,i]))+","+str(value(instance.transmisionInstalledCap[n1,n2,i]))+","+ \
         str(value(instance.discount_multiplier[i]*instance.transmisionInvCap[n1,n2,i]*instance.transmissionInvCost[n1,n2,i]))+","+ \
-        str(value(sum(instance.sceProbab[w]*instance.seasScale[s]*(instance.transmisionOperational[n1,n2,s,h,i,w]+instance.transmisionOperational[n2,n1,s,h,i,w])/1000 for (s,h) in instance.HoursOfSeason for w in instance.Scenario)))+","+ \
-        str(value(sum(instance.sceProbab[w]*instance.seasScale[s]*((1 - instance.lineEfficiency[n1,n2])*instance.transmisionOperational[n1,n2,s,h,i,w] + (1 - instance.lineEfficiency[n2,n1])*instance.transmisionOperational[n2,n1,s,h,i,w])/1000 for (s,h) in instance.HoursOfSeason for w in instance.Scenario)))
+        str(value(sum(instance.sceProbab[w]*instance.seasScale[s]*(instance.transmisionOperational[n1,n2,h,i,w]+instance.transmisionOperational[n2,n1,h,i,w])/1000 for (s,h) in instance.HoursOfSeason for w in instance.Scenario)))+","+ \
+        str(value(sum(instance.sceProbab[w]*instance.seasScale[s]*((1 - instance.lineEfficiency[n1,n2])*instance.transmisionOperational[n1,n2,h,i,w] + (1 - instance.lineEfficiency[n2,n1])*instance.transmisionOperational[n2,n1,h,i,w])/1000 for (s,h) in instance.HoursOfSeason for w in instance.Scenario)))
         writer.writerow([my_string])
 f.close()
 
 f = open('results_output_Operational.csv', 'w', newline='')
 writer = csv.writer(f)
-writer.writerow(["Node,Period,Scenario,Season,Hour,Load_MW,Fossil_MW,Hydro_MW,RES_MW,Price_EuroPerMW,MargCO2factor_tonCO2perMW,EnergyLevel_MWh,NetDischarge_MW,LossesChargeDischarge_MW,NetFlowOut_MW,LossesFlowOut_MW,LoadShed_MW"])
+writer.writerow(["Node,Period,Scenario,Season,Hour,Load_MW,Fossil_MW,CCS_MW,Nuclear_MW,Bio_MW,BioCoFire_MW,Hydro_reg_MW,Wind_onshr_MW,Wind_offshr_MW,Solar_MW,OtherRES_MW,Price_EURperMWh,MargCO2_kgCO2perMWh,storEnergyLevel_MWh,Discharge_MW,Charge_MW,LossesStorage_MW,FlowOut_MW,FlowIn_MW,LossesFlowIn_MW,LoadShed_MW"])
 for n in instance.Node:
     for i in instance.Period:
         for w in instance.Scenario:
             for (s,h) in instance.HoursOfSeason:
                 my_string=str(n)+","+str(value(2010+(i-1)*5))+","+str(w)+","+str(s)+","+str(h)+","+ \
-                str(value(instance.sload[n,s,h,i,w]))+","+ \
-                str(value(sum(instance.genOperational[n,g,s,h,i,w] for g in instance.Generator if (n,g) in instance.GeneratorsOfNode and not ('Hydro',g) in instance.GeneratorsOfTechnology and not ('RES',g) in instance.GeneratorsOfTechnology)))+","+ \
-                str(value(sum(instance.genOperational[n,g,s,h,i,w] for g in instance.Generator if (n,g) in instance.GeneratorsOfNode and ('Hydro',g) in instance.GeneratorsOfTechnology)))+","+ \
-                str(value(sum(instance.genOperational[n,g,s,h,i,w] for g in instance.Generator if (n,g) in instance.GeneratorsOfNode and ('RES',g) in instance.GeneratorsOfTechnology or (n,g) in instance.GeneratorsOfNode and ('Hydro',g) in instance.GeneratorsOfTechnology)))+","+ \
-                str(instance.dual[instance.FlowBalance[n,s,h,i,w]])+","+ \
-                str(value(sum(instance.genOperational[n,g,s,h,i,w]*instance.genCO2factor[g,i] for g in instance.Generator if (n,g) in instance.GeneratorsOfNode)/sum(instance.genOperational[n,g,s,h,i,w] for g in instance.Generator if (n,g) in instance.GeneratorsOfNode)))+","+ \
-                str(value(sum(instance.storOperational[n,b,s,h,i,w] for b in instance.Storage if (n,b) in instance.StoragesOfNode)))+","+ \
-                str(value(sum(instance.storDischarge[n,b,s,h,i,w] - instance.storCharge[n,b,s,h,i,w] for b in instance.Storage if (n,b) in instance.StoragesOfNode)))+","+ \
-                str(value(sum((1 - instance.storageDischargeEff[b])*instance.storDischarge[n,b,s,h,i,w] + (1 - instance.storageChargeEff[b])*instance.storCharge[n,b,s,h,i,w] for b in instance.Storage if (n,b) in instance.StoragesOfNode)))+","+ \
-                str(value(sum(instance.transmisionOperational[n,outflow,s,h,i,w] for outflow in instance.NodesOut[n]) - sum(instance.transmisionOperational[inflow,n,s,h,i,w] for inflow in instance.NodesIn[n])))+","+ \
-                str(value(sum((1 - instance.lineEfficiency[n,outflow])*instance.transmisionOperational[n,outflow,s,h,i,w] for outflow in instance.NodesOut[n])))+","+ \
-                str(value(instance.loadShed[n,s,h,i,w]))
+                str(value(instance.sload[n,h,i,w]))+","+ \
+                str(value(sum(instance.genOperational[n,g,h,i,w] for g in instance.Generator if (n,g) in instance.GeneratorsOfNode and ('Fossil',g) in instance.GeneratorsOfTechnology)))+","+ \
+                str(value(sum(instance.genOperational[n,g,h,i,w] for g in instance.Generator if (n,g) in instance.GeneratorsOfNode and ('CCS',g) in instance.GeneratorsOfTechnology)))+","+ \
+                str(value(sum(instance.genOperational[n,g,h,i,w] for g in instance.Generator if (n,g) in instance.GeneratorsOfNode and ('Nuclear',g) in instance.GeneratorsOfTechnology)))+","+ \
+                str(value(sum(instance.genOperational[n,g,h,i,w] for g in instance.Generator if (n,g) in instance.GeneratorsOfNode and ('Bio',g) in instance.GeneratorsOfTechnology)))+","+ \
+                str(value(sum(instance.genOperational[n,g,h,i,w] for g in instance.Generator if (n,g) in instance.GeneratorsOfNode and not ('CCS',g) in instance.GeneratorsOfTechnology and ('CoFire',g) in instance.GeneratorsOfTechnology)))+","+ \
+                str(value(sum(instance.genOperational[n,g,h,i,w] for g in instance.Generator if (n,g) in instance.GeneratorsOfNode and ('Hydro_reg',g) in instance.GeneratorsOfTechnology)))+","+ \
+                str(value(sum(instance.genOperational[n,g,h,i,w] for g in instance.Generator if (n,g) in instance.GeneratorsOfNode and ('Wind_onshr',g) in instance.GeneratorsOfTechnology)))+","+ \
+                str(value(sum(instance.genOperational[n,g,h,i,w] for g in instance.Generator if (n,g) in instance.GeneratorsOfNode and ('Wind_offshr',g) in instance.GeneratorsOfTechnology)))+","+ \
+                str(value(sum(instance.genOperational[n,g,h,i,w] for g in instance.Generator if (n,g) in instance.GeneratorsOfNode and ('Solar',g) in instance.GeneratorsOfTechnology)))+","+ \
+                str(value(sum(instance.genOperational[n,g,h,i,w] for g in instance.Generator if (n,g) in instance.GeneratorsOfNode and (('Geo',g) in instance.GeneratorsOfTechnology or ('Hydro_ror',g) in instance.GeneratorsOfTechnology or ('Wave',g) in instance.GeneratorsOfTechnology))))+","+ \
+                str(instance.dual[instance.FlowBalance[n,h,i,w]])+","+ \
+                str(value(sum(instance.genOperational[n,g,h,i,w]*instance.genCO2TypeFactor[g]*(3.6/instance.genEfficiency[g,i]) for g in instance.Generator if (n,g) in instance.GeneratorsOfNode)/sum(instance.genOperational[n,g,h,i,w] for g in instance.Generator if (n,g) in instance.GeneratorsOfNode)))+","+ \
+                str(value(sum(instance.storOperational[n,b,h,i,w] for b in instance.Storage if (n,b) in instance.StoragesOfNode)))+","+ \
+                str(value(sum(instance.storDischarge[n,b,h,i,w] for b in instance.Storage if (n,b) in instance.StoragesOfNode)))+","+ \
+                str(value(sum(instance.storCharge[n,b,h,i,w] for b in instance.Storage if (n,b) in instance.StoragesOfNode)))+","+ \
+                str(value(sum((1 - instance.storageDischargeEff[b])*instance.storDischarge[n,b,h,i,w] + (1 - instance.storageChargeEff[b])*instance.storCharge[n,b,h,i,w] + (1 - instance.storageBleedEff[b])*instance.storOperational[n,b,h,i,w] for b in instance.Storage if (n,b) in instance.StoragesOfNode)))+","+ \
+                str(value(sum(instance.transmisionOperational[n,link,h,i,w] for link in instance.NodesLinked[n])))+","+ \
+                str(value(sum(instance.transmisionOperational[link,n,h,i,w] for link in instance.NodesLinked[n])))+","+ \
+                str(value(sum((1 - instance.lineEfficiency[link,n])*instance.transmisionOperational[link,n,h,i,w] for link in instance.NodesLinked[n])))+","+ \
+                str(value(instance.loadShed[n,h,i,w]))
                 writer.writerow([my_string])
 f.close()
 
 f = open('results_output_curtailed_prod.csv', 'w', newline='')
 writer = csv.writer(f)
-writer.writerow(["Node,GeneratorType,Period,ExpectedAnnualCurtailment_GWh"])
-for (n,g) in instance.GeneratorsOfNode:
-    if ('RES',g) in instance.GeneratorsOfTechnology and g != 'Bioexisting' and g != 'Bio' and g != 'Geo': 
-        for i in instance.Period:
-            my_string=str(n)+","+str(g)+","+str(value(2010+(i-1)*5))+","+ \
-            str(value(sum(instance.sceProbab[w]*instance.seasScale[s]*(instance.genCapAvail[n,g,s,h,i,w]*instance.genInstalledCap[n,g,i] - instance.genOperational[n,g,s,h,i,w])/1000 for w in instance.Scenario for (s,h) in instance.HoursOfSeason)))#+","+ \
-            writer.writerow([my_string])
+writer.writerow(["Node,RESGeneratorType,Period,ExpectedAnnualCurtailment_GWh"])
+for t in instance.Technology:
+    if t == 'Hydro_ror' or t == 'Wind_onshr' or t == 'Wind_offshr' or t == 'Solar':
+        for (n,g) in instance.GeneratorsOfNode: 
+            for i in instance.Period:
+                my_string=str(n)+","+str(g)+","+str(value(2010+(i-1)*5))+","+ \
+                str(value(sum(instance.sceProbab[w]*instance.seasScale[s]*(instance.genCapAvail[n,g,h,w]*instance.genInstalledCap[n,g,i] - instance.genOperational[n,g,h,i,w])/1000 for w in instance.Scenario for (s,h) in instance.HoursOfSeason)))#+","+ \
+                writer.writerow([my_string])
 f.close()
 
 f = open('results_output_EuropePlot.csv', 'w', newline='')
@@ -616,7 +794,7 @@ writer.writerow([my_string])
 for i in instance.Period:
     my_string=str(value(2010+(i-1)*5))
     for g in instance.Generator:
-        my_string+=","+str(value(sum(instance.sceProbab[w]*instance.seasScale[s]*instance.genOperational[n,g,s,h,i,w]/1000 for n in instance.Node if (n,g) in instance.GeneratorsOfNode for (s,h) in instance.HoursOfSeason for w in instance.Scenario)))
+        my_string+=","+str(value(sum(instance.sceProbab[w]*instance.seasScale[s]*instance.genOperational[n,g,h,i,w]/1000 for n in instance.Node if (n,g) in instance.GeneratorsOfNode for (s,h) in instance.HoursOfSeason for w in instance.Scenario)))
     writer.writerow([my_string])
 writer.writerow([""])
 writer.writerow(["Period,storPWInstalledCap_MW"])
@@ -649,32 +827,32 @@ writer.writerow([my_string])
 for i in instance.Period:
     my_string=str(value(2010+(i-1)*5))
     for b in instance.Storage:
-        my_string+=","+str(value(sum(instance.sceProbab[w]*instance.seasScale[s]*instance.storDischarge[n,b,s,h,i,w]/1000 for n in instance.Node if (n,b) in instance.StoragesOfNode for (s,h) in instance.HoursOfSeason for w in instance.Scenario)))
+        my_string+=","+str(value(sum(instance.sceProbab[w]*instance.seasScale[s]*instance.storDischarge[n,b,h,i,w]/1000 for n in instance.Node if (n,b) in instance.StoragesOfNode for (s,h) in instance.HoursOfSeason for w in instance.Scenario)))
     writer.writerow([my_string])
 f.close()
 
 f = open('results_output_EuropeSummary.csv', 'w', newline='')
 writer = csv.writer(f)
-writer.writerow(["Period,AvgExpectedCO2factor_TonPerMWh,AvgELPrice_EuroPerMWh,TotExpectedAnnualCurtailedRES_MWh,TotExpectedAnnualLossesChargeDischarge_GWh,ExpectedAnnualLossesTransmission_GWh"])
+writer.writerow(["Period,AvgExpectedCO2factor_TonPerMWh,AvgELPrice_EuroPerMWh,TotExpectedAnnualCurtailedRES_GWh,TotExpectedAnnualLossesChargeDischarge_GWh,ExpectedAnnualLossesTransmission_GWh"])
 for i in instance.Period:
     my_string=str(value(2010+(i-1)*5))+","+ \
-    str(value(sum(instance.sceProbab[w]*instance.genOperational[n,g,s,h,i,w]*instance.genCO2factor[g,i] for (n,g) in instance.GeneratorsOfNode for h in instance.Operationalhour for w in instance.Scenario)/sum(instance.sceProbab[w]*instance.genOperational[n,g,s,h,i,w] for (n,g) in instance.GeneratorsOfNode for h in instance.Operationalhour for w in instance.Scenario)))+","+ \
-    str(value(sum(instance.sceProbab[w]*instance.dual[instance.FlowBalance[n,s,h,i,w]] for n in instance.Node for (s,h) in instance.HoursOfSeason for w in instance.Scenario)/value(len(instance.HoursOfSeason)*len(instance.Node))))+","+ \
-    str(value(sum(instance.sceProbab[w]*instance.seasScale[s]*(instance.genCapAvail[n,g,s,h,i,w]*instance.genInstalledCap[n,g,i] - instance.genOperational[n,g,s,h,i,w]) for (n,g) in instance.GeneratorsOfNode if ('RES',g) in instance.GeneratorsOfTechnology for w in instance.Scenario for (s,h) in instance.HoursOfSeason)))+","+ \
-    str(value(sum(instance.sceProbab[w]*instance.seasScale[s]*((1 - instance.storageDischargeEff[b])*instance.storDischarge[n,b,s,h,i,w] + (1 - instance.storageChargeEff[b])*instance.storCharge[n,b,s,h,i,w])/1000 for (n,b) in instance.StoragesOfNode for (s,h) in instance.HoursOfSeason for w in instance.Scenario)))+","+ \
-    str(value(sum(instance.sceProbab[w]*instance.seasScale[s]*((1 - instance.lineEfficiency[n1,n2])*instance.transmisionOperational[n1,n2,s,h,i,w] + (1 - instance.lineEfficiency[n2,n1])*instance.transmisionOperational[n2,n1,s,h,i,w])/1000 for (n1,n2) in instance.BidirectionalArc for (s,h) in instance.HoursOfSeason for w in instance.Scenario)))
+    str(value(sum(instance.sceProbab[w]*instance.genOperational[n,g,h,i,w]*instance.genCO2TypeFactor[g]*(3.6/instance.genEfficiency[g,i]) for (n,g) in instance.GeneratorsOfNode for h in instance.Operationalhour for w in instance.Scenario)/sum(instance.sceProbab[w]*instance.genOperational[n,g,h,i,w] for (n,g) in instance.GeneratorsOfNode for h in instance.Operationalhour for w in instance.Scenario)))+","+ \
+    str(value(sum(instance.sceProbab[w]*instance.dual[instance.FlowBalance[n,h,i,w]] for n in instance.Node for h in instance.Operationalhour for w in instance.Scenario)/value(len(instance.Operationalhour)*len(instance.Node))))+","+ \
+    str(value(sum(instance.sceProbab[w]*instance.seasScale[s]*(instance.genCapAvail[n,g,h,w]*instance.genInstalledCap[n,g,i] - instance.genOperational[n,g,h,i,w])/1000 for (n,g) in instance.GeneratorsOfNode if ('RES',g) in instance.GeneratorsOfTechnology and g != 'Bioexisting' and g != 'Bio' and g != 'Geo' for w in instance.Scenario for (s,h) in instance.HoursOfSeason)))+","+ \
+    str(value(sum(instance.sceProbab[w]*instance.seasScale[s]*((1 - instance.storageDischargeEff[b])*instance.storDischarge[n,b,h,i,w] + (1 - instance.storageChargeEff[b])*instance.storCharge[n,b,h,i,w])/1000 for (n,b) in instance.StoragesOfNode for (s,h) in instance.HoursOfSeason for w in instance.Scenario)))+","+ \
+    str(value(sum(instance.sceProbab[w]*instance.seasScale[s]*((1 - instance.lineEfficiency[n1,n2])*instance.transmisionOperational[n1,n2,h,i,w] + (1 - instance.lineEfficiency[n2,n1])*instance.transmisionOperational[n2,n1,h,i,w])/1000 for (n1,n2) in instance.BidirectionalArc for (s,h) in instance.HoursOfSeason for w in instance.Scenario)))
     writer.writerow([my_string])
 writer.writerow([""])
-writer.writerow(["GeneratorType,Period,genInvCap_MW,genInstalledCap_MW,TotDiscountedInvestmentCost_EuroPerMW,genExpectedAnnualProduction_GWh"])
+writer.writerow(["GeneratorType,Period,genInvCap_MW,genInstalledCap_MW,TotDiscountedInvestmentCost_Euro,genExpectedAnnualProduction_GWh"])
 for g in instance.Generator:
     for i in instance.Period:
         my_string=str(g)+","+str(value(2010+(i-1)*5))+","+str(value(sum(instance.genInvCap[n,g,i] for n in instance.Node if (n,g) in instance.GeneratorsOfNode)))+","+ \
         str(value(sum(instance.genInstalledCap[n,g,i] for n in instance.Node if (n,g) in instance.GeneratorsOfNode)))+","+ \
         str(value(sum(instance.discount_multiplier[i]*instance.genInvCap[n,g,i]*instance.genInvCost[g,i] for n in instance.Node if (n,g) in instance.GeneratorsOfNode))) +","+ \
-        str(value(sum(instance.seasScale[s]*instance.sceProbab[w]*instance.genOperational[n,g,s,h,i,w]/1000 for n in instance.Node if (n,g) in instance.GeneratorsOfNode for (s,h) in instance.HoursOfSeason or w in instance.Scenario)))       
+        str(value(sum(instance.seasScale[s]*instance.sceProbab[w]*instance.genOperational[n,g,h,i,w]/1000 for n in instance.Node if (n,g) in instance.GeneratorsOfNode for (s,h) in instance.HoursOfSeason or w in instance.Scenario)))       
         writer.writerow([my_string])
 writer.writerow([""])
-writer.writerow(["StorageType,Period,storPWInvCap_MW,storPWInstalledCap_MW,storENInvCap_MWh,storENInstalledCap_MWh,TotDiscountedInvestmentCostPWEN_EuroPerMWMWh,ExpectedAnnualDischargeVolume_GWh"])
+writer.writerow(["StorageType,Period,storPWInvCap_MW,storPWInstalledCap_MW,storENInvCap_MWh,storENInstalledCap_MWh,TotDiscountedInvestmentCostPWEN_Euro,ExpectedAnnualDischargeVolume_GWh"])
 for b in instance.Storage:
     for i in instance.Period:
         my_string=str(b)+","+str(value(2010+(i-1)*5))+","+str(value(sum(instance.storPWInvCap[n,b,i] for n in instance.Node if (n,b) in instance.StoragesOfNode)))+","+ \
@@ -682,6 +860,8 @@ for b in instance.Storage:
         str(value(sum(instance.storENInvCap[n,b,i] for n in instance.Node if (n,b) in instance.StoragesOfNode)))+","+ \
         str(value(sum(instance.storENInstalledCap[n,b,i] for n in instance.Node if (n,b) in instance.StoragesOfNode)))+","+ \
         str(value(sum(instance.discount_multiplier[i]*(instance.storPWInvCap[n,b,i]*instance.storPWInvCost[b,i] + instance.storENInvCap[n,b,i]*instance.storENInvCost[b,i]) for n in instance.Node if (n,b) in instance.StoragesOfNode)))+","+ \
-        str(value(sum(instance.seasScale[s]*instance.sceProbab[w]*instance.storDischarge[n,b,s,h,i,w]/1000 for n in instance.Node if (n,b) in instance.StoragesOfNode for (s,h) in instance.HoursOfSeason or w in instance.Scenario)))
+        str(value(sum(instance.seasScale[s]*instance.sceProbab[w]*instance.storDischarge[n,b,h,i,w]/1000 for n in instance.Node if (n,b) in instance.StoragesOfNode for (s,h) in instance.HoursOfSeason or w in instance.Scenario)))
         writer.writerow([my_string])
 f.close()
+
+#import pdb; pdb.set_trace()

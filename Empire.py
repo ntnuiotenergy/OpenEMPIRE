@@ -432,15 +432,23 @@ def prepSload_rule(model):
 	#Build load profiles for all periods
 
     for n in model.Node:
-        nodeaverageload=sum(model.sloadRaw[n,h,sce] for h in model.Operationalhour if value(h) < value(model.FirstHoursOfRegSeason[-1]+model.lengthRegSeason) for sce in model.Scenario)/value((model.FirstHoursOfRegSeason[-1]+model.lengthRegSeason-1)*len(model.Scenario))
+        nodeaverageload = 0
+        for h in model.Operationalhour:
+            if value(h) < value(model.FirstHoursOfRegSeason[-1] + model.lengthRegSeason):
+                for sce in model.Scenario:
+                    nodeaverageload += model.sloadRaw[n,h,sce].value
+        nodeaverageload = nodeaverageload / value((model.FirstHoursOfRegSeason[-1] + model.lengthRegSeason - 1) * len(model.Scenario))
         for i in model.Period:
-            hourlyadjustment=value(model.sloadAnnualDemand[n,i]/8760) - nodeaverageload
+            hourlyadjustment = value(model.sloadAnnualDemand[n,i].value / 8760) - value(nodeaverageload)
             for h in model.Operationalhour:
                 for sce in model.Scenario:
-                    if value(model.sloadRaw[n,h,sce]+hourlyadjustment)>0:
-                        model.sload[n,h,i,sce]=model.sloadRaw[n,h,sce]+hourlyadjustment
+                    if value(model.sloadRaw[n,h,sce].value + hourlyadjustment) > 0:
+                        model.sload[n,h,i,sce] = model.sloadRaw[n,h,sce].value + hourlyadjustment
                     else:
-                    	print(n);print(h);print(sce);print('Adjusted load is negative')
+                        print(n)
+                        print(h)
+                        print(sce)
+                        print('Adjusted load is negative')
 
 model.build_sload = BuildAction(rule=prepSload_rule)
 
