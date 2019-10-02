@@ -67,13 +67,14 @@ model.Season = Set(initialize = ['winter','summer','peak'], ordered=True) #s
 model.Node = Set(ordered=True, initialize = ['Germany','Denmark']) #n
 model.DirectionalLink = Set(dimen=2, within=model.Node*model.Node, ordered=True, initialize = [('Germany','Denmark'),('Denmark','Germany')]) #a
 model.TransmissionType = Set(ordered=True, initialize = ['HVAC','HVDC'])
+
 #Stochastic sets
 model.Scenario = Set(initialize = ['sce1','sce2','sce3','sce4','sce5'], ordered=True) #w
 
 #Subsets
 model.GeneratorsOfTechnology=Set(dimen=2, initialize = [('Fossil','Coal'),('Hydro_reg','HydroReg'),('Solar','Solar'),('Wind_onshr','Wind'),('Bio','Bio')]) #(t,g) for all t in T, g in G_t
 model.GeneratorsOfNode = Set(dimen=2, initialize = [('Germany','Coal'),('Germany','HydroReg'),('Germany','Solar'),('Germany','Wind'),('Denmark','Wind'),('Denmark','Bio')]) #,('Denmark','Coal'),('Denmark','Solar') #(n,g) for all n in N, g in G_n
-model.TransmissionTypeOfDirectionalLink = Set(dimen=3) #(n1,n2,t) for all (n1,n2) in L, t in T
+model.TransmissionTypeOfDirectionalLink = Set(dimen=3, initialize = [('Germany','Denmark','HVAC'),('Denmark','Germany','HVAC')]) #(n1,n2,t) for all (n1,n2) in L, t in T
 model.ThermalGenerators = Set(within=model.Generator, initialize = ['Coal','Bio']) #g_thermal
 model.RegHydroGenerator = Set(within=model.Generator, initialize = ['HydroReg']) #g_reghyd
 model.HydroGenerator = Set(within=model.Generator, initialize = ['HydroReg']) #g_hyd
@@ -124,38 +125,38 @@ model.lengthPeakSeason = Param(initialize=2) #NB! Hard-coded
 
 #Cost
 
-model.genCapitalCost = Param(model.Generator, model.Period, default=0, mutable=True, initialize=10)
-model.transmissionTypeCapitalCost = Param(model.TransmissionType, model.Period, default=0, mutable=True, initialize=10)
-model.storPWCapitalCost = Param(model.Storage, model.Period, default=0, mutable=True, initialize=10)
-model.storENCapitalCost = Param(model.Storage, model.Period, default=0, mutable=True, initialize=10)
-model.genFixedOMCost = Param(model.Generator, model.Period, default=0, mutable=True, initialize=10)
-model.transmissionTypeFixedOMCost = Param(model.TransmissionType, model.Period, default=0, mutable=True, initialize=10)
+model.genCapitalCost = Param(model.Generator, model.Period, default=0, mutable=True, initialize=1000)
+model.transmissionTypeCapitalCost = Param(model.TransmissionType, model.Period, default=0, mutable=True, initialize=100)
+model.storPWCapitalCost = Param(model.Storage, model.Period, default=0, mutable=True, initialize=100)
+model.storENCapitalCost = Param(model.Storage, model.Period, default=0, mutable=True, initialize=100)
+model.genFixedOMCost = Param(model.Generator, model.Period, default=0, mutable=True, initialize=50)
+model.transmissionTypeFixedOMCost = Param(model.TransmissionType, model.Period, default=0, mutable=True, initialize=30)
 model.storPWFixedOMCost = Param(model.Storage, model.Period, default=0, mutable=True, initialize=10)
 model.storENFixedOMCost = Param(model.Storage, model.Period, default=0, mutable=True, initialize=10)
 model.genInvCost = Param(model.Generator, model.Period, default=9000000, mutable=True)
 model.transmissionInvCost = Param(model.BidirectionalArc, model.Period, default=3000000, mutable=True)
 model.storPWInvCost = Param(model.Storage, model.Period, default=1000000, mutable=True)
 model.storENInvCost = Param(model.Storage, model.Period, default=800000, mutable=True)
-model.transmissionLength = Param(model.BidirectionalArc, default=0, mutable=True, initialize=10)
+model.transmissionLength = Param(model.BidirectionalArc, default=0, mutable=True, initialize=400)
 model.genVariableOMCost = Param(model.Generator, default=0.0, mutable=True, initialize=1)
-model.genFuelCost = Param(model.Generator, model.Period, default=0.0, mutable=True, initialize=1)
-model.genMargCost = Param(model.Generator, model.Period, default=600, mutable=True, initialize=1)
-model.genCO2TypeFactor = Param(model.Generator, default=0.0, mutable=True, initialize=100)
+model.genFuelCost = Param(model.Generator, model.Period, default=0.0, mutable=True, initialize=5)
+model.genMargCost = Param(model.Generator, model.Period, default=0.0, mutable=True)
+model.genCO2TypeFactor = Param(model.Generator, default=0.0, mutable=True, initialize=0.08)
 model.nodeLostLoadCost = Param(model.Node, model.Period, default=100000.0)
 model.CO2price = Param(model.Period, default=0.0, mutable=True, initialize=100)
 model.CCSCostTSFix = Param(initialize=1149873.72) #NB! Hard-coded
-model.CCSCostTSVariable = Param(model.Period, default=0.0, mutable=True, initialize=100)
+model.CCSCostTSVariable = Param(model.Period, default=0.0, mutable=True, initialize=14)
 model.CCSRemFrac = Param(initialize=0.9)
 
 #Node dependent technology limitations
 
-model.genRefInitCap = Param(model.GeneratorsOfNode, default=100, mutable=True)
-model.genScaleInitCap = Param(model.Generator, model.Period, default=100, mutable=True)
-model.genInitCap = Param(model.GeneratorsOfNode, model.Period, default=100, mutable=True)
-model.transmissionInitCap = Param(model.BidirectionalArc, model.Period, default=100, mutable=True)
-model.storPWInitCap = Param(model.StoragesOfNode, model.Period, default=100, mutable=True)
-model.storENInitCap = Param(model.StoragesOfNode, model.Period, default=100, mutable=True)
-model.genMaxBuiltCap = Param(model.Node, model.Technology, model.Period, default=10000.0, mutable=True)
+model.genRefInitCap = Param(model.GeneratorsOfNode, default=1000, mutable=True)
+model.genScaleInitCap = Param(model.Generator, model.Period, default=0.9, mutable=True)
+model.genInitCap = Param(model.GeneratorsOfNode, model.Period, default=1000, mutable=True)
+model.transmissionInitCap = Param(model.BidirectionalArc, model.Period, default=1000, mutable=True)
+model.storPWInitCap = Param(model.StoragesOfNode, model.Period, default=1000, mutable=True)
+model.storENInitCap = Param(model.StoragesOfNode, model.Period, default=1000, mutable=True)
+model.genMaxBuiltCap = Param(model.Node, model.Technology, model.Period, default=15000.0, mutable=True)
 model.transmissionMaxBuiltCap = Param(model.BidirectionalArc, model.Period, default=20000.0, mutable=True)
 model.storPWMaxBuiltCap = Param(model.StoragesOfNode, model.Period, default=500000.0, mutable=True)
 model.storENMaxBuiltCap = Param(model.StoragesOfNode, model.Period, default=500000.0, mutable=True)
@@ -170,15 +171,15 @@ model.storENMaxInstalledCapRaw = Param(model.StoragesOfNode, default=100000.0, m
 
 #Type dependent technology limitations
 
-model.genLifetime = Param(model.Generator, default=10.0, mutable=True)
+model.genLifetime = Param(model.Generator, default=15.0, mutable=True)
 model.transmissionLifetime = Param(model.BidirectionalArc, default=20.0, mutable=True)
 model.storageLifetime = Param(model.Storage, default=10.0, mutable=True)
-model.genEfficiency = Param(model.Generator, model.Period, default=0.9, mutable=True)
+model.genEfficiency = Param(model.Generator, model.Period, default=0.4, mutable=True)
 model.lineEfficiency = Param(model.DirectionalLink, default=0.97, mutable=True)
 model.storageChargeEff = Param(model.Storage, default=0.9, mutable=True)
 model.storageDischargeEff = Param(model.Storage, default=0.9, mutable=True)
 model.storageBleedEff = Param(model.Storage, default=1.0, mutable=True)
-model.genRampUpCap = Param(model.ThermalGenerators, default=0.5, mutable=True)
+model.genRampUpCap = Param(model.ThermalGenerators, default=0.8, mutable=True)
 model.storageDiscToCharRatio = Param(model.Storage, default=1.0, mutable=True) #NB! Hard-coded
 model.storagePowToEnergy = Param(model.DependentStorage, default=1.0, mutable=True)
 
@@ -335,8 +336,8 @@ def prepGenCapAvail_rule(model):
     for (n,g) in model.GeneratorsOfNode:
     	for h in model.Operationalhour:
             for s in model.Scenario:
-                if model.genCapAvailTypeRaw[g] == 0:
-                    model.genCapAvail[n,g,h,s]=model.genCapAvailStochRaw[n,g,h,s]
+                if g == 'Wind' or g == 'Solar':
+                    model.genCapAvail[n,g,h,s]=random.uniform(0,1)
                 else:
                     model.genCapAvail[n,g,h,s]=model.genCapAvailTypeRaw[g]                        
 
