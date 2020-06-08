@@ -79,10 +79,10 @@ model.ThermalGenerators = Set(within=model.Generator) #g_ramp
 model.RegHydroGenerator = Set(within=model.Generator) #g_reghyd
 model.HydroGenerator = Set(within=model.Generator) #g_hyd
 model.StoragesOfNode = Set(dimen=2) #(n,b) for all n in N, b in B_n
-model.DependentStorage = Set(within=model.Storage) #b_dagger
+model.DependentStorage = Set() #b_dagger
 model.HoursOfSeason = Set(dimen=2, ordered=True) #(s,h) for all s in S, h in H_s
-model.FirstHoursOfRegSeason = Set(within=model.Operationalhour, ordered=True, initialize=[1,169,337,505])
-model.FirstHoursOfPeakSeason = Set(within=model.Operationalhour, ordered=True, initialize=[673,697])
+model.FirstHoursOfRegSeason = Set(within=model.Operationalhour, ordered=True, initialize=[1,169,337,505]) #NB! Hard-coded
+model.FirstHoursOfPeakSeason = Set(within=model.Operationalhour, ordered=True, initialize=[673,697]) #NB! Hard-coded
 
 print("Reading sets...")
 
@@ -279,10 +279,12 @@ data.load(filename='Stochastic_StochasticAvailability.tab', param=model.genCapAv
 data.load(filename='Stochastic_ElectricLoadRaw.tab', param=model.sloadRaw, format="table") 
 
 data.load(filename='General_seasonScale.tab', param=model.seasScale, format="table") 
-data.load(filename='General_CO2Price.tab', param=model.CO2price, format="table")
 
 if EMISSION_CAP==1:
     data.load(filename='General_CO2Cap.tab', param=model.CO2cap, format="table")
+else:
+    data.load(filename='General_CO2Price.tab', param=model.CO2price, format="table")
+
 
 print("Constructing parameter values...")
 
