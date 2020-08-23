@@ -7,6 +7,7 @@ from datetime import datetime
 ##USER##
 ########
 
+USE_TEMP_DIR = False #True
 temp_dir = 'C:/Users/stianbac' #'/panfs/nas-0-0.local/work/stianbac'
 version = 'test'
 NoOfPeriods = 3
@@ -89,4 +90,5 @@ run_empire(name = name,
            IAMC_PRINT = IAMC_PRINT, 
            WRITE_LP = WRITE_LP, 
            PICKLE_INSTANCE = PICKLE_INSTANCE, 
-           EMISSION_CAP = EMISSION_CAP)
+           EMISSION_CAP = EMISSION_CAP,
+           USE_TEMP_DIR = USE_TEMP_DIR)

@@ -11,9 +11,10 @@ def run_empire(name, tab_file_path, result_file_path, solver, temp_dir,
                FirstHoursOfRegSeason, FirstHoursOfPeakSeason, lengthRegSeason,
                lengthPeakSeason, Period, Operationalhour, Scenario, Season,
                discountrate, WACC, LeapYearsInvestment, IAMC_PRINT, 
-               WRITE_LP, PICKLE_INSTANCE, EMISSION_CAP):
+               WRITE_LP, PICKLE_INSTANCE, EMISSION_CAP, USE_TEMP_DIR):
 
-    TempfileManager.tempdir = temp_dir
+    if USE_TEMP_DIR:
+        TempfileManager.tempdir = temp_dir
 
     if not os.path.exists(result_file_path):
         os.makedirs(result_file_path)
@@ -757,7 +758,10 @@ def run_empire(name, tab_file_path, result_file_path, solver, temp_dir,
     if WRITE_LP:
         print("Writing LP-file...")
         start = time.time()
-        instance.write(temp_dir + '/LP_'+ name + '.lp', io_options={'symbolic_solver_labels': True})
+        lpstring = 'LP_' + name + '.lp'
+        if USE_TEMP_DIR:
+            lpstring = temp_dir + '/LP_'+ name + '.lp'
+        instance.write(lpstring, io_options={'symbolic_solver_labels': True})
         end = time.time()
         print("Writing LP-file took [sec]:")
         print(end - start)
@@ -785,7 +789,10 @@ def run_empire(name, tab_file_path, result_file_path, solver, temp_dir,
 
     if PICKLE_INSTANCE:
         start = time.time()
-        with open(temp_dir + '/instance' + name + '.pkl', mode='wb') as file:
+        picklestring = 'instance' + name + '.pkl'
+        if USE_TEMP_DIR:
+            picklestring = temp_dir + '/instance' + name + '.pkl'
+        with open(picklestring, mode='wb') as file:
             cloudpickle.dump(instance, file)
         end = time.time()
         print("Pickling instance took [sec]:")
