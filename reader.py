@@ -53,7 +53,6 @@ def generate_tab_files(filepath, tab_file_path, scenariogeneration=True):
     read_sets(filepath, 'Sets.xlsx', 'Technology', tab_file_path = tab_file_path)
     read_sets(filepath, 'Sets.xlsx', 'Storage', tab_file_path = tab_file_path)
     read_sets(filepath, 'Sets.xlsx', 'Generators', tab_file_path = tab_file_path)
-    read_file(filepath, 'Sets.xlsx', 'HourOfSeason', [0, 1], tab_file_path = tab_file_path)
     read_file(filepath, 'Sets.xlsx', 'StorageOfNodes', [0, 1], tab_file_path = tab_file_path)
     read_file(filepath, 'Sets.xlsx', 'GeneratorsOfNode', [0, 1], tab_file_path = tab_file_path)
     read_file(filepath, 'Sets.xlsx', 'GeneratorsOfTechnology', [0, 1], tab_file_path = tab_file_path)
@@ -96,12 +95,6 @@ def generate_tab_files(filepath, tab_file_path, scenariogeneration=True):
     read_file(filepath, 'General.xlsx', 'seasonScale', [0, 1], tab_file_path = tab_file_path)
     read_file(filepath, 'General.xlsx', 'CO2Cap', [0, 1], tab_file_path = tab_file_path)
     read_file(filepath, 'General.xlsx', 'CO2Price', [0, 1], tab_file_path = tab_file_path)
-
-    #Reading Stochastic
-    if scenariogeneration == False:
-        read_file(filepath, 'Stochastic.xlsx', 'StochasticAvailability', [0, 1, 2, 3, 4], tab_file_path = tab_file_path)
-        read_file(filepath, 'Stochastic.xlsx', 'ElectricLoadRaw', [0, 1, 2, 3], tab_file_path = tab_file_path)
-        read_file(filepath, 'Stochastic.xlsx', 'HydroGenMaxSeasonalProduction', [0, 1, 2, 3, 4], tab_file_path = tab_file_path)
     
     #Reading Storage
     read_file(filepath, 'Storage.xlsx', 'StorageBleedEfficiency', [0, 1], tab_file_path = tab_file_path)

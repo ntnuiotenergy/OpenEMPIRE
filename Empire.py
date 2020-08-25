@@ -7,9 +7,9 @@ import cloudpickle
 import time
 import os
 
-def run_empire(name, tab_file_path, result_file_path, solver, temp_dir,
-               FirstHoursOfRegSeason, FirstHoursOfPeakSeason, lengthRegSeason,
-               lengthPeakSeason, Period, Operationalhour, Scenario, Season,
+def run_empire(name, tab_file_path, result_file_path, scenariogeneration, scenario_data_path,
+               solver, temp_dir, FirstHoursOfRegSeason, FirstHoursOfPeakSeason, lengthRegSeason,
+               lengthPeakSeason, Period, Operationalhour, Scenario, Season, HoursOfSeason,
                discountrate, WACC, LeapYearsInvestment, WRITE_LP,
                PICKLE_INSTANCE, EMISSION_CAP, USE_TEMP_DIR):
 
@@ -84,7 +84,7 @@ def run_empire(name, tab_file_path, result_file_path, solver, temp_dir,
     model.HydroGenerator = Set(within=model.Generator) #g_hyd
     model.StoragesOfNode = Set(dimen=2) #(n,b) for all n in N, b in B_n
     model.DependentStorage = Set() #b_dagger
-    model.HoursOfSeason = Set(dimen=2, ordered=True) #(s,h) for all s in S, h in H_s
+    model.HoursOfSeason = Set(dimen=2, ordered=True, initialize=HoursOfSeason) #(s,h) for all s in S, h in H_s
     model.FirstHoursOfRegSeason = Set(within=model.Operationalhour, ordered=True, initialize=FirstHoursOfRegSeason)
     model.FirstHoursOfPeakSeason = Set(within=model.Operationalhour, ordered=True, initialize=FirstHoursOfPeakSeason)
 
@@ -107,7 +107,6 @@ def run_empire(name, tab_file_path, result_file_path, solver, temp_dir,
     data.load(filename=tab_file_path + "/" + 'Sets_GeneratorsOfTechnology.tab',format="set", set=model.GeneratorsOfTechnology)
     data.load(filename=tab_file_path + "/" + 'Sets_GeneratorsOfNode.tab',format="set", set=model.GeneratorsOfNode)
     data.load(filename=tab_file_path + "/" + 'Sets_StorageOfNodes.tab',format="set", set=model.StoragesOfNode)
-    data.load(filename=tab_file_path + "/" + 'Sets_HourOfSeason.tab',format="set", set=model.HoursOfSeason)
 
     print("Constructing sub sets...")
 
@@ -274,9 +273,14 @@ def run_empire(name, tab_file_path, result_file_path, solver, temp_dir,
     data.load(filename=tab_file_path + "/" + 'Node_ElectricAnnualDemand.tab', param=model.sloadAnnualDemand, format="table") 
     data.load(filename=tab_file_path + "/" + 'Node_HydroGenMaxAnnualProduction.tab', param=model.maxHydroNode, format="table") 
     
-    data.load(filename=tab_file_path + "/" + 'Stochastic_HydroGenMaxSeasonalProduction.tab', param=model.maxRegHydroGenRaw, format="table")
-    data.load(filename=tab_file_path + "/" + 'Stochastic_StochasticAvailability.tab', param=model.genCapAvailStochRaw, format="table") 
-    data.load(filename=tab_file_path + "/" + 'Stochastic_ElectricLoadRaw.tab', param=model.sloadRaw, format="table") 
+    if scenariogeneration:
+        scenariopath = tab_file_path
+    else:
+        scenariopath = scenario_data_path
+
+    data.load(filename=scenariopath + "/" + 'Stochastic_HydroGenMaxSeasonalProduction.tab', param=model.maxRegHydroGenRaw, format="table")
+    data.load(filename=scenariopath + "/" + 'Stochastic_StochasticAvailability.tab', param=model.genCapAvailStochRaw, format="table") 
+    data.load(filename=scenariopath + "/" + 'Stochastic_ElectricLoadRaw.tab', param=model.sloadRaw, format="table") 
 
     data.load(filename=tab_file_path + "/" + 'General_seasonScale.tab', param=model.seasScale, format="table") 
 

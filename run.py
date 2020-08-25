@@ -44,8 +44,19 @@ FirstHoursOfRegSeason = [lengthRegSeason*i + 1 for i in range(NoOfRegSeason)]
 FirstHoursOfPeakSeason = [lengthRegSeason*NoOfRegSeason + lengthPeakSeason*i + 1 for i in range(NoOfPeakSeason)]
 Period = [i + 1 for i in range(NoOfPeriods)]
 Scenario = ["scenario"+str(i + 1) for i in range(NoOfScenarios)]
-Season = regular_seasons + ['peak'+str(i + 1) for i in range(NoOfPeakSeason)]
+peak_seasons = ['peak'+str(i + 1) for i in range(NoOfPeakSeason)]
+Season = regular_seasons + peak_seasons
 Operationalhour = [i + 1 for i in range(FirstHoursOfPeakSeason[-1] + lengthPeakSeason - 1)]
+HoursOfRegSeason = [(s,h) for s in regular_seasons for h in Operationalhour \
+                 if h in list(range(regular_seasons.index(s)*lengthRegSeason+1,
+                               regular_seasons.index(s)*lengthRegSeason+lengthRegSeason+1))]
+HoursOfPeakSeason = [(s,h) for s in peak_seasons for h in Operationalhour \
+                     if h in list(range(lengthRegSeason*len(regular_seasons)+ \
+                                        peak_seasons.index(s)*lengthPeakSeason+1,
+                                        lengthRegSeason*len(regular_seasons)+ \
+                                            peak_seasons.index(s)*lengthPeakSeason+ \
+                                                lengthPeakSeason+1))]
+HoursOfSeason = HoursOfRegSeason + HoursOfPeakSeason
 dict_countries = {"AT": "Austria", "BA": "BosniaH", "BE": "Belgium",
                   "BG": "Bulgaria", "CH": "Switzerland", "CZ": "CzechR",
                   "DE": "Germany", "DK": "Denmark", "EE": "Estonia",
@@ -82,7 +93,9 @@ generate_tab_files(filepath = workbook_path, tab_file_path = tab_file_path,
 
 run_empire(name = name, 
            tab_file_path = tab_file_path,
-           result_file_path = result_file_path, 
+           result_file_path = result_file_path,
+           scenariogeneration = scenariogeneration,
+           scenario_data_path = scenario_data_path, 
            solver = solver,
            temp_dir = temp_dir, 
            FirstHoursOfRegSeason = FirstHoursOfRegSeason, 
@@ -93,6 +106,7 @@ run_empire(name = name,
            Operationalhour = Operationalhour,
            Scenario = Scenario,
            Season = Season,
+           HoursOfSeason = HoursOfSeason,
            discountrate = discountrate, 
            WACC = WACC, 
            LeapYearsInvestment = LeapYearsInvestment,
