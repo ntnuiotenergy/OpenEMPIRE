@@ -23,7 +23,6 @@ LeapYearsInvestment = 5
 solver = "Gurobi" #"Xpress" # #"CPLEX"
 scenariogeneration = True #False
 EMISSION_CAP = True #False
-IAMC_PRINT = False #True
 WRITE_LP = False #True
 PICKLE_INSTANCE = False #True 
 
@@ -87,7 +86,6 @@ run_empire(name = name,
            discountrate = discountrate, 
            WACC = WACC, 
            LeapYearsInvestment = LeapYearsInvestment,
-           IAMC_PRINT = IAMC_PRINT, 
            WRITE_LP = WRITE_LP, 
            PICKLE_INSTANCE = PICKLE_INSTANCE, 
            EMISSION_CAP = EMISSION_CAP,

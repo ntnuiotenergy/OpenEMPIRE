@@ -10,8 +10,8 @@ import os
 def run_empire(name, tab_file_path, result_file_path, solver, temp_dir,
                FirstHoursOfRegSeason, FirstHoursOfPeakSeason, lengthRegSeason,
                lengthPeakSeason, Period, Operationalhour, Scenario, Season,
-               discountrate, WACC, LeapYearsInvestment, IAMC_PRINT, 
-               WRITE_LP, PICKLE_INSTANCE, EMISSION_CAP, USE_TEMP_DIR):
+               discountrate, WACC, LeapYearsInvestment, WRITE_LP,
+               PICKLE_INSTANCE, EMISSION_CAP, USE_TEMP_DIR):
 
     if USE_TEMP_DIR:
         TempfileManager.tempdir = temp_dir
@@ -1012,83 +1012,3 @@ def run_empire(name, tab_file_path, result_file_path, solver, temp_dir,
             value(sum(instance.discount_multiplier[i]*(instance.storPWInvCap[n,b,i]*instance.storPWInvCost[b,i] + instance.storENInvCap[n,b,i]*instance.storENInvCost[b,i]) for n in instance.Node if (n,b) in instance.StoragesOfNode)), 
             value(sum(instance.seasScale[s]*instance.sceProbab[w]*instance.storDischarge[n,b,h,i,w]/1000 for n in instance.Node if (n,b) in instance.StoragesOfNode for (s,h) in instance.HoursOfSeason or w in instance.Scenario))])
     f.close()
-    
-    if IAMC_PRINT:
-        ####################
-        ###STANDARD PRINT###
-        ####################
-
-        Modelname = "EMPIRE"
-        Scenario = "1.5degree"
-
-        dict_countries = {"AT": "Austria", "BA": "BosniaH", "BE": "Belgium", "BG": "Bulgaria", "CH": "Switzerland", "CZ": "CzechR", "DE": "Germany", "DK": "Denmark", "EE": "Estonia", \
-        "ES": "Spain", "FI": "Finland", "FR": "France", "GB": "GreatBrit.", "GR": "Greece", "HR": "Croatia", "HU": "Hungary", "IE": "Ireland", "IT": "Italy", "LT": "Lithuania", "LU": "Luxemb.", "LV": "Latvia", "MK": "Macedonia", \
-        "NL": "Netherlands", "NO": "Norway", "PL": "Poland", "PT": "Portugal", "RO": "Romania", "RS": "Serbia", "SE": "Sweden", "SI": "Slovenia", "SK": "Slovakia", "NO1": "NO1", "NO2": "NO2", "NO3": "NO3", "NO4": "NO4", "NO5": "NO5"}
-
-        dict_countries_reversed = dict([reversed(i) for i in dict_countries.items()])
-
-        dict_generators = {"Bio": "Biomass", "Bioexisting": "Biomass", "Coalexisting": "Coal|w/o CCS", "Coal": "Coal|w/o CCS", "CoalCCS": "Coal|w/ CCS", "CoalCCSadv": "Coal|w/ CCS", "Lignite": "Lignite|w/o CCS", "Liginiteexisting": "Lignite|w/o CCS", \
-        "LigniteCCSadv": "Lignite|w/ CCS", "Gasexisting": "Gas|CCGT|w/o CCS", "GasOCGT": "Gas|OCGT|w/o CCS", "GasCCGT": "Gas|CCGT|w/o CCS", "GasCCS": "Gas|CCGT|w/ CCS", "GasCCSadv": "Gas|CCGT|w/ CCS", "Oilexisting": "Oil", "Nuclear": "Nuclear", \
-        "Wave": "Ocean", "Geo": "Geothermal", "Hydroregulated": "Hydro|Reservoir", "Hydrorun-of-the-river": "Hydro|Run-of-River", "Windonshore": "Wind|Onshore", "Windoffshore": "Wind|Offshore", "Solar": "Solar|PV", "Waste": "Waste", \
-        "Bio10cofiring": "Biomass|Co-fire|w/o CCS", "Bio10cofiringCCS": "Biomass|Co-fire|w/ CCS", "LigniteCCSsup": "Lignite|w/ CCS"}
-
-        #Scalefactors to make units
-        Mtonperton = (1/1000000)
-
-        GJperMWh = 3.6
-        EJperMWh = 3.6*10**(-9)
-
-        GWperMW = (1/1000)
-
-        USD10perEUR10 = 1.33 #Source: https://www.statista.com/statistics/412794/euro-to-u-s-dollar-annual-average-exchange-rate/ 
-        EUR10perEUR18 = 154/171 #Source: https://www.inflationtool.com/euro 
-        USD10perEUR18 = USD10perEUR10*EUR10perEUR18 
-
-        print("Writing standard output to .csv...")
-
-        f = open(result_file_path + "/" + 'IAMC/empire_iamc_conv.csv', 'w', newline='')
-        writer = csv.writer(f)
-
-        def row_write(region, variable, unit, subannual, input_value, modelname=Modelname, scenario=Scenario, writer=writer):
-            row = [modelname, scenario, region, variable, unit, subannual]
-            row.extend(input_value)
-            writer.writerow(row)  
-
-        row_write("Region", "Variable", "Unit", "Subannual", [value(2020+(i)*5) for i in instance.Period], "Modelname", "Scenario") #Top row
-        row_write("Europe", "Discount rate|Electricity", "%", "Year", [value(instance.discountrate*100)]*len(instance.Period)) #Discount rate
-        row_write("Europe", "Capacity|Electricity", "GW", "Year", [value(sum(instance.genInstalledCap[n,g,i]*GWperMW for (n,g) in instance.GeneratorsOfNode)) for i in instance.Period]) #Total European installed generator capacity 
-        row_write("Europe", "Investment|Energy Supply|Electricity", "billion US$2010/yr", "Year", [value((1/instance.LeapYearsInvestment)*USD10perEUR18* \
-                    sum(instance.genInvCost[g,i]*instance.genInvCap[n,g,i] for (n,g) in instance.GeneratorsOfNode) + \
-                    sum(instance.transmissionInvCost[n1,n2,i]*instance.transmisionInvCap[n1,n2,i] for (n1,n2) in instance.BidirectionalArc) + \
-                    sum((instance.storPWInvCost[b,i]*instance.storPWInvCap[n,b,i]+instance.storENInvCost[b,i]*instance.storENInvCap[n,b,i]) for (n,b) in instance.StoragesOfNode)) for i in instance.Period]) #Total European investment cost (gen+stor+trans)
-        row_write("Europe", "Investment|Energy Supply|Electricity|Electricity storage", "billion US$2010/yr", "Year", [value((1/instance.LeapYearsInvestment)*USD10perEUR18* \
-                    sum((instance.storPWInvCost[b,i]*instance.storPWInvCap[n,b,i]+instance.storENInvCost[b,i]*instance.storENInvCap[n,b,i]) for (n,b) in instance.StoragesOfNode)) for i in instance.Period]) #Total European storage investment cost
-        row_write("Europe", "Investment|Energy Supply|Electricity|Transmission and Distribution", "billion US$2010/yr", "Year", [value((1/instance.LeapYearsInvestment)*USD10perEUR18* \
-                    sum(instance.transmissionInvCost[n1,n2,i]*instance.transmisionInvCap[n1,n2,i] for (n1,n2) in instance.BidirectionalArc)) for i in instance.Period]) #Total European transmission investment cost
-        for w in instance.Scenario:
-            row_write("Europe", "Emissions|CO2|Energy|Supply|Electricity", "Mt CO2/yr", "Year|"+str(w), [value(Mtonperton*sum(instance.seasScale[s]*instance.genCO2TypeFactor[g]*(GJperMWh/instance.genEfficiency[g,i])* \
-                    instance.genOperational[n,g,h,i,w] for (n,g) in instance.GeneratorsOfNode for (s,h) in instance.HoursOfSeason)) for i in instance.Period]) #Total European emissions per scenario
-            row_write("Europe", "Secondary Energy|Electricity", "EJ/yr", "Year|"+str(w), \
-                    [value(sum(EJperMWh*instance.seasScale[s]*instance.genOperational[n,g,h,i,w] for (n,g) in instance.GeneratorsOfNode for (s,h) in instance.HoursOfSeason)) for i in instance.Period]) #Total European generation per scenario
-            for g in instance.Generator:
-                row_write("Europe", "Secondary Energy|Electricity|"+dict_generators[str(g)], "EJ/yr", "Year|"+str(w), \
-                    [value(sum(EJperMWh*instance.seasScale[s]*instance.genOperational[n,g,h,i,w] for n in instance.Node if (n,g) in instance.GeneratorsOfNode for (s,h) in instance.HoursOfSeason)) for i in instance.Period]) #Total generation per type and scenario
-            for (s,h) in instance.HoursOfSeason:
-                for n in instance.Node:
-                    row_write(dict_countries_reversed[str(n)], "Price|Secondary Energy|Electricity", "US$2010/GJ", str(s)+"|Hour "+str(h)+"|"+str(w), \
-                        [value(instance.dual[instance.FlowBalance[n,h,i,w]]/(GJperMWh*instance.discount_multiplier[i]*instance.operationalDiscountrate*instance.seasScale[s]*instance.sceProbab[w])) for i in instance.Period])
-        for g in instance.Generator:
-            row_write("Europe", "Capacity|Electricity|"+dict_generators[str(g)], "GW", "Year", [value(sum(instance.genInstalledCap[n,g,i]*GWperMW for n in instance.Node if (n,g) in instance.GeneratorsOfNode)) for i in instance.Period]) #Total European installed generator capacity per type
-            row_write("Europe", "Capital Cost|Electricity|"+dict_generators[str(g)], "US$2010/kW", "Year", [value(instance.genCapitalCost[g,i]*USD10perEUR18) for i in instance.Period]) #Capital generator cost
-            if instance.genMargCost[g,instance.Period[1]] != 0: 
-                row_write("Europe", "Variable Cost|Electricity|"+dict_generators[str(g)], "€/MWh", "Year", [value(instance.genMargCost[g,i]) for i in instance.Period])
-            row_write("Europe", "Investment|Energy Supply|Electricity|"+dict_generators[str(g)], "billion US$2010/yr", "Year", [value((1/instance.LeapYearsInvestment)*USD10perEUR18* \
-                    sum(instance.genInvCost[g,i]*instance.genInvCap[n,g,i] for n in instance.Node if (n,g) in instance.GeneratorsOfNode)) for i in instance.Period]) #Total generator investment cost per type
-            if instance.genCO2TypeFactor[g] != 0:
-                row_write("Europe", "CO2 Emmissions|Electricity|"+dict_generators[str(g)], "tons/MWh", "Year", [value(instance.genCO2TypeFactor[g]*(GJperMWh/instance.genEfficiency[g,i])) for i in instance.Period]) #CO2 factor per generator type
-        for (n,g) in instance.GeneratorsOfNode:
-            row_write(dict_countries_reversed[str(n)], "Capacity|Electricity|"+dict_generators[str(g)], "GW", "Year", [value(instance.genInstalledCap[n,g,i]*GWperMW) for i in instance.Period]) #Installed generator capacity per country and type
-
-        f.close()
-
-        #import pdb; pdb.set_trace()
