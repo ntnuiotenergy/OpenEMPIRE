@@ -215,8 +215,8 @@ def run_empire(name, tab_file_path, result_file_path, scenariogeneration, scenar
     model.genCapAvailTypeRaw = Param(model.Generator, default=1.0, mutable=True)
     model.genCapAvailStochRaw = Param(model.GeneratorsOfNode, model.Operationalhour, model.Scenario, model.Period, default=0.0, mutable=True)
     model.genCapAvail = Param(model.GeneratorsOfNode, model.Operationalhour, model.Scenario, model.Period, default=0.0, mutable=True)
-    model.maxRegHydroGenRaw = Param(model.Node, model.Period, model.HoursOfSeason, model.Scenario, default=1.0, mutable=True)
-    model.maxRegHydroGen = Param(model.Node, model.Period, model.Season, model.Scenario, default=1.0, mutable=True)
+    model.maxRegHydroGenRaw = Param(model.Node, model.Period, model.HoursOfSeason, model.Scenario, default=0.0, mutable=True)
+    model.maxRegHydroGen = Param(model.Node, model.Period, model.Season, model.Scenario, default=0.0, mutable=True)
     model.maxHydroNode = Param(model.Node, default=0.0, mutable=True)
     model.storOperationalInit = Param(model.Storage, default=0.0, mutable=True) #Percentage of installed energy capacity initially
 
@@ -307,7 +307,7 @@ def run_empire(name, tab_file_path, result_file_path, scenariogeneration, scenar
     	for g in model.Generator:
     		for i in model.Period:
     			costperyear=(model.WACC/(1+model.WACC-((1+model.WACC)**(1-model.genLifetime[g]))))*model.genCapitalCost[g,i]+model.genFixedOMCost[g,i]
-    			costperperiod=costperyear*1000*(1-(1+model.discountrate)**-(min(value((9-i+1)*5), value(model.genLifetime[g]))))/(1-(1/(1+model.discountrate)))
+    			costperperiod=costperyear*1000*(1-(1+model.discountrate)**-(min(value((len(model.Period)-i+1)*LeapYearsInvestment), value(model.genLifetime[g]))))/(1-(1/(1+model.discountrate)))
     			if ('CCS',g) in model.GeneratorsOfTechnology:
     				costperperiod+=model.CCSCostTSFix*model.CCSRemFrac*model.genCO2TypeFactor[g]*(3.6/model.genEfficiency[g,i])
     			model.genInvCost[g,i]=costperperiod
@@ -316,10 +316,10 @@ def run_empire(name, tab_file_path, result_file_path, scenariogeneration, scenar
     	for b in model.Storage:
     		for i in model.Period:
     			costperyearPW=(model.WACC/(1+model.WACC-((1+model.WACC)**(1-model.storageLifetime[b]))))*model.storPWCapitalCost[b,i]+model.storPWFixedOMCost[b,i]
-    			costperperiodPW=costperyearPW*1000*(1-(1+model.discountrate)**-(min(value((9-i+1)*5), value(model.storageLifetime[b]))))/(1-(1/(1+model.discountrate)))
+    			costperperiodPW=costperyearPW*1000*(1-(1+model.discountrate)**-(min(value((len(model.Period)-i+1)*LeapYearsInvestment), value(model.storageLifetime[b]))))/(1-(1/(1+model.discountrate)))
     			model.storPWInvCost[b,i]=costperperiodPW
     			costperyearEN=(model.WACC/(1+model.WACC-((1+model.WACC)**(1-model.storageLifetime[b]))))*model.storENCapitalCost[b,i]+model.storENFixedOMCost[b,i]
-    			costperperiodEN=costperyearEN*1000*(1-(1+model.discountrate)**-(min(value((9-i+1)*5), value(model.storageLifetime[b]))))/(1-(1/(1+model.discountrate)))
+    			costperperiodEN=costperyearEN*1000*(1-(1+model.discountrate)**-(min(value((len(model.Period)-i+1)*LeapYearsInvestment), value(model.storageLifetime[b]))))/(1-(1/(1+model.discountrate)))
     			model.storENInvCost[b,i]=costperperiodEN
 
     	#Transmission
@@ -328,7 +328,7 @@ def run_empire(name, tab_file_path, result_file_path, scenariogeneration, scenar
     			for t in model.TransmissionType:
     				if (n1,n2,t) in model.TransmissionTypeOfDirectionalLink:
     					costperyear=(model.WACC/(1+model.WACC-((1+model.WACC)**(1-model.transmissionLifetime[n1,n2]))))*model.transmissionLength[n1,n2]*model.transmissionTypeCapitalCost[t,i]+model.transmissionTypeFixedOMCost[t,i]
-    					costperperiod=costperyear*(1-(1+model.discountrate)**-(min(value((9-i+1)*5), value(model.transmissionLifetime[n1,n2]))))/(1-(1/(1+model.discountrate)))
+    					costperperiod=costperyear*(1-(1+model.discountrate)**-(min(value((len(model.Period)-i+1)*LeapYearsInvestment), value(model.transmissionLifetime[n1,n2]))))/(1-(1/(1+model.discountrate)))
     					model.transmissionInvCost[n1,n2,i]=costperperiod
 
     model.build_InvCost = BuildAction(rule=prepInvCost_rule)
@@ -497,7 +497,7 @@ def run_empire(name, tab_file_path, result_file_path, scenariogeneration, scenar
     def multiplier_rule(model,period):
         coeff=1
         if period>1:
-            coeff=pow(1.0+model.discountrate,(-5*(int(period)-1)))
+            coeff=pow(1.0+model.discountrate,(-LeapYearsInvestment*(int(period)-1)))
         return coeff
     model.discount_multiplier=Expression(model.Period, rule=multiplier_rule)
 
@@ -814,7 +814,7 @@ def run_empire(name, tab_file_path, result_file_path, scenariogeneration, scenar
 
     inv_per = []
     for i in instance.Period:
-        my_string = str(value(2015+int(i)*5))+"-"+str(value(2020+int(i)*5))
+        my_string = str(value(2015+int(i)*LeapYearsInvestment))+"-"+str(value(2020+int(i)*LeapYearsInvestment))
         inv_per.append(my_string)
 
     f = open(result_file_path + "/" + 'results_objective.csv', 'w', newline='')
