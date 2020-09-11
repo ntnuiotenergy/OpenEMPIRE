@@ -18,8 +18,8 @@ def remove_time_index(data):
     return data
 
 
-def filter_sample_year(data, sample_year):
-    data["time"] = pd.to_datetime(data["time"])
+def filter_sample_year(data, sample_year, format_str):
+    data["time"] = pd.to_datetime(data["time"], format=format_str)
     data['year'] = data['time'].dt.year
     data['month'] = data['time'].dt.month
     data['hour'] = data['time'].dt.hour
@@ -274,17 +274,23 @@ def generate_random_scenario(filepath, tab_file_path, scenarios, seasons,
             # Filter out the hours within the sample year
             
             solar_data_year = filter_sample_year(
-                data=solar_data, sample_year=sample_year)
+                data=solar_data, sample_year=sample_year,
+                format_str="%Y-%m-%dT%H:%M")
             windonshore_data_year = filter_sample_year(
-                data=windonshore_data, sample_year=sample_year)
+                data=windonshore_data, sample_year=sample_year,
+                format_str="%Y-%m-%dT%H:%M")
             windoffshore_data_year = filter_sample_year(
-                data=windoffshore_data, sample_year=sample_year)
+                data=windoffshore_data, sample_year=sample_year,
+                format_str="%Y-%m-%dT%H:%M")
             hydrorunoftheriver_data_year = filter_sample_year(
-                data=hydrorunoftheriver_data, sample_year=sample_year_hydro)
-            hydroseasonal_data = filter_sample_year(
-                data=hydroseasonal_data, sample_year=None)
+                data=hydrorunoftheriver_data, sample_year=sample_year_hydro,
+                format_str="%d/%m/%Y %H:%M")
+            hydroseasonal_data_year = filter_sample_year(
+                data=hydroseasonal_data, sample_year=sample_year_hydro,
+                format_str="%d/%m/%Y %H:%M")
             electricload_data_year = filter_sample_year(
-                data=electricload_data, sample_year=sample_year_load)
+                data=electricload_data, sample_year=sample_year_load,
+		format_str="%Y-%m-%d %H:%M")
 
             # Ensure the same climatic year is not chosen twice for wind/solar
             
@@ -351,7 +357,7 @@ def generate_random_scenario(filepath, tab_file_path, scenarios, seasons,
                 
                 # Sample seasonal hydro limit for regular seasons
                 hydroSeasonal = hydroSeasonal.append(
-                    sample_hydro(data=hydroseasonal_data,
+                    sample_hydro(data=hydroseasonal_data_year,
                                  regularSeasonHours=regularSeasonHours,
                                  scenario=scenario, season=s, 
                                  seasons=seasons, period=i,
@@ -417,7 +423,7 @@ def generate_random_scenario(filepath, tab_file_path, scenarios, seasons,
             
             #Sample seasonal hydro limit for peak seasons
             hydroSeasonal = hydroSeasonal.append(
-                sample_hydro_peak(data=hydroseasonal_data,
+                sample_hydro_peak(data=hydroseasonal_data_year,
                                   seasons=seasons,
                                   scenario=scenario, period=i, 
                                   regularSeasonHours=regularSeasonHours, 
