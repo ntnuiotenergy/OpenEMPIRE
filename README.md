@@ -5,7 +5,7 @@ Open basic version of EMPIRE in Pyomo
 Open basic version of EMPIRE in Pyomo
 
 # Required Software
-The EMPIRE model is available in the Python-based, open-source optimization modelling language Pyomo. To run the model, make sure Python, Pyomo and a third-party solver like SCIP or CPLEX is installed and loaded to the respective computer or cluster. More information on how to install Python and Pyomo can be found here: http://www.pyomo.org/installation.
+The EMPIRE model is available in the Python-based, open-source optimization modelling language Pyomo. To run the model, make sure Python, Pyomo and a third-party solver (gurobi, FICO xpress, or CPLEX) is installed and loaded to the respective computer or cluster. More information on how to install Python and Pyomo can be found here: http://www.pyomo.org/installation.
 
 # Test Run
 Note that building the instance in Pyomo for a base case of EMPIRE can take around 40 min. Therefore, it is good to run the ‘test_run.py’ first to confirm whether your computer or cluster connects to the preferred solver or not.
