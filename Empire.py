@@ -1,6 +1,6 @@
 from __future__ import division
 from pyomo.environ import *
-from pyomo.common.tempfiles import TempfileManager
+from pyutilib.services import TempfileManager
 import csv
 import sys
 import cloudpickle
