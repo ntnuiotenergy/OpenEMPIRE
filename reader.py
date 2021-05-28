@@ -35,7 +35,7 @@ def read_sets(filepath, excel, sheet, tab_file_path):
         save_csv_frame.to_csv(tab_file_path + "/" + excel.replace(".xlsx", '_') + column + '.tab', header=True, index=None, sep='\t', mode='w')
         #save_csv_frame.to_csv(excel.replace(".xlsx", '_') + column + '.tab', header=True, index=None, sep='\t', mode='w')
 
-def generate_tab_files(filepath, tab_file_path, scenariogeneration=True):
+def generate_tab_files(filepath, tab_file_path):
     # Function description: read column value from excel sheet and save as .tab file "sheet.tab"
     # Input: excel name, sheet name, the number of columns to be read
     # Output:  .tab file
@@ -48,7 +48,6 @@ def generate_tab_files(filepath, tab_file_path, scenariogeneration=True):
         os.makedirs(tab_file_path)
 
     read_sets(filepath, 'Sets.xlsx', 'Nodes', tab_file_path = tab_file_path)
-    #read_sets(filepath, 'Sets.xlsx', 'Times', tab_file_path = tab_file_path)
     read_sets(filepath, 'Sets.xlsx', 'LineType', tab_file_path = tab_file_path)
     read_sets(filepath, 'Sets.xlsx', 'Technology', tab_file_path = tab_file_path)
     read_sets(filepath, 'Sets.xlsx', 'Storage', tab_file_path = tab_file_path)

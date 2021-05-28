@@ -7,11 +7,11 @@ from datetime import datetime
 ##USER##
 ########
 
-USE_TEMP_DIR = False #True
-temp_dir = '/panfs/nas-0-0.local/work/stianbac'
+USE_TEMP_DIR = True #True
+temp_dir = '/mnt/beegfs/users/stianbac'
 version = 'europe_v50'
 NoOfPeriods = 8
-NoOfScenarios = 3
+NoOfScenarios = 5
 NoOfRegSeason = 4
 lengthRegSeason = 168
 regular_seasons = ["winter", "spring", "summer", "fall"]
@@ -22,7 +22,10 @@ WACC = 0.05
 LeapYearsInvestment = 5
 solver = "Xpress" #"Gurobi" #"CPLEX"
 scenariogeneration = True #False
+fix_sample = False #True
+time_format = "%d/%m/%Y %H:%M"
 EMISSION_CAP = True #False
+IAMC_PRINT = True #False
 WRITE_LP = False #True
 PICKLE_INSTANCE = False #True 
 
@@ -30,9 +33,11 @@ PICKLE_INSTANCE = False #True
 ##RUN##
 #######
 
-name = version + '_reg' + str(lengthRegSeason) + '_peak' + str(lengthPeakSeason) 
-if scenariogeneration:
-	name = name + "_randomSGR"
+name = version + '_reg' + str(lengthRegSeason) + \
+    '_peak' + str(lengthPeakSeason) + \
+    '_sce' + str(NoOfScenarios)
+if scenariogeneration and not fix_sample:
+        name = name + "_randomSGR"
 else:
 	name = name + "_noSGR"
 name = name + str(datetime.now().strftime("_%Y%m%d%H%M"))
@@ -86,16 +91,17 @@ if scenariogeneration:
                              Periods = NoOfPeriods,
                              regularSeasonHours = lengthRegSeason,
                              peakSeasonHours = lengthPeakSeason,
-                             dict_countries = dict_countries)
+                             dict_countries = dict_countries,
+			                 time_format = time_format,
+			                 fix_sample = fix_sample)
 
-generate_tab_files(filepath = workbook_path, tab_file_path = tab_file_path,
-                   scenariogeneration = scenariogeneration)
+generate_tab_files(filepath = workbook_path, tab_file_path = tab_file_path)
 
 run_empire(name = name, 
            tab_file_path = tab_file_path,
-           result_file_path = result_file_path,
+           result_file_path = result_file_path, 
            scenariogeneration = scenariogeneration,
-           scenario_data_path = scenario_data_path, 
+           scenario_data_path = scenario_data_path,
            solver = solver,
            temp_dir = temp_dir, 
            FirstHoursOfRegSeason = FirstHoursOfRegSeason, 
@@ -110,6 +116,7 @@ run_empire(name = name,
            discountrate = discountrate, 
            WACC = WACC, 
            LeapYearsInvestment = LeapYearsInvestment,
+           IAMC_PRINT = IAMC_PRINT, 
            WRITE_LP = WRITE_LP, 
            PICKLE_INSTANCE = PICKLE_INSTANCE, 
            EMISSION_CAP = EMISSION_CAP,

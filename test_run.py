@@ -7,7 +7,7 @@ from datetime import datetime
 ##USER##
 ########
 
-USE_TEMP_DIR = False #True
+USE_TEMP_DIR = True #True
 temp_dir = 'C:/Users/stianbac' #'/panfs/nas-0-0.local/work/stianbac'
 version = 'test'
 NoOfPeriods = 3
@@ -22,7 +22,10 @@ WACC = 0.05
 LeapYearsInvestment = 5
 solver = "Gurobi" #"Xpress" # #"CPLEX"
 scenariogeneration = True #False
-EMISSION_CAP = True #False
+fix_sample = False #True
+time_format = "%d/%m/%Y %H:%M"
+EMISSION_CAP = False #False
+IAMC_PRINT = True #False
 WRITE_LP = False #True
 PICKLE_INSTANCE = False #True 
 
@@ -30,9 +33,11 @@ PICKLE_INSTANCE = False #True
 ##RUN##
 #######
 
-name = version + '_reg' + str(lengthRegSeason) + '_peak' + str(lengthPeakSeason) 
-if scenariogeneration:
-	name = name + "_randomSGR"
+name = version + '_reg' + str(lengthRegSeason) + \
+    '_peak' + str(lengthPeakSeason) + \
+    '_sce' + str(NoOfScenarios)
+if scenariogeneration and not fix_sample:
+        name = name + "_randomSGR"
 else:
 	name = name + "_noSGR"
 name = name + str(datetime.now().strftime("_%Y%m%d%H%M"))
@@ -76,10 +81,11 @@ if scenariogeneration:
                              Periods = NoOfPeriods,
                              regularSeasonHours = lengthRegSeason,
                              peakSeasonHours = lengthPeakSeason,
-                             dict_countries = dict_countries)
+                             dict_countries = dict_countries,
+			                 time_format = time_format,
+			                 fix_sample = fix_sample)
 
-generate_tab_files(filepath = workbook_path, tab_file_path = tab_file_path,
-                   scenariogeneration = scenariogeneration)
+generate_tab_files(filepath = workbook_path, tab_file_path = tab_file_path)
 
 run_empire(name = name, 
            tab_file_path = tab_file_path,
@@ -100,6 +106,7 @@ run_empire(name = name,
            discountrate = discountrate, 
            WACC = WACC, 
            LeapYearsInvestment = LeapYearsInvestment,
+           IAMC_PRINT = IAMC_PRINT, 
            WRITE_LP = WRITE_LP, 
            PICKLE_INSTANCE = PICKLE_INSTANCE, 
            EMISSION_CAP = EMISSION_CAP,
