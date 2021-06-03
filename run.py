@@ -10,7 +10,7 @@ from datetime import datetime
 USE_TEMP_DIR = True #True
 temp_dir = '/mnt/beegfs/users/stianbac'
 version = 'europe_v50'
-NoOfPeriods = 8
+Horizon = 2060
 NoOfScenarios = 5
 NoOfRegSeason = 4
 lengthRegSeason = 168
@@ -47,7 +47,7 @@ scenario_data_path = 'Data handler/' + version + '/ScenarioData'
 result_file_path = 'Results/' + name
 FirstHoursOfRegSeason = [lengthRegSeason*i + 1 for i in range(NoOfRegSeason)]
 FirstHoursOfPeakSeason = [lengthRegSeason*NoOfRegSeason + lengthPeakSeason*i + 1 for i in range(NoOfPeakSeason)]
-Period = [i + 1 for i in range(NoOfPeriods)]
+Period = [i + 1 for i in range(int((Horizon-2020)/LeapYearsInvestment))]
 Scenario = ["scenario"+str(i + 1) for i in range(NoOfScenarios)]
 peak_seasons = ['peak'+str(i + 1) for i in range(NoOfPeakSeason)]
 Season = regular_seasons + peak_seasons
@@ -88,7 +88,7 @@ if scenariogeneration:
                              tab_file_path = tab_file_path,
                              scenarios = NoOfScenarios,
                              seasons = regular_seasons,
-                             Periods = NoOfPeriods,
+                             Periods = len(Period),
                              regularSeasonHours = lengthRegSeason,
                              peakSeasonHours = lengthPeakSeason,
                              dict_countries = dict_countries,
