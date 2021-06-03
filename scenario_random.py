@@ -38,8 +38,8 @@ def gather_regular_sample(data, season, seasons, regularSeasonHours,
     data = data.reset_index(drop=True)
     sample_data = data.iloc[sample_hour:sample_hour + regularSeasonHours,:]
     
-    # Sort sample_data to start on midnight monday
-    sample_data = sample_data.sort_values(by=['dayofweek','hour'])
+    # Sort sample_data to start on midnight monday (INACTIVE)
+    # sample_data = sample_data.sort_values(by=['dayofweek','hour'])
     
     # Drop non-country columns
     sample_data = remove_time_index(sample_data)
@@ -125,9 +125,9 @@ def gather_peak_sample(data, seasons, regularSeasonHours, peakSeasonHours,
             overall_sample + (peakSeasonHours/2)),
         :]
     
-    # Sort data to start on midnight 
-    country_peak = country_peak.sort_values(by=['hour'])
-    overall_peak = overall_peak.sort_values(by=['hour'])
+    # Sort data to start on midnight (INACTIVE)
+    # country_peak = country_peak.sort_values(by=['hour'])
+    # overall_peak = overall_peak.sort_values(by=['hour'])
     
     # Drop non-country columns
     country_peak = remove_time_index(country_peak)

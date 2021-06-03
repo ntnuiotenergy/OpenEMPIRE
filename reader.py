@@ -48,6 +48,7 @@ def generate_tab_files(filepath, tab_file_path):
         os.makedirs(tab_file_path)
 
     read_sets(filepath, 'Sets.xlsx', 'Nodes', tab_file_path = tab_file_path)
+    read_sets(filepath, 'Sets.xlsx', 'Horizon', tab_file_path = tab_file_path)
     read_sets(filepath, 'Sets.xlsx', 'LineType', tab_file_path = tab_file_path)
     read_sets(filepath, 'Sets.xlsx', 'Technology', tab_file_path = tab_file_path)
     read_sets(filepath, 'Sets.xlsx', 'Storage', tab_file_path = tab_file_path)
