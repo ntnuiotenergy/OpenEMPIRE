@@ -8,3 +8,4 @@ dependencies:
   - pandas=1.2.4=py39hd77b12b_0
   - pyomo=6.0.1=py39h415ef7b_0
   - python=3.9.5=h6244533_3
+  - pyyaml=5.4.1=py39h2bbff1b_1
