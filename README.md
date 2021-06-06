@@ -6,7 +6,8 @@ The EMPIRE model and all additional files in the git repository are licensed und
 For further information please read the LICENSE file, which contains the license text, or go to https://opensource.org/licenses/MIT
 
 # Required Software
-The EMPIRE model is available in the Python-based, open-source optimization modelling language Pyomo. Running the model thus requires some coding skills in Python. To run the model, make sure Python, Pyomo and a third-party solver (gurobi, FICO xpress, or CPLEX) is installed and loaded to the respective computer or cluster. More information on how to install Python and Pyomo can be found here: http://www.pyomo.org/installation.
+The EMPIRE model is available in the Python-based, open-source optimization modelling language Pyomo. Running the model thus requires some coding skills in Python. To run the model, make sure Python, Pyomo and a third-party solver (gurobi, FICO xpress, or CPLEX) is installed and loaded to the respective computer or cluster. More information on how to install Python and Pyomo can be found here: http://www.pyomo.org/installation. 
+Other python package dependencies can be found in the file environment.yml.
 
 To download, you need to install Git and clone the repository. Note that the repository makes use of Git Large File Storage (LFS) which also needs to be installed for input data-files to be downloaded when cloning the repository. Once both Git and Git LFS has been successfully installed, the model is downloaded to the desired directory.
 
@@ -46,7 +47,7 @@ For more details, please refer to the software documentation in the repository.
   <tr>
     <td>temp_dir</td>
     <td>String</td>
-    <td>'/panfs/nas-0-0.local/work/stianbac'</td>
+    <td>'./'</td>
     <td>The path to which temporary files will be stored if USE_TEMP_DIR = True; .lp-file is stored if WRITE_LP = True; and .plk-file is stored if PICKLE_INSTANCE = True. </td>
   </tr>
   <tr>
@@ -56,10 +57,10 @@ For more details, please refer to the software documentation in the repository.
     <td>The name of the version to be run. Note that this is the folder-name containing input data in ‘Data handler’. </td>
   </tr>
   <tr>
-    <td>NoOfPeriods</td>
+    <td>Horizon</td>
     <td>Integer</td>
-    <td>8</td>
-    <td>The number of investment periods. NB! Must correspond with data for version. </td>
+    <td>2060</td>
+    <td>The last strategic (investment) period used in the optimization run. </td>
   </tr>
   <tr>
     <td>NoOfScenarios</td>
@@ -68,34 +69,10 @@ For more details, please refer to the software documentation in the repository.
     <td>The number of scenarios in every investment period.  </td>
   </tr>
   <tr>
-    <td>NoOfRegSeason</td>
-    <td>Integer</td>
-    <td>4</td>
-    <td>The number of regular seasons in every investment period. NB! Must correspond with scenario generation. </td>
-  </tr>
-  <tr>
     <td>lengthRegSeason</td>
     <td>Integer</td>
-    <td>["winter", "spring", "summer", "fall"]</td>
-    <td>The identity-string for the regular seasons. NB! Must correspond with data for version. </td>
-  </tr>
-  <tr>
-    <td>regular_seasons</td>
-    <td>Array</td>
-    <td>8</td>
-    <td>The number of investment periods. NB! Must correspond with data for version. </td>
-  </tr>
-  <tr>
-    <td>NoOfPeakSeason</td>
-    <td>Integer</td>
-    <td>2</td>
-    <td>The number of regular seasons in every investment period. NB! Must correspond with data for version. </td>
-  </tr>
-  <tr>
-    <td>lengthPeakSeason</td>
-    <td>Integer</td>
-    <td>24</td>
-    <td>The number of chronological time steps in a peak season. NB! Must correspond with data for version. </td>
+    <td>168</td>
+    <td>The number of hours to use in a regular season for optimization of system operation in every investment period. </td>
   </tr>
   <tr>
     <td>discountrate</td>
@@ -108,12 +85,6 @@ For more details, please refer to the software documentation in the repository.
     <td>Float</td>
     <td>0.05</td>
     <td>The weighted average cost of capital (WACC). </td>
-  </tr>
-  <tr>
-    <td>LeapYearsInvestment</td>
-    <td>Integer</td>
-    <td>5</td>
-    <td>The number of years covered in one investment period. </td>
   </tr>
   <tr>
     <td>solver</td>
@@ -132,12 +103,6 @@ For more details, please refer to the software documentation in the repository.
     <td>True/False</td>
     <td>False</td>
     <td>If true, new operational scenarios will be generated. NB! If false, .tab-files or sampling key must be manually added to the ‘ScenarioData’-folder in the version. </td>
-  </tr>
-  <tr>
-    <td>time_format</td>
-    <td>String</td>
-    <td>"%d/%m/%Y %H:%M"</td>
-    <td>The format for time stamps for operational data in ‘Scenario Data’. </td>
   </tr>
   <tr>
     <td>EMISSION_CAP</td>
