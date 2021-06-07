@@ -2,32 +2,39 @@ from reader import generate_tab_files
 from Empire import run_empire
 from scenario_random import generate_random_scenario
 from datetime import datetime
+from yaml import safe_load
 
-########
-##USER##
-########
+UserRunTimeConfig = safe_load(open("config_run.yaml"))
 
-USE_TEMP_DIR = True #True
-temp_dir = '/mnt/beegfs/users/stianbac'
-version = 'europe_v50'
-Horizon = 2060
-NoOfScenarios = 5
+USE_TEMP_DIR = UserRunTimeConfig["USE_TEMP_DIR"]
+temp_dir = UserRunTimeConfig["temp_dir"]
+version = UserRunTimeConfig["version"]
+Horizon = UserRunTimeConfig["Horizon"]
+NoOfScenarios = UserRunTimeConfig["NoOfScenarios"]
+lengthRegSeason = UserRunTimeConfig["lengthRegSeason"]
+discountrate = UserRunTimeConfig["discountrate"]
+WACC = UserRunTimeConfig["WACC"]
+solver = UserRunTimeConfig["solver"]
+scenariogeneration = UserRunTimeConfig["scenariogeneration"]
+fix_sample = UserRunTimeConfig["fix_sample"]
+EMISSION_CAP = UserRunTimeConfig["EMISSION_CAP"]
+IAMC_PRINT = UserRunTimeConfig["IAMC_PRINT"]
+WRITE_LP = UserRunTimeConfig["WRITE_LP"]
+PICKLE_INSTANCE = UserRunTimeConfig["PICKLE_INSTANCE"] 
+
+
+#############################
+##Non configurable settings##
+#############################
+
 NoOfRegSeason = 4
-lengthRegSeason = 168
 regular_seasons = ["winter", "spring", "summer", "fall"]
 NoOfPeakSeason = 2
 lengthPeakSeason = 24
 discountrate = 0.05
 WACC = 0.05
 LeapYearsInvestment = 5
-solver = "Xpress" #"Gurobi" #"CPLEX"
-scenariogeneration = True #False
-fix_sample = False #True
 time_format = "%d/%m/%Y %H:%M"
-EMISSION_CAP = True #False
-IAMC_PRINT = True #False
-WRITE_LP = False #True
-PICKLE_INSTANCE = False #True 
 
 #######
 ##RUN##

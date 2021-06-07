@@ -1,0 +1,18 @@
+# This is an example OpenEMPIRE configuration file. 
+# To be used with the execution script OpenEMPIRE/test_run.py
+
+USE_TEMP_DIR : True #
+temp_dir : './'
+version : 'test'
+Horizon : 2035
+NoOfScenarios : 2
+lengthRegSeason : 24
+discountrate : 0.05
+WACC : 0.05
+solver : "Gurobi" #"Xpress" # #"CPLEX"
+scenariogeneration : True #False
+fix_sample : False #True
+EMISSION_CAP : False #True
+IAMC_PRINT : True #False
+WRITE_LP : False #True
+PICKLE_INSTANCE : False #True 

@@ -1,0 +1,11 @@
+name: empire_env
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - cloudpickle=1.6.0=py_0
+  - openpyxl=3.0.7=pyhd3eb1b0_0
+  - pandas=1.2.4=py39hd77b12b_0
+  - pyomo=6.0.1=py39h415ef7b_0
+  - python=3.9.5=h6244533_3
+  - pyyaml=5.4.1=py39h2bbff1b_1
