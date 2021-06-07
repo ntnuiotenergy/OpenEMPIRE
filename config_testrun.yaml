@@ -1,5 +1,5 @@
 # This is an example OpenEMPIRE configuration file. 
-# To be used with the execution script OpenEMPIRE/run.py
+# To be used with the execution script OpenEMPIRE/test_run.py
 
 USE_TEMP_DIR : True #
 temp_dir : './'
