@@ -1,5 +1,10 @@
 import pandas as pd
 import os
+__author__ = "Stian Backe"
+__license__ = "MIT"
+__maintainer__ = "Stian Backe"
+__email__ = "stian.backe@ntnu.no"
+
 
 def read_file(filepath, excel, sheet, columns, tab_file_path):
     input_sheet = pd.read_excel(filepath + "/" +excel, sheet, skiprows=2)
