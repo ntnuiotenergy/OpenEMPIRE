@@ -7,6 +7,11 @@ import cloudpickle
 import time
 import os
 
+__author__ = "Stian Backe"
+__license__ = "MIT"
+__maintainer__ = "Stian Backe"
+__email__ = "stian.backe@ntnu.no"
+
 def run_empire(name, tab_file_path, result_file_path, scenariogeneration, scenario_data_path,
                solver, temp_dir, FirstHoursOfRegSeason, FirstHoursOfPeakSeason, lengthRegSeason,
                lengthPeakSeason, Period, Operationalhour, Scenario, Season, HoursOfSeason,
