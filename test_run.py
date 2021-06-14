@@ -1,10 +1,17 @@
+#!/usr/bin/env python
 from reader import generate_tab_files
 from Empire import run_empire
 from scenario_random import generate_random_scenario
 from datetime import datetime
 from yaml import safe_load
 
-UserRunTimeConfig = safe_load(open("config_testrun.yaml"))
+__author__ = "Stian Backe"
+__license__ = "MIT"
+__maintainer__ = "Stian Backe"
+__email__ = "stian.backe@ntnu.no"
+
+
+UserRunTimeConfig= safe_load(open("config_testrun.yaml"))
 
 USE_TEMP_DIR = UserRunTimeConfig["USE_TEMP_DIR"]
 temp_dir = UserRunTimeConfig["temp_dir"]

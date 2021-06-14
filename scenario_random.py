@@ -1,3 +1,9 @@
+__author__ = "Stian Backe"
+__license__ = "MIT"
+__maintainer__ = "Stian Backe"
+__email__ = "stian.backe@ntnu.no"
+
+
 import pandas as pd
 import numpy as np
 import os
@@ -491,6 +497,11 @@ def generate_random_scenario(filepath, tab_file_path, scenarios, seasons,
     hydroSeasonal = hydroSeasonal[["Node", "Period", "Season", 
                                    "Operationalhour", "Scenario",
                                    "HydroGeneratorMaxSeasonalProduction"]]
+    
+    genAvail.loc[genAvail["GeneratorStochasticAvailabilityRaw"] <= 0.001,"GeneratorStochasticAvailabilityRaw"] = 0
+    elecLoad.loc[elecLoad['ElectricLoadRaw_in_MW'] <= 0.001,'ElectricLoadRaw_in_MW'] = 0
+    hydroSeasonal.loc[hydroSeasonal["HydroGeneratorMaxSeasonalProduction"] <= 0.001,"HydroGeneratorMaxSeasonalProduction"] = 0
+    
 
     #Make filepath (if it does not exist) and print .tab-files
     if not os.path.exists(tab_file_path):
