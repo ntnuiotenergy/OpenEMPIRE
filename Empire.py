@@ -36,6 +36,8 @@ def run_empire(name, tab_file_path, result_file_path, scenariogeneration, scenar
         print("Solver: Xpress")
     elif solver == "Gurobi":
         print("Solver: Gurobi")
+    elif solver == "GLPK":
+        print("Solver: GLPK")
     else:
         sys.exit("ERROR! Invalid solver! Options: CPLEX, Xpress, Gurobi")
 
@@ -775,7 +777,7 @@ def run_empire(name, tab_file_path, result_file_path, scenariogeneration, scenar
     if solver == "CPLEX":
         opt = SolverFactory("cplex", Verbose=True)
         opt.options["lpmethod"] = 4
-        opt.options["barrier crossover"] = -1
+        opt.options["solutiontype"] = 2
         #instance.display('outputs_cplex.txt')
     if solver == "Xpress":
         opt = SolverFactory("xpress") #Verbose=True
@@ -788,8 +790,10 @@ def run_empire(name, tab_file_path, result_file_path, scenariogeneration, scenar
         opt = SolverFactory('gurobi', Verbose=True)
         opt.options["Crossover"]=0
         opt.options["Method"]=2
+    if solver == "GLPK":
+        opt = SolverFactory("glpk", Verbose=True)
 
-    results = opt.solve(instance, tee=True, logfile=result_file_path + '/logfile_' + name + '.log')#, keepfiles=True, symbolic_solver_labels=True)
+    results = opt.solve(instance, tee=True, logfile=result_file_path + '\logfile_' + name + '.log')#, keepfiles=True, symbolic_solver_labels=True)
 
     if PICKLE_INSTANCE:
         start = time.time()
