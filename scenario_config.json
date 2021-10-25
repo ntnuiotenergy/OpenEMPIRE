@@ -1,0 +1,32 @@
+[
+  {
+    "file_name": "electricload",
+    "file_path": "/Users/nwong/Workspace/School/OpenEMPIRE/Data handler/europe_v50/ScenarioData/electricload.csv",
+    "rest_cols": ["time", "hour", "dayofweek", "month"]
+  },
+  {
+    "file_name": "hydroror",
+    "file_path": "/Users/nwong/Workspace/School/OpenEMPIRE/Data handler/europe_v50/ScenarioData/hydroror.csv",
+    "rest_cols": ["time", "hour", "dayofweek", "month"]
+  },
+  {
+    "file_name": "hydroseasonal",
+    "file_path": "/Users/nwong/Workspace/School/OpenEMPIRE/Data handler/europe_v50/ScenarioData/hydroseasonal.csv",
+    "rest_cols": ["time"]
+  },
+  {
+    "file_name": "solar",
+    "file_path": "/Users/nwong/Workspace/School/OpenEMPIRE/Data handler/europe_v50/ScenarioData/solar.csv",
+    "rest_cols": ["time"]
+  },
+  {
+    "file_name": "windoffshore",
+    "file_path": "/Users/nwong/Workspace/School/OpenEMPIRE/Data handler/europe_v50/ScenarioData/windoffshore.csv",
+    "rest_cols": ["time"]
+  },
+  {
+    "file_name": "windonshore",
+    "file_path": "/Users/nwong/Workspace/School/OpenEMPIRE/Data handler/europe_v50/ScenarioData/windonshore.csv",
+    "rest_cols": ["time"]
+  }
+]

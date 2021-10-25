@@ -2,6 +2,7 @@
   {
     "file_name": "Storage",
     "file_path": "/Users/nwong/Workspace/School/OpenEMPIRE/Data handler/europe_v50/Storage.xlsx",
+    "node_name": "Nodes",
     "agg_sheets": [
       {
         "sheet_name": "InitialPowerCapacity",
@@ -41,6 +42,68 @@
         "usecols": "A:C",
         "group_by_cols": ["StorageTypes", "Period"],
         "agg_col": "PowerMaxBuiltCapacity",
+        "agg_strat": "sum"
+      }
+    ]
+  },
+  {
+    "file_name": "Generator",
+    "file_path": "/Users/nwong/Workspace/School/OpenEMPIRE/Data handler/europe_v50/Generator.xlsx",
+    "node_name": "Node",
+    "agg_sheets": [
+      {
+        "sheet_name": "RefInitialCap",
+        "skiprows": 2,
+        "usecols": "A:C",
+        "group_by_cols": ["GeneratorTechnology"],
+        "agg_col": "generatoReferenceInitialCapacity in MW",
+        "agg_strat": "sum"
+      },
+      {
+        "sheet_name": "MaxBuiltCapacity",
+        "skiprows": 2,
+        "usecols": "A:D",
+        "group_by_cols": ["GeneratorTechnology", "Period"],
+        "agg_col": "generatorMaxBuildCapacity in MW",
+        "agg_strat": "sum"
+      },
+      {
+        "sheet_name": "MaxInstalledCapacity",
+        "skiprows": 2,
+        "usecols": "A:C",
+        "group_by_cols": ["GeneratorTechnology"],
+        "agg_col": "generatorMaxInstallCapacity  in MW",
+        "agg_strat": "sum"
+      }
+    ]
+  },
+  {
+    "file_name": "Storage",
+    "file_path": "/Users/nwong/Workspace/School/OpenEMPIRE/Data handler/europe_v50/Node.xlsx",
+    "node_name": "Nodes",
+    "agg_sheets": [
+      {
+        "sheet_name": "ElectricAnnualDemand",
+        "skiprows": 2,
+        "usecols": "A:C",
+        "group_by_cols": ["Period"],
+        "agg_col": "ElectricAdjustment in MWh",
+        "agg_strat": "sum"
+      },
+      {
+        "sheet_name": "NodeLostLoadCost",
+        "skiprows": 2,
+        "usecols": "A:C",
+        "group_by_cols": ["Period"],
+        "agg_col": "NodeLostLoadCost",
+        "agg_strat": "sum"
+      },
+      {
+        "sheet_name": "HydroGenMaxAnnualProduction",
+        "skiprows": 2,
+        "usecols": "A:B",
+        "group_by_cols": [],
+        "agg_col": "HydroGenMaxAnnualProduction in MWh per year",
         "agg_strat": "sum"
       }
     ]

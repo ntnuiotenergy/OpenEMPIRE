@@ -3,53 +3,13 @@ import pandas as pd
 from typing import List, Callable
 import numpy as np
 import json
-import itertools
-
-# def construct_super(data: pd.DataFrame,
-#                     s_name: str, 
-#                     child_nodes: List[str], 
-#                     group_by_cols: List[str], 
-#                     agg_col: str, 
-#                     agg_strat: Callable):
-    
-#     f_data = data[data.Nodes.isin(child_nodes)]
-#     agg_data = agg_strat(f_data, group_by_cols, agg_col)
-#     agg_data['Nodes'] = s_name
-#     return agg_data
-
-# def combine_nodes(data: pd.DataFrame, 
-#                   s_nodes: dict, 
-#                   group_by_cols: List[str], 
-#                   agg_col:str, 
-#                   agg_strat: Callable):
-#     dfs = [construct_super(data=data, 
-#                            s_name=s_node, 
-#                            child_nodes=child_nodes, 
-#                            group_by_cols=group_by_cols,
-#                            agg_col=agg_col, 
-#                            agg_strat=agg_strat) for s_node, child_nodes in s_nodes.items()]
-#     return pd.concat(dfs)
-
-# def construct_tab_files(config_path: str):
-#     with open(config_path) as json_file:
-#         config = json.load(json_file)
-#         for file in config:
-#             file_path = pd.ExcelFile(file['file_path'])
-#             for sheet in file['agg_sheets']:
-#                 sheet_df = pd.read_excel(file_path, sheet['sheet_name'], skiprows=sheet['skiprows'], usecols=sheet['usecols'])
-#                 df = combine_nodes(data=sheet_df, 
-#                               s_nodes={'Nordics': ['Norway', 'Sweden', 'Denmark'], 'Europe': ['France', 'Germany']},
-#                               group_by_cols=sheet['group_by_cols'],
-#                               agg_col=sheet['agg_col'],
-#                               agg_strat=sum_strat)
-#                 df.to_csv("nic_test/" + file['file_name'] + "_" + sheet['sheet_name'] + '.tab', sep='\t')
-
-# def sum_countries(filtered_data: pd.DataFrame, group_by_cols: List[str]):
-#     return filtered_data[group_by_cols].sum(axis=1)
-
+import itertools)
 
 def vert_sum_strat(filtered_data: pd.DataFrame, group_by_cols: List[str], agg_col: str):
-    return filtered_data.groupby(group_by_cols).sum(agg_col)
+    if len(group_by_cols) != 0:
+        print(filtered_data.groupby(group_by_cols).sum(agg_col))
+        return filtered_data.groupby(group_by_cols).sum(agg_col)
+    return pd.DataFrame({agg_col: [filtered_data[agg_col].sum()]})
 
 def vert_mean_strat(filtered_data: pd.DataFrame, group_by_cols: str, agg_col: str):
     return filtered_data.groupby(group_by_cols).mean(agg_col)
@@ -94,42 +54,48 @@ class SuperNodes:
         dfs = [process_strat(self.data, s_node, child_nodes, **kwargs) for s_node, child_nodes in self.s_nodes.items()]
         self.processed_data = comb_strat(data=self.data, dfs=dfs, processed_nodes=self.processed_nodes(), **kwargs)
     
-    def print_df(self):
-        print(self.processed_data)
+    def print_df(self, sheet_name: str=None):
+        if self.sheet_name:
+            self.processed_data.to_csv(f"nic_test/{self.sheet_name}.csv")
+        else:
+            self.processed_data.to_csv(f"nic_test/{sheet_name}.csv")
     
     def processed_nodes(self):
         nodes = [value for value in self.s_nodes.values()]
         return list(itertools.chain.from_iterable(nodes))
 
 if __name__ == '__main__':
-    # def construct_tab_files(config_path: str):
-    #     with open(config_path) as json_file:
-    #         config = json.load(json_file)
-    #         for file in config:
-    #             file_path = pd.ExcelFile(file['file_path'])
-    #             for sheet in file['agg_sheets']:
-    #                 sheet_df = pd.read_excel(file_path, sheet['sheet_name'], skiprows=sheet['skiprows'], usecols=sheet['usecols'])
-    #                 df = combine_nodes(data=sheet_df, 
-    #                             s_nodes={'Nordics': ['Norway', 'Sweden', 'Denmark'], 'Europe': ['France', 'Germany']},
-    #                             group_by_cols=sheet['group_by_cols'],
-    #                             agg_col=sheet['agg_col'],
-    #                             agg_strat=sum_strat)
-    #                 df.to_csv("nic_test/" + file['file_name'] + "_" + sheet['sheet_name'] + '.tab', sep='\t')
-                
-    file_path = pd.ExcelFile('/Users/nwong/Workspace/School/OpenEMPIRE/Data handler/europe_v50/Generator.xlsx')
-    generators = SuperNodes({'Nordics': ['NO1', 'Sweden', 'Denmark'], 'Europe': ['France', 'Germany']}, 'MaxInstalledCapacity', 2, 'A:C')
-    generators.load_data(file_path)
-    generators.construct_super(vertical_process_strat, 
-                               vertical_comb_strat, 
-                               group_by_cols=['GeneratorTechnology'], 
-                               agg_col='generatorMaxInstallCapacity  in MW', 
-                               agg_strat=vert_sum_strat,
-                               node_col_name='Node')
-    generators.print_df()
-    
-    # electric load
-    file_path2 = '/Users/nwong/Workspace/School/OpenEMPIRE/Data handler/europe_v50/ScenarioData/electricload.csv'
-    load = SuperNodes({'Nordics': ['NO1', 'SE', 'DK'], 'Europe': ['FR', 'DE']})
-    load.load_data(file_path2)
-    load.construct_super(horizontal_process_strat, horizontal_comb_strat, rest_cols=['time'])
-    load.print_df()
+    def construct_tab_files(agg_config: str, scenario_config: str):
+        with open(agg_config) as agg:
+            config = json.load(agg)
+            for file in config:
+                file_path = file['file_path']
+                node_name = file['node_name']
+                for sheet in file['agg_sheets']:
+                    super_node = SuperNodes(
+                        {'Nordics': ['NO1', 'Sweden', 'Denmark'], 'Europe': ['France', 'Germany']}, 
+                        sheet['sheet_name'], 
+                        sheet['skiprows'], 
+                        sheet['usecols']
+                    )
+                    super_node.load_data(file_path)
+                    super_node.construct_super(
+                        vertical_process_strat,
+                        vertical_comb_strat,
+                        group_by_cols=sheet['group_by_cols'],
+                        agg_col=sheet['agg_col'],
+                        agg_strat=vert_sum_strat,
+                        node_col_name=node_name)
+                    super_node.print_df()
+                    
+        with open(scenario_config) as scenario:
+            scenario = json.load(scenario)
+            for file in scenario:
+                file_path = file['file_path']
+                print(file['file_name'])
+                super_node = SuperNodes({'Nordics': ['GB', 'SE'], 'Europe': ['FR', 'DE']})
+                super_node.load_data(file_path)
+                super_node.construct_super(horizontal_process_strat, horizontal_comb_strat, rest_cols=file['rest_cols'])
+                super_node.print_df(file['file_name'])
+            
+    construct_tab_files("agg_config.json", "scenario_config.json")
