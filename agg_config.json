@@ -1,0 +1,48 @@
+[
+  {
+    "file_name": "Storage",
+    "file_path": "/Users/nwong/Workspace/School/OpenEMPIRE/Data handler/europe_v50/Storage.xlsx",
+    "agg_sheets": [
+      {
+        "sheet_name": "InitialPowerCapacity",
+        "skiprows": 2,
+        "usecols": "A:D",
+        "group_by_cols": ["StorageTypes", "Period"],
+        "agg_col": "InitialPowerCapacity",
+        "agg_strat": "sum"
+      },
+      {
+        "sheet_name": "PowerMaxBuiltCapacity",
+        "skiprows": 2,
+        "usecols": "A:D",
+        "group_by_cols": ["StorageTypes", "Period"],
+        "agg_col": "PowerMaxBuiltCapacity",
+        "agg_strat": "sum"
+      },
+      {
+        "sheet_name": "PowerMaxInstalledCapacity",
+        "skiprows": 2,
+        "usecols": "A:C",
+        "group_by_cols": ["StorageTypes"],
+        "agg_col": "PowerMaxBuiltCapacity",
+        "agg_strat": "sum"
+      },
+      {
+        "sheet_name": "EnergyMaxBuiltCapacity",
+        "skiprows": 2,
+        "usecols": "A:D",
+        "group_by_cols": ["StorageTypes", "Period"],
+        "agg_col": "generatorMaxInstallCapacity in MW",
+        "agg_strat": "sum"
+      },
+      {
+        "sheet_name": "EnergyInitialCapacity",
+        "skiprows": 2,
+        "usecols": "A:C",
+        "group_by_cols": ["StorageTypes", "Period"],
+        "agg_col": "PowerMaxBuiltCapacity",
+        "agg_strat": "sum"
+      }
+    ]
+  }
+]
