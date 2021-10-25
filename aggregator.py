@@ -3,7 +3,7 @@ import pandas as pd
 from typing import List, Callable
 import numpy as np
 import json
-import itertools)
+import itertools
 
 def vert_sum_strat(filtered_data: pd.DataFrame, group_by_cols: List[str], agg_col: str):
     if len(group_by_cols) != 0:
