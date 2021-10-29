@@ -99,3 +99,7 @@ if __name__ == '__main__':
                 super_node.print_df(file['file_name'])
             
     construct_tab_files("agg_config.json", "scenario_config.json")
+
+# todos
+# Write test for all aggregation functions.
+# TDD
