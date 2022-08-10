@@ -4,12 +4,12 @@
 USE_TEMP_DIR : True #
 temp_dir : './'
 version : 'test'
-Horizon : 2035
+Horizon : 2030
 NoOfScenarios : 2
 lengthRegSeason : 24
 discountrate : 0.05
 WACC : 0.05
-solver : "Gurobi" #"Xpress" # #"CPLEX"
+solver : "GLPK" #"Gurobi" #"Xpress" # #"CPLEX"
 scenariogeneration : True #False
 fix_sample : False #True
 EMISSION_CAP : False #True

@@ -1,3 +1,9 @@
+__author__ = "Stian Backe"
+__license__ = "MIT"
+__maintainer__ = "Stian Backe"
+__email__ = "stian.backe@ntnu.no"
+
+
 import pandas as pd
 import numpy as np
 import os
