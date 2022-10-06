@@ -445,10 +445,13 @@ def run_empire(name, tab_file_path, result_file_path, scenariogeneration, scenar
             for i in model.PeriodActive:
                 noderawdemand = 0
                 for (s,h) in model.HoursOfSeason:
-                    if value(h) < value(model.FirstHoursOfRegSeason[-1] + model.lengthRegSeason):
+                    if value(h) < value(FirstHoursOfRegSeason[-1] + model.lengthRegSeason):
                         for sce in model.Scenario:
                                 noderawdemand += value(model.sceProbab[sce]*model.seasScale[s]*model.sloadRaw[n,h,sce,i])
-                hourlyscale = model.sloadAnnualDemand[n,i].value / noderawdemand
+                if value(model.sloadAnnualDemand[n,i]) < 1:
+                    hourlyscale = 0
+                else:
+                    hourlyscale = value(model.sloadAnnualDemand[n,i]) / noderawdemand
                 for h in model.Operationalhour:
                     for sce in model.Scenario:
                         model.sload[n, h, i, sce] = model.sloadRaw[n,h,sce,i]*hourlyscale
@@ -895,7 +898,7 @@ def run_empire(name, tab_file_path, result_file_path, scenariogeneration, scenar
                         value(sum(-(1 - instance.lineEfficiency[link,n])*instance.transmisionOperational[link,n,h,i,w] for link in instance.NodesLinked[n])), 
                         value(instance.loadShed[n,h,i,w]), 
                         value(instance.dual[instance.FlowBalance[n,h,i,w]]/(instance.operationalDiscountrate*instance.seasScale[s]*instance.sceProbab[w])),
-                        value(sum(instance.genOperational[n,g,h,i,w]*instance.genCO2TypeFactor[g]*(3.6/instance.genEfficiency[g,i]) for g in instance.Generator if (n,g) in instance.GeneratorsOfNode)/sum(instance.genOperational[n,g,h,i,w] for g in instance.Generator if (n,g) in instance.GeneratorsOfNode))])
+                        value(sum(instance.genOperational[n,g,h,i,w]*instance.genCO2TypeFactor[g]*(3.6/instance.genEfficiency[g,i]) for g in instance.Generator if (n,g) in instance.GeneratorsOfNode)/sum(instance.genOperational[n,g,h,i,w] for g in instance.Generator if (n,g) in instance.GeneratorsOfNode) if value(sum(instance.genOperational[n,g,h,i,w] for g in instance.Generator if (n,g) in instance.GeneratorsOfNode)) != 0 else 0)])
                     writer.writerow(my_string)
     f.close()
 
@@ -1061,7 +1064,9 @@ def run_empire(name, tab_file_path, result_file_path, scenariogeneration, scenar
                            "Hydroregulated": "Hydro|Reservoir", 
                            "Hydrorun-of-the-river": "Hydro|Run-of-River", 
                            "Windonshore": "Wind|Onshore", 
-                           "Windoffshore": "Wind|Offshore", 
+                           "Windoffshore": "Wind|Offshore",
+                           "Windoffshoregrounded": "Wind|Offshore", 
+                           "Windoffshorefloating": "Wind|Offshore", 
                            "Solar": "Solar|PV", "Waste": "Waste", 
                            "Bio10cofiring": "Coal|w/o CCS", 
                            "Bio10cofiringCCS": "Coal|w/ CCS", 
@@ -1108,7 +1113,7 @@ def run_empire(name, tab_file_path, result_file_path, scenariogeneration, scenar
         def row_write(df, region, variable, unit, subannual, input_value, scenario=Scenario, modelname=Modelname):
             df2 = pd.DataFrame([[modelname, scenario, region, variable, unit, subannual]+input_value],
                                columns=["model", "scenario", "region", "variable", "unit", "subannual"]+[value(2020+(i)*instance.LeapYearsInvestment) for i in instance.PeriodActive])
-            df = df.append(df2)
+            df = pd.concat([df, df2], ignore_index=True)
             return df
 
         f = row_write(f, "Europe", "Discount rate|Electricity", "%", "Year", [value(instance.discountrate*100)]*len(instance.PeriodActive)) #Discount rate

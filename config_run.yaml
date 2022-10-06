@@ -3,7 +3,7 @@
 
 USE_TEMP_DIR : True #
 temp_dir : './'
-version : 'europe_v50'
+version : 'europe_v51'
 Horizon : 2060
 NoOfScenarios : 5
 lengthRegSeason : 168
