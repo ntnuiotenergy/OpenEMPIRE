@@ -77,6 +77,7 @@ def run_empire(name, tab_file_path, result_file_path, scenariogeneration, scenar
 
     #Spatial sets
     model.Node = Set(ordered=True) #n
+    model.OffshoreNode = Set(ordered=True, within=model.Node) #n
     model.DirectionalLink = Set(dimen=2, within=model.Node*model.Node, ordered=True) #a
     model.TransmissionType = Set(ordered=True)
 
@@ -109,6 +110,7 @@ def run_empire(name, tab_file_path, result_file_path, scenariogeneration, scenar
     data.load(filename=tab_file_path + "/" + 'Sets_DependentStorage.tab',format="set", set=model.DependentStorage)
     data.load(filename=tab_file_path + "/" + 'Sets_Technology.tab',format="set", set=model.Technology)
     data.load(filename=tab_file_path + "/" + 'Sets_Node.tab',format="set", set=model.Node)
+    data.load(filename=tab_file_path + "/" + 'Sets_OffshoreNode.tab',format="set", set=model.OffshoreNode)
     data.load(filename=tab_file_path + "/" + 'Sets_Horizon.tab',format="set", set=model.Period)
     data.load(filename=tab_file_path + "/" + 'Sets_DirectionalLines.tab',format="set", set=model.DirectionalLink)
     data.load(filename=tab_file_path + "/" + 'Sets_LineType.tab',format="set", set=model.TransmissionType)
@@ -618,6 +620,25 @@ def run_empire(name, tab_file_path, result_file_path, scenariogeneration, scenar
             return model.transmisionOperational[(n1,n2),h,i,w]  - model.transmisionInstalledCap[(n2,n1),i] <= 0
     model.transmission_cap = Constraint(model.DirectionalLink, model.Operationalhour, model.PeriodActive, model.Scenario, rule=transmission_cap_rule)
 
+    #################################################################
+
+    def wind_farm_tranmission_cap_rule(model, n1, n2, i):
+        if n1 in model.OffshoreNode or n2 in model.OffshoreNode:
+            if (n1,n2) in model.BidirectionalArc:
+                if n1 in model.OffshoreNode:
+                    return model.transmissionInstalledCap[(n1,n2),i] <= sum(model.genInstalledCap[n1,g,i] for g in model.Generator if (n1,g) in model.GeneratorsOfNode)
+                else:
+                    return model.transmissionInstalledCap[(n1,n2),i] <= sum(model.genInstalledCap[n2,g,i] for g in model.Generator if (n2,g) in model.GeneratorsOfNode)
+            elif (n2,n1) in model.BidirectionalArc:
+                if n1 in model.OffshoreNode:
+                    return model.transmissionInstalledCap[(n2,n1),i] <= sum(model.genInstalledCap[n1,g,i] for g in model.Generator if (n1,g) in model.GeneratorsOfNode)
+                else:
+                    return model.transmissionInstalledCap[(n2,n1),i] <= sum(model.genInstalledCap[n2,g,i] for g in model.Generator if (n2,g) in model.GeneratorsOfNode)
+            else:
+                return Constraint.Skip
+        else:
+            return Constraint.Skip
+    model.wind_farm_transmission_cap = Constraint(model.Node, model.Node, model.Period, rule=wind_farm_tranmission_cap_rule)
     #################################################################
 
     if EMISSION_CAP:
