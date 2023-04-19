@@ -10,24 +10,23 @@ import os
 
 def season_month(season):
     if season=="winter":
-        return [12, 1, 2]
+        return [1, 2, 3]
     elif season=="spring":
-        return [3, 4, 5]
+        return [4, 5, 6]
     elif season=="summer":
-        return [6, 7, 8]
+        return [7, 8, 9]
     elif season=="fall":
-        return [9, 10, 11]
+        return [10, 11, 12]
 
-def year_month_filter(data, sample_year, sample_month):
+def year_season_filter(data, sample_year, season):
     data = data.loc[data.year.isin([sample_year]), :]
-    data = data.loc[data.month.isin([sample_month]), :]
+    data = data.loc[data.month.isin(season_month(season)), :]
     return data
 
 def remove_time_index(data):
     data = data.reset_index(drop=True)
     data = data.drop(['time', 'year', 'month', 'dayofweek', 'hour'], axis=1)
     return data
-
 
 def make_datetime(data, time_format):
     data["time"] = pd.to_datetime(data["time"],
@@ -288,49 +287,47 @@ def generate_random_scenario(filepath, tab_file_path, scenarios, seasons,
         sampling_key = pd.read_csv(filepath + "/sampling_key.csv")
         sampling_key = sampling_key.set_index(['Period','Scenario','Season'])
     else:
-        sampling_key = pd.DataFrame(columns=['Period','Scenario','Season','Year','Month','Hour'])
+        sampling_key = pd.DataFrame(columns=['Period','Scenario','Season','Year','Hour'])
 
     for i in range(1,Periods+1):
         for scenario in range(1,scenarios+1):
             for s in seasons:
-                	###################
-                	##REGULAR SEASONS##
-                	###################
+                ###################
+                ##REGULAR SEASONS##
+                ###################
 
-        		# Get sample year (2015-2019) and month for each season/scenario 
+        		# Get sample year (2015-2019) for each season/scenario 
                         
                 sample_year = np.random.choice(list(range(2015,2020)))
-                sample_month = np.random.choice(season_month(s))
         
-        		# Set sample year and month according to key
+        		# Set sample year according to key
                     
                 if fix_sample:
                     sample_year = sampling_key.loc[(i,scenario,s),'Year']
-                    sample_month = sampling_key.loc[(i,scenario,s),'Month']
 
         		# Filter out the hours within the sample year
                     
-                solar_month = year_month_filter(solar_data,
+                solar_season = year_season_filter(solar_data,
                                                 sample_year,
-                                                sample_month)
-                windonshore_month = year_month_filter(windonshore_data,
+                                                s)
+                windonshore_season = year_season_filter(windonshore_data,
                                                       sample_year,
-                                                      sample_month)
-                windoffshore_month = year_month_filter(windoffshore_data,
+                                                      s)
+                windoffshore_season = year_season_filter(windoffshore_data,
                                                        sample_year,
-                                                       sample_month)
-                hydroror_month = year_month_filter(hydroror_data,
+                                                       s)
+                hydroror_season = year_season_filter(hydroror_data,
                                                    sample_year,
-                                                   sample_month)
-                hydroseasonal_month = year_month_filter(hydroseasonal_data,
+                                                   s)
+                hydroseasonal_season = year_season_filter(hydroseasonal_data,
                                                         sample_year,
-                                                        sample_month)
-                electricload_month = year_month_filter(electricload_data,
+                                                        s)
+                electricload_season = year_season_filter(electricload_data,
                                                        sample_year,
-                                                       sample_month)
+                                                       s)
                 
                 sample_hour = np.random.randint(
-                    0, solar_month.shape[0] - regularSeasonHours - 1)
+                    0, solar_season.shape[0] - regularSeasonHours - 1)
                 
 
                 # Choose sample_hour from key or save sampling key
@@ -342,13 +339,12 @@ def generate_random_scenario(filepath, tab_file_path, scenarios, seasons,
                                             'Scenario': scenario,
                                             'Season': s,
                                             'Year': sample_year,
-                                            'Month': sample_month,
                                             'Hour': sample_hour}, index=[0])
                     sampling_key = pd.concat([sampling_key, df], ignore_index=True)
 
                 # Sample generator availability for regular seasons
                 genAvail = pd.concat([genAvail,
-                                      sample_generator(data=solar_month,
+                                      sample_generator(data=solar_season,
                                                        regularSeasonHours=regularSeasonHours,
                                                        scenario=scenario, season=s,
                                                        seasons=seasons, period=i,
@@ -356,7 +352,7 @@ def generate_random_scenario(filepath, tab_file_path, scenarios, seasons,
                                                        sample_hour=sample_hour)],
                                      ignore_index=True)
                 genAvail = pd.concat([genAvail,
-                                      sample_generator(data=windonshore_month,
+                                      sample_generator(data=windonshore_season,
                                                        regularSeasonHours=regularSeasonHours,
                                                        scenario=scenario, season=s,
                                                        seasons=seasons, period=i,
@@ -365,7 +361,7 @@ def generate_random_scenario(filepath, tab_file_path, scenarios, seasons,
                                      ignore_index=True)
                 if north_sea:
                     genAvail = pd.concat([genAvail,
-                                          sample_generator(data=windoffshore_month,
+                                          sample_generator(data=windoffshore_season,
                                                            regularSeasonHours=regularSeasonHours,
                                                            scenario=scenario, season=s,
                                                            seasons=seasons, period=i,
@@ -373,16 +369,16 @@ def generate_random_scenario(filepath, tab_file_path, scenarios, seasons,
                                                            sample_hour=sample_hour)],
                                          ignore_index=True)
                     genAvail = pd.concat([genAvail,
-                                          sample_generator(data=windoffshore_month,
+                                          sample_generator(data=windoffshore_season,
                                                            regularSeasonHours=regularSeasonHours,
                                                            scenario=scenario, season=s,
                                                            seasons=seasons, period=i,
                                                            generator="Windoffshorefloating",
                                                            sample_hour=sample_hour)],
-                                         ignore_index=True)                    
+                                         ignore_index=True)
                 else:
                     genAvail = pd.concat([genAvail,
-                                          sample_generator(data=windoffshore_month,
+                                          sample_generator(data=windoffshore_season,
                                                            regularSeasonHours=regularSeasonHours,
                                                            scenario=scenario, season=s,
                                                            seasons=seasons, period=i,
@@ -390,7 +386,7 @@ def generate_random_scenario(filepath, tab_file_path, scenarios, seasons,
                                                            sample_hour=sample_hour)],
                                          ignore_index=True)
                 genAvail = pd.concat([genAvail,
-                                      sample_generator(data=hydroror_month,
+                                      sample_generator(data=hydroror_season,
                                                        regularSeasonHours=regularSeasonHours,
                                                        scenario=scenario, season=s,
                                                        seasons=seasons, period=i,
@@ -400,7 +396,7 @@ def generate_random_scenario(filepath, tab_file_path, scenarios, seasons,
 
                 # Sample electric load for regular seasons
                 elecLoad = pd.concat([elecLoad,
-                                      sample_load(data=electricload_month,
+                                      sample_load(data=electricload_season,
                                                   regularSeasonHours=regularSeasonHours,
                                                   scenario=scenario, season=s,
                                                   seasons=seasons, period=i, 
@@ -409,7 +405,7 @@ def generate_random_scenario(filepath, tab_file_path, scenarios, seasons,
                 
                 # Sample seasonal hydro limit for regular seasons
                 hydroSeasonal = pd.concat([hydroSeasonal,
-                                           sample_hydro(data=hydroseasonal_month,
+                                           sample_hydro(data=hydroseasonal_season,
                                                         regularSeasonHours=regularSeasonHours,
                                                         scenario=scenario, season=s, 
                                                         seasons=seasons, period=i,
@@ -431,7 +427,6 @@ def generate_random_scenario(filepath, tab_file_path, scenarios, seasons,
                                         'Scenario': scenario,
                                         'Season': 'peak',
                                         'Year': sample_year,
-                                        'Month': 0,
                                         'Hour': 0}, index=[0])
                 sampling_key = pd.concat([sampling_key, df], ignore_index=True)
         
