@@ -41,6 +41,10 @@ discountrate = 0.05
 WACC = 0.05
 LeapYearsInvestment = 5
 time_format = "%d/%m/%Y %H:%M"
+if version in ["europe_v50"]:
+    north_sea = False
+else:
+    north_sea = True
 
 #######
 ##RUN##
@@ -85,7 +89,11 @@ dict_countries = {"AT": "Austria", "BA": "BosniaH", "BE": "Belgium",
                   "MK": "Macedonia", "NL": "Netherlands", "NO": "Norway",
                   "PL": "Poland", "PT": "Portugal", "RO": "Romania",
                   "RS": "Serbia", "SE": "Sweden", "SI": "Slovenia",
-                  "SK": "Slovakia"}
+                  "SK": "Slovakia", "MF": "MorayFirth", "FF": "FirthofForth",
+                  "DB": "DoggerBank", "HS": "Hornsea", "OD": "OuterDowsing",
+                  "NF": "Norfolk", "EA": "EastAnglia", "BS": "Borssele",
+                  "HK": "HollandseeKust", "HB": "HelgolanderBucht", "NS": "Nordsoen",
+                  "UN": "UtsiraNord", "SN1": "SorligeNordsjoI", "SN2": "SorligeNordsjoII"}
 
 print('++++++++')
 print('+EMPIRE+')
@@ -106,7 +114,8 @@ if scenariogeneration:
                              peakSeasonHours = lengthPeakSeason,
                              dict_countries = dict_countries,
 			                 time_format = time_format,
-			                 fix_sample = fix_sample)
+			                 fix_sample = fix_sample,
+                             north_sea = north_sea)
 
 generate_tab_files(filepath = workbook_path, tab_file_path = tab_file_path)
 

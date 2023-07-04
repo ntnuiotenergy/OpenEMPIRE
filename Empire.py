@@ -77,6 +77,7 @@ def run_empire(name, tab_file_path, result_file_path, scenariogeneration, scenar
 
     #Spatial sets
     model.Node = Set(ordered=True) #n
+    model.OffshoreNode = Set(ordered=True, within=model.Node) #n
     model.DirectionalLink = Set(dimen=2, within=model.Node*model.Node, ordered=True) #a
     model.TransmissionType = Set(ordered=True)
 
@@ -109,6 +110,7 @@ def run_empire(name, tab_file_path, result_file_path, scenariogeneration, scenar
     data.load(filename=tab_file_path + "/" + 'Sets_DependentStorage.tab',format="set", set=model.DependentStorage)
     data.load(filename=tab_file_path + "/" + 'Sets_Technology.tab',format="set", set=model.Technology)
     data.load(filename=tab_file_path + "/" + 'Sets_Node.tab',format="set", set=model.Node)
+    data.load(filename=tab_file_path + "/" + 'Sets_OffshoreNode.tab',format="set", set=model.OffshoreNode)
     data.load(filename=tab_file_path + "/" + 'Sets_Horizon.tab',format="set", set=model.Period)
     data.load(filename=tab_file_path + "/" + 'Sets_DirectionalLines.tab',format="set", set=model.DirectionalLink)
     data.load(filename=tab_file_path + "/" + 'Sets_LineType.tab',format="set", set=model.TransmissionType)
@@ -315,7 +317,7 @@ def run_empire(name, tab_file_path, result_file_path, scenariogeneration, scenar
     	#Generator 
     	for g in model.Generator:
     		for i in model.PeriodActive:
-    			costperyear=(model.WACC/(1+model.WACC-((1+model.WACC)**(1-model.genLifetime[g]))))*model.genCapitalCost[g,i]+model.genFixedOMCost[g,i]
+    			costperyear=(model.WACC/(1-((1+model.WACC)**(-model.genLifetime[g]))))*model.genCapitalCost[g,i]+model.genFixedOMCost[g,i]
     			costperperiod=costperyear*1000*(1-(1+model.discountrate)**-(min(value((len(model.PeriodActive)-i+1)*LeapYearsInvestment), value(model.genLifetime[g]))))/(1-(1/(1+model.discountrate)))
     			if ('CCS',g) in model.GeneratorsOfTechnology:
     				costperperiod+=model.CCSCostTSFix*model.CCSRemFrac*model.genCO2TypeFactor[g]*(3.6/model.genEfficiency[g,i])
@@ -324,10 +326,10 @@ def run_empire(name, tab_file_path, result_file_path, scenariogeneration, scenar
     	#Storage
     	for b in model.Storage:
     		for i in model.PeriodActive:
-    			costperyearPW=(model.WACC/(1+model.WACC-((1+model.WACC)**(1-model.storageLifetime[b]))))*model.storPWCapitalCost[b,i]+model.storPWFixedOMCost[b,i]
+    			costperyearPW=(model.WACC/(1-((1+model.WACC)**(-model.storageLifetime[b]))))*model.storPWCapitalCost[b,i]+model.storPWFixedOMCost[b,i]
     			costperperiodPW=costperyearPW*1000*(1-(1+model.discountrate)**-(min(value((len(model.PeriodActive)-i+1)*LeapYearsInvestment), value(model.storageLifetime[b]))))/(1-(1/(1+model.discountrate)))
     			model.storPWInvCost[b,i]=costperperiodPW
-    			costperyearEN=(model.WACC/(1+model.WACC-((1+model.WACC)**(1-model.storageLifetime[b]))))*model.storENCapitalCost[b,i]+model.storENFixedOMCost[b,i]
+    			costperyearEN=(model.WACC/(1-((1+model.WACC)**(-model.storageLifetime[b]))))*model.storENCapitalCost[b,i]+model.storENFixedOMCost[b,i]
     			costperperiodEN=costperyearEN*1000*(1-(1+model.discountrate)**-(min(value((len(model.PeriodActive)-i+1)*LeapYearsInvestment), value(model.storageLifetime[b]))))/(1-(1/(1+model.discountrate)))
     			model.storENInvCost[b,i]=costperperiodEN
 
@@ -336,7 +338,7 @@ def run_empire(name, tab_file_path, result_file_path, scenariogeneration, scenar
     		for i in model.PeriodActive:
     			for t in model.TransmissionType:
     				if (n1,n2,t) in model.TransmissionTypeOfDirectionalLink:
-    					costperyear=(model.WACC/(1+model.WACC-((1+model.WACC)**(1-model.transmissionLifetime[n1,n2]))))*model.transmissionLength[n1,n2]*model.transmissionTypeCapitalCost[t,i]+model.transmissionTypeFixedOMCost[t,i]
+    					costperyear=(model.WACC/(1-((1+model.WACC)**(-model.transmissionLifetime[n1,n2]))))*model.transmissionLength[n1,n2]*model.transmissionTypeCapitalCost[t,i]+model.transmissionTypeFixedOMCost[t,i]
     					costperperiod=costperyear*(1-(1+model.discountrate)**-(min(value((len(model.PeriodActive)-i+1)*LeapYearsInvestment), value(model.transmissionLifetime[n1,n2]))))/(1-(1/(1+model.discountrate)))
     					model.transmissionInvCost[n1,n2,i]=costperperiod
 
@@ -452,10 +454,13 @@ def run_empire(name, tab_file_path, result_file_path, scenariogeneration, scenar
             for i in model.PeriodActive:
                 noderawdemand = 0
                 for (s,h) in model.HoursOfSeason:
-                    if value(h) < value(model.FirstHoursOfRegSeason[-1] + model.lengthRegSeason):
+                    if value(h) < value(FirstHoursOfRegSeason[-1] + model.lengthRegSeason):
                         for sce in model.Scenario:
                                 noderawdemand += value(model.sceProbab[sce]*model.seasScale[s]*model.sloadRaw[n,h,sce,i])
-                hourlyscale = model.sloadAnnualDemand[n,i].value / noderawdemand
+                if value(model.sloadAnnualDemand[n,i]) < 1:
+                    hourlyscale = 0
+                else:
+                    hourlyscale = value(model.sloadAnnualDemand[n,i]) / noderawdemand
                 for h in model.Operationalhour:
                     for sce in model.Scenario:
                         model.sload[n, h, i, sce] = model.sloadRaw[n,h,sce,i]*hourlyscale
@@ -615,6 +620,25 @@ def run_empire(name, tab_file_path, result_file_path, scenariogeneration, scenar
             return model.transmisionOperational[(n1,n2),h,i,w]  - model.transmisionInstalledCap[(n2,n1),i] <= 0
     model.transmission_cap = Constraint(model.DirectionalLink, model.Operationalhour, model.PeriodActive, model.Scenario, rule=transmission_cap_rule)
 
+    #################################################################
+
+    def wind_farm_tranmission_cap_rule(model, n1, n2, i):
+        if n1 in model.OffshoreNode or n2 in model.OffshoreNode:
+            if (n1,n2) in model.BidirectionalArc:
+                if n1 in model.OffshoreNode:
+                    return model.transmissionInstalledCap[(n1,n2),i] <= sum(model.genInstalledCap[n1,g,i] for g in model.Generator if (n1,g) in model.GeneratorsOfNode)
+                else:
+                    return model.transmissionInstalledCap[(n1,n2),i] <= sum(model.genInstalledCap[n2,g,i] for g in model.Generator if (n2,g) in model.GeneratorsOfNode)
+            elif (n2,n1) in model.BidirectionalArc:
+                if n1 in model.OffshoreNode:
+                    return model.transmissionInstalledCap[(n2,n1),i] <= sum(model.genInstalledCap[n1,g,i] for g in model.Generator if (n1,g) in model.GeneratorsOfNode)
+                else:
+                    return model.transmissionInstalledCap[(n2,n1),i] <= sum(model.genInstalledCap[n2,g,i] for g in model.Generator if (n2,g) in model.GeneratorsOfNode)
+            else:
+                return Constraint.Skip
+        else:
+            return Constraint.Skip
+    model.wind_farm_transmission_cap = Constraint(model.Node, model.Node, model.Period, rule=wind_farm_tranmission_cap_rule)
     #################################################################
 
     if EMISSION_CAP:
@@ -903,8 +927,8 @@ def run_empire(name, tab_file_path, result_file_path, scenariogeneration, scenar
                         value(sum(instance.transmisionOperational[link,n,h,i,w] for link in instance.NodesLinked[n])), 
                         value(sum(-(1 - instance.lineEfficiency[link,n])*instance.transmisionOperational[link,n,h,i,w] for link in instance.NodesLinked[n])), 
                         value(instance.loadShed[n,h,i,w]), 
-                        value(instance.dual[instance.FlowBalance[n,h,i,w]]/(instance.discount_multiplier[i]*instance.operationalDiscountrate*instance.seasScale[s]*instance.sceProbab[w])), 
-                        value(sum(instance.genOperational[n,g,h,i,w]*instance.genCO2TypeFactor[g]*(3.6/instance.genEfficiency[g,i]) for g in instance.Generator if (n,g) in instance.GeneratorsOfNode)/sum(instance.genOperational[n,g,h,i,w] for g in instance.Generator if (n,g) in instance.GeneratorsOfNode))])
+                        value(instance.dual[instance.FlowBalance[n,h,i,w]]/(instance.operationalDiscountrate*instance.seasScale[s]*instance.sceProbab[w])),
+                        value(sum(instance.genOperational[n,g,h,i,w]*instance.genCO2TypeFactor[g]*(3.6/instance.genEfficiency[g,i]) for g in instance.Generator if (n,g) in instance.GeneratorsOfNode)/sum(instance.genOperational[n,g,h,i,w] for g in instance.Generator if (n,g) in instance.GeneratorsOfNode) if value(sum(instance.genOperational[n,g,h,i,w] for g in instance.Generator if (n,g) in instance.GeneratorsOfNode)) != 0 else 0)])
                     writer.writerow(my_string)
     f.close()
 
@@ -990,12 +1014,12 @@ def run_empire(name, tab_file_path, result_file_path, scenariogeneration, scenar
             my_string=[inv_per[int(i-1)],w, 
             value(sum(instance.seasScale[s]*instance.genOperational[n,g,h,i,w]*instance.genCO2TypeFactor[g]*(3.6/instance.genEfficiency[g,i]) for (n,g) in instance.GeneratorsOfNode for (s,h) in instance.HoursOfSeason))]
             if EMISSION_CAP:
-                my_string.extend([value(instance.dual[instance.emission_cap[i,w]]/(instance.discount_multiplier[i]*instance.operationalDiscountrate*instance.sceProbab[w]*1e6)),value(instance.CO2cap[i]*1e6)])
+                my_string.extend([value(instance.dual[instance.emission_cap[i,w]]/(instance.operationalDiscountrate*instance.sceProbab[w]*1e6)),value(instance.CO2cap[i]*1e6)])
             else:
                 my_string.extend([value(instance.CO2price[i]),0])
             my_string.extend([value(sum(instance.seasScale[s]*instance.genOperational[n,g,h,i,w]/1000 for (n,g) in instance.GeneratorsOfNode for (s,h) in instance.HoursOfSeason)), 
             value(sum(instance.seasScale[s]*instance.genOperational[n,g,h,i,w]*instance.genCO2TypeFactor[g]*(3.6/instance.genEfficiency[g,i]) for (n,g) in instance.GeneratorsOfNode for (s,h) in instance.HoursOfSeason)/sum(instance.seasScale[s]*instance.genOperational[n,g,h,i,w] for (n,g) in instance.GeneratorsOfNode for (s,h) in instance.HoursOfSeason)), 
-            value(sum(instance.dual[instance.FlowBalance[n,h,i,w]]/(instance.discount_multiplier[i]*instance.operationalDiscountrate*instance.seasScale[s]*instance.sceProbab[w]) for n in instance.Node for (s,h) in instance.HoursOfSeason)/value(len(instance.HoursOfSeason)*len(instance.Node))), 
+            value(sum(instance.dual[instance.FlowBalance[n,h,i,w]]/(instance.operationalDiscountrate*instance.seasScale[s]*instance.sceProbab[w]) for n in instance.Node for (s,h) in instance.HoursOfSeason)/value(len(instance.HoursOfSeason)*len(instance.Node))),
             value(sum(instance.seasScale[s]*(instance.genCapAvail[n,g,h,w,i]*instance.genInstalledCap[n,g,i] - instance.genOperational[n,g,h,i,w])/1000 for (n,g) in instance.GeneratorsOfNode if g == 'Hydrorun-of-the-river' or g == 'Windonshore' or g == 'Windoffshore' or g == 'Solar' for (s,h) in instance.HoursOfSeason)), 
             value(sum(instance.seasScale[s]*((1 - instance.storageDischargeEff[b])*instance.storDischarge[n,b,h,i,w] + (1 - instance.storageChargeEff[b])*instance.storCharge[n,b,h,i,w])/1000 for (n,b) in instance.StoragesOfNode for (s,h) in instance.HoursOfSeason)), 
             value(sum(instance.seasScale[s]*((1 - instance.lineEfficiency[n1,n2])*instance.transmisionOperational[n1,n2,h,i,w] + (1 - instance.lineEfficiency[n2,n1])*instance.transmisionOperational[n2,n1,h,i,w])/1000 for (n1,n2) in instance.BidirectionalArc for (s,h) in instance.HoursOfSeason))])
@@ -1070,7 +1094,9 @@ def run_empire(name, tab_file_path, result_file_path, scenariogeneration, scenar
                            "Hydroregulated": "Hydro|Reservoir", 
                            "Hydrorun-of-the-river": "Hydro|Run-of-River", 
                            "Windonshore": "Wind|Onshore", 
-                           "Windoffshore": "Wind|Offshore", 
+                           "Windoffshore": "Wind|Offshore",
+                           "Windoffshoregrounded": "Wind|Offshore", 
+                           "Windoffshorefloating": "Wind|Offshore", 
                            "Solar": "Solar|PV", "Waste": "Waste", 
                            "Bio10cofiring": "Coal|w/o CCS", 
                            "Bio10cofiringCCS": "Coal|w/ CCS", 
@@ -1117,7 +1143,7 @@ def run_empire(name, tab_file_path, result_file_path, scenariogeneration, scenar
         def row_write(df, region, variable, unit, subannual, input_value, scenario=Scenario, modelname=Modelname):
             df2 = pd.DataFrame([[modelname, scenario, region, variable, unit, subannual]+input_value],
                                columns=["model", "scenario", "region", "variable", "unit", "subannual"]+[value(2020+(i)*instance.LeapYearsInvestment) for i in instance.PeriodActive])
-            df = df.append(df2)
+            df = pd.concat([df, df2], ignore_index=True)
             return df
 
         f = row_write(f, "Europe", "Discount rate|Electricity", "%", "Year", [value(instance.discountrate*100)]*len(instance.PeriodActive)) #Discount rate
@@ -1141,7 +1167,7 @@ def run_empire(name, tab_file_path, result_file_path, scenariogeneration, scenar
             for (s,h) in instance.HoursOfSeason:
                 for n in instance.Node:
                     f = row_write(f, dict_countries_reversed[str(n)], "Price|Secondary Energy|Electricity", "US$2010/GJ", seasonhours[h-1], \
-                        [value(instance.dual[instance.FlowBalance[n,h,i,w]]/(GJperMWh*instance.discount_multiplier[i]*instance.operationalDiscountrate*instance.seasScale[s]*instance.sceProbab[w])) for i in instance.PeriodActive], Scenario+"|"+str(w)+str(s))
+                        [value(instance.dual[instance.FlowBalance[n,h,i,w]]/(GJperMWh*instance.operationalDiscountrate*instance.seasScale[s]*instance.sceProbab[w])) for i in instance.PeriodActive], Scenario+"|"+str(w)+str(s))
         for g in instance.Generator:
             f = row_write(f, "Europe", "Capacity|Electricity|"+dict_generators[str(g)], "GW", "Year", [value(sum(instance.genInstalledCap[n,g,i]*GWperMW for n in instance.Node if (n,g) in instance.GeneratorsOfNode)) for i in instance.PeriodActive]) #Total European installed generator capacity per type
             f = row_write(f, "Europe", "Capital Cost|Electricity|"+dict_generators[str(g)], "US$2010/kW", "Year", [value(instance.genCapitalCost[g,i]*USD10perEUR18) for i in instance.PeriodActive]) #Capital generator cost
