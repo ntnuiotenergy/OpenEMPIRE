@@ -493,7 +493,7 @@ def run_empire(name, tab_file_path, result_file_path, scenariogeneration, scenar
     model.storDischarge = Var(model.StoragesOfNode, model.Operationalhour, model.PeriodActive, model.Scenario, domain=NonNegativeReals)
     model.loadShed = Var(model.Node, model.Operationalhour, model.PeriodActive, model.Scenario, domain=NonNegativeReals)
     model.genInstalledCap = Var(model.GeneratorsOfNode, model.PeriodActive, domain=NonNegativeReals)
-    model.transmisionInstalledCap = Var(model.BidirectionalArc, model.PeriodActive, domain=NonNegativeReals)
+    model.transmissionInstalledCap = Var(model.BidirectionalArc, model.PeriodActive, domain=NonNegativeReals)
     model.storPWInstalledCap = Var(model.StoragesOfNode, model.PeriodActive, domain=NonNegativeReals)
     model.storENInstalledCap = Var(model.StoragesOfNode, model.PeriodActive, domain=NonNegativeReals)
 
@@ -615,9 +615,9 @@ def run_empire(name, tab_file_path, result_file_path, scenariogeneration, scenar
 
     def transmission_cap_rule(model, n1, n2, h, i, w):
         if (n1,n2) in model.BidirectionalArc:
-            return model.transmisionOperational[(n1,n2),h,i,w]  - model.transmisionInstalledCap[(n1,n2),i] <= 0
+            return model.transmisionOperational[(n1,n2),h,i,w]  - model.transmissionInstalledCap[(n1,n2),i] <= 0
         elif (n2,n1) in model.BidirectionalArc:
-            return model.transmisionOperational[(n1,n2),h,i,w]  - model.transmisionInstalledCap[(n2,n1),i] <= 0
+            return model.transmisionOperational[(n1,n2),h,i,w]  - model.transmissionInstalledCap[(n2,n1),i] <= 0
     model.transmission_cap = Constraint(model.DirectionalLink, model.Operationalhour, model.PeriodActive, model.Scenario, rule=transmission_cap_rule)
 
     #################################################################
@@ -680,7 +680,7 @@ def run_empire(name, tab_file_path, result_file_path, scenariogeneration, scenar
         startPeriod=1
         if value(1+i-model.transmissionLifetime[n1,n2]*(1/model.LeapYearsInvestment))>startPeriod:
             startPeriod=value(1+i-model.transmissionLifetime[n1,n2]/model.LeapYearsInvestment)
-        return sum(model.transmisionInvCap[n1,n2,j]  for j in model.PeriodActive if j>=startPeriod and j<=i )- model.transmisionInstalledCap[n1,n2,i] + model.transmissionInitCap[n1,n2,i] == 0   #
+        return sum(model.transmisionInvCap[n1,n2,j]  for j in model.PeriodActive if j>=startPeriod and j<=i )- model.transmissionInstalledCap[n1,n2,i] + model.transmissionInitCap[n1,n2,i] == 0   #
     model.installedCapDefinitionTrans = Constraint(model.BidirectionalArc, model.PeriodActive, rule=lifetime_rule_trans)
 
     #################################################################
@@ -716,7 +716,7 @@ def run_empire(name, tab_file_path, result_file_path, scenariogeneration, scenar
     #################################################################
 
     def installed_trans_cap_rule(model, n1, n2, i):
-        return model.transmisionInstalledCap[n1,n2,i] - model.transmissionMaxInstalledCap[n1,n2,i] <= 0
+        return model.transmissionInstalledCap[n1,n2,i] - model.transmissionMaxInstalledCap[n1,n2,i] <= 0
     model.installed_trans_cap = Constraint(model.BidirectionalArc, model.PeriodActive, rule=installed_trans_cap_rule)
 
     #################################################################
@@ -876,10 +876,10 @@ def run_empire(name, tab_file_path, result_file_path, scenariogeneration, scenar
 
     f = open(result_file_path + "/" + 'results_output_transmision.csv', 'w', newline='')
     writer = csv.writer(f)
-    writer.writerow(["BetweenNode","AndNode","Period","transmisionInvCap_MW","transmisionInstalledCap_MW","DiscountedInvestmentCost_EuroPerMW","transmisionExpectedAnnualVolume_GWh","ExpectedAnnualLosses_GWh"])
+    writer.writerow(["BetweenNode","AndNode","Period","transmisionInvCap_MW","transmissionInstalledCap_MW","DiscountedInvestmentCost_EuroPerMW","transmisionExpectedAnnualVolume_GWh","ExpectedAnnualLosses_GWh"])
     for (n1,n2) in instance.BidirectionalArc:
         for i in instance.PeriodActive:
-            writer.writerow([n1,n2,inv_per[int(i-1)],value(instance.transmisionInvCap[n1,n2,i]),value(instance.transmisionInstalledCap[n1,n2,i]), 
+            writer.writerow([n1,n2,inv_per[int(i-1)],value(instance.transmisionInvCap[n1,n2,i]),value(instance.transmissionInstalledCap[n1,n2,i]), 
             value(instance.discount_multiplier[i]*instance.transmisionInvCap[n1,n2,i]*instance.transmissionInvCost[n1,n2,i]), 
             value(sum(instance.sceProbab[w]*instance.seasScale[s]*(instance.transmisionOperational[n1,n2,h,i,w]+instance.transmisionOperational[n2,n1,h,i,w])/1000 for (s,h) in instance.HoursOfSeason for w in instance.Scenario)), 
             value(sum(instance.sceProbab[w]*instance.seasScale[s]*((1 - instance.lineEfficiency[n1,n2])*instance.transmisionOperational[n1,n2,h,i,w] + (1 - instance.lineEfficiency[n2,n1])*instance.transmisionOperational[n2,n1,h,i,w])/1000 for (s,h) in instance.HoursOfSeason for w in instance.Scenario))])
