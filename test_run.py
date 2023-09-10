@@ -96,7 +96,8 @@ if scenariogeneration:
                              peakSeasonHours = lengthPeakSeason,
                              dict_countries = dict_countries,
 			                 time_format = time_format,
-			                 fix_sample = fix_sample)
+			                 fix_sample = fix_sample,
+                             north_sea = False) 
 
 generate_tab_files(filepath = workbook_path, tab_file_path = tab_file_path)
 
