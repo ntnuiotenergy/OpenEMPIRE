@@ -1,17 +1,25 @@
 [build-system]
-requires = ["setuptools", "wheel"]
-build-backend = "setuptools.build_meta"
+requires = ["poetry-core>=1.0.8"]
+build-backend = "poetry.core.masonry.api"
 
-[project]
-name = "OpenEmpire"
+[tool.poetry]
+name = "Empire"
 version = "0.1.1"
 description = "Stochastic linear program for investments in the European power system."
 authors = ["Stian Backe <stian.backe@ntnu.no>"]
 maintainers = ["Stian Backe <stian.backe@ntnu.no>"]
-license = "LICENSE"
 readme = "README.md"
-repository = "https://github.com/ntnuiotenergy/OpenEMPIRE"
 
 [tool.black]
 line-lenght = 88
 
+[tool.ruff]
+line-length = 88
+
+[tool.poetry.dependencies]
+python = ">=3.7"
+cloudpickle = ">=1.0.0"
+openpyxl = ">=3.0.0"
+pandas = ">=1.2"
+pyomo = ">=6.0"
+pyyaml = ">=5.1"
