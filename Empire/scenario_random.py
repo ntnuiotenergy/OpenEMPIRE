@@ -1,12 +1,9 @@
-__author__ = "Stian Backe"
-__license__ = "MIT"
-__maintainer__ = "Stian Backe"
-__email__ = "stian.backe@ntnu.no"
-
-
-import pandas as pd
-import numpy as np
 import os
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
 
 def season_month(season):
     if season=="winter":
@@ -251,7 +248,7 @@ def sample_generator_peak(data, seasons, g, scenario,
             peak_data = pd.concat([peak_data, df], ignore_index=True)
     return peak_data
 
-def generate_random_scenario(filepath, tab_file_path, scenarios, seasons,
+def generate_random_scenario(file_path: Path, tab_file_path: Path, scenarios, seasons,
                              Periods, regularSeasonHours, peakSeasonHours, 
                              dict_countries, time_format, fix_sample,
                              north_sea):
@@ -267,12 +264,12 @@ def generate_random_scenario(filepath, tab_file_path, scenarios, seasons,
     hydroSeasonal = pd.DataFrame()
     
     # Load all the raw scenario data
-    solar_data = pd.read_csv(filepath + "/solar.csv")
-    windonshore_data = pd.read_csv(filepath + "/windonshore.csv")
-    windoffshore_data = pd.read_csv(filepath + "/windoffshore.csv")
-    hydroror_data = pd.read_csv(filepath + "/hydroror.csv")
-    hydroseasonal_data = pd.read_csv(filepath + "/hydroseasonal.csv")
-    electricload_data = pd.read_csv(filepath + "/electricload.csv")
+    solar_data = pd.read_csv(file_path / "solar.csv")
+    windonshore_data = pd.read_csv(file_path / "windonshore.csv")
+    windoffshore_data = pd.read_csv(file_path / "windoffshore.csv")
+    hydroror_data = pd.read_csv(file_path / "hydroror.csv")
+    hydroseasonal_data = pd.read_csv(file_path / "hydroseasonal.csv")
+    electricload_data = pd.read_csv(file_path / "electricload.csv")
 
     # Make datetime columns
     solar_data = make_datetime(solar_data, time_format)
@@ -284,7 +281,7 @@ def generate_random_scenario(filepath, tab_file_path, scenarios, seasons,
 
 
     if fix_sample:
-        sampling_key = pd.read_csv(filepath + "/sampling_key.csv")
+        sampling_key = pd.read_csv(file_path / "sampling_key.csv")
         sampling_key = sampling_key.set_index(['Period','Scenario','Season'])
     else:
         sampling_key = pd.DataFrame(columns=['Period','Scenario','Season','Year','Hour'])
@@ -551,7 +548,7 @@ def generate_random_scenario(filepath, tab_file_path, scenarios, seasons,
     hydroSeasonal.loc[hydroSeasonal["HydroGeneratorMaxSeasonalProduction"] <= 0.001,"HydroGeneratorMaxSeasonalProduction"] = 0
     
 
-    #Make filepath (if it does not exist) and print .tab-files
+    #Make file_path (if it does not exist) and print .tab-files
     if not os.path.exists(tab_file_path):
         os.makedirs(tab_file_path)
         
@@ -560,15 +557,15 @@ def generate_random_scenario(filepath, tab_file_path, scenarios, seasons,
         sampling_key = sampling_key.reset_index(level=['Period','Scenario','Season'])
         
     sampling_key.to_csv(
-        tab_file_path + "/sampling_key" + '.csv',
+        tab_file_path / "sampling_key.csv",
         header=True, index=None, mode='w')        
 
     genAvail.to_csv(
-        tab_file_path + "/Stochastic_StochasticAvailability" + '.tab',
+        tab_file_path / "Stochastic_StochasticAvailability.tab",
         header=True, index=None, sep='\t', mode='w')
     elecLoad.to_csv(
-        tab_file_path + "/Stochastic_ElectricLoadRaw" + '.tab',
+        tab_file_path / "Stochastic_ElectricLoadRaw.tab",
         header=True, index=None, sep='\t', mode='w')
     hydroSeasonal.to_csv(
-        tab_file_path + "/Stochastic_HydroGenMaxSeasonalProduction" + '.tab',
+        tab_file_path / "Stochastic_HydroGenMaxSeasonalProduction.tab",
         header=True, index=None, sep='\t', mode='w')

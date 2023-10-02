@@ -6,13 +6,10 @@ import sys
 import cloudpickle
 import time
 import os
+from pathlib import Path
 
-__author__ = "Stian Backe"
-__license__ = "MIT"
-__maintainer__ = "Stian Backe"
-__email__ = "stian.backe@ntnu.no"
 
-def run_empire(name, tab_file_path, result_file_path, scenariogeneration, scenario_data_path,
+def run_empire(name, tab_file_path: Path, result_file_path: Path, scenariogeneration, scenario_data_path,
                solver, temp_dir, FirstHoursOfRegSeason, FirstHoursOfPeakSeason, lengthRegSeason,
                lengthPeakSeason, Period, Operationalhour, Scenario, Season, HoursOfSeason,
                discountrate, WACC, LeapYearsInvestment, IAMC_PRINT, WRITE_LP,
@@ -102,22 +99,22 @@ def run_empire(name, tab_file_path, result_file_path, scenariogeneration, scenar
     #Load the data
 
     data = DataPortal()
-    data.load(filename=tab_file_path + "/" + 'Sets_Generator.tab',format="set", set=model.Generator)
-    data.load(filename=tab_file_path + "/" + 'Sets_ThermalGenerators.tab',format="set", set=model.ThermalGenerators)
-    data.load(filename=tab_file_path + "/" + 'Sets_HydroGenerator.tab',format="set", set=model.HydroGenerator)
-    data.load(filename=tab_file_path + "/" + 'Sets_HydroGeneratorWithReservoir.tab',format="set", set=model.RegHydroGenerator)
-    data.load(filename=tab_file_path + "/" + 'Sets_Storage.tab',format="set", set=model.Storage)
-    data.load(filename=tab_file_path + "/" + 'Sets_DependentStorage.tab',format="set", set=model.DependentStorage)
-    data.load(filename=tab_file_path + "/" + 'Sets_Technology.tab',format="set", set=model.Technology)
-    data.load(filename=tab_file_path + "/" + 'Sets_Node.tab',format="set", set=model.Node)
-    data.load(filename=tab_file_path + "/" + 'Sets_OffshoreNode.tab',format="set", set=model.OffshoreNode)
-    data.load(filename=tab_file_path + "/" + 'Sets_Horizon.tab',format="set", set=model.Period)
-    data.load(filename=tab_file_path + "/" + 'Sets_DirectionalLines.tab',format="set", set=model.DirectionalLink)
-    data.load(filename=tab_file_path + "/" + 'Sets_LineType.tab',format="set", set=model.TransmissionType)
-    data.load(filename=tab_file_path + "/" + 'Sets_LineTypeOfDirectionalLines.tab',format="set", set=model.TransmissionTypeOfDirectionalLink)
-    data.load(filename=tab_file_path + "/" + 'Sets_GeneratorsOfTechnology.tab',format="set", set=model.GeneratorsOfTechnology)
-    data.load(filename=tab_file_path + "/" + 'Sets_GeneratorsOfNode.tab',format="set", set=model.GeneratorsOfNode)
-    data.load(filename=tab_file_path + "/" + 'Sets_StorageOfNodes.tab',format="set", set=model.StoragesOfNode)
+    data.load(filename=str(tab_file_path / 'Sets_Generator.tab'),format="set", set=model.Generator)
+    data.load(filename=str(tab_file_path / 'Sets_ThermalGenerators.tab'),format="set", set=model.ThermalGenerators)
+    data.load(filename=str(tab_file_path / 'Sets_HydroGenerator.tab'),format="set", set=model.HydroGenerator)
+    data.load(filename=str(tab_file_path / 'Sets_HydroGeneratorWithReservoir.tab'),format="set", set=model.RegHydroGenerator)
+    data.load(filename=str(tab_file_path / 'Sets_Storage.tab'),format="set", set=model.Storage)
+    data.load(filename=str(tab_file_path / 'Sets_DependentStorage.tab'),format="set", set=model.DependentStorage)
+    data.load(filename=str(tab_file_path / 'Sets_Technology.tab'),format="set", set=model.Technology)
+    data.load(filename=str(tab_file_path / 'Sets_Node.tab'),format="set", set=model.Node)
+    data.load(filename=str(tab_file_path / 'Sets_OffshoreNode.tab'),format="set", set=model.OffshoreNode)
+    data.load(filename=str(tab_file_path / 'Sets_Horizon.tab'),format="set", set=model.Period)
+    data.load(filename=str(tab_file_path / 'Sets_DirectionalLines.tab'),format="set", set=model.DirectionalLink)
+    data.load(filename=str(tab_file_path / 'Sets_LineType.tab'),format="set", set=model.TransmissionType)
+    data.load(filename=str(tab_file_path / 'Sets_LineTypeOfDirectionalLines.tab'),format="set", set=model.TransmissionTypeOfDirectionalLink)
+    data.load(filename=str(tab_file_path / 'Sets_GeneratorsOfTechnology.tab'),format="set", set=model.GeneratorsOfTechnology)
+    data.load(filename=str(tab_file_path / 'Sets_GeneratorsOfNode.tab'),format="set", set=model.GeneratorsOfNode)
+    data.load(filename=str(tab_file_path / 'Sets_StorageOfNodes.tab'),format="set", set=model.StoragesOfNode)
 
     print("Constructing sub sets...")
 
@@ -134,7 +131,7 @@ def run_empire(name, tab_file_path, result_file_path, scenariogeneration, scenar
     def BidirectionalArc_init(model):
         retval = []
         for (i,j) in model.DirectionalLink:
-            if i != j and (not (j,i) in retval):
+            if i != j and ((j,i) not in retval):
                 retval.append((i,j))
         return retval
     model.BidirectionalArc = Set(dimen=2, initialize=BidirectionalArc_init, ordered=True) #l
@@ -238,67 +235,67 @@ def run_empire(name, tab_file_path, result_file_path, scenariogeneration, scenar
 
     print("Reading parameters...")
 
-    data.load(filename=tab_file_path + "/" + 'Generator_CapitalCosts.tab', param=model.genCapitalCost, format="table")
-    data.load(filename=tab_file_path + "/" + 'Generator_FixedOMCosts.tab', param=model.genFixedOMCost, format="table")
-    data.load(filename=tab_file_path + "/" + 'Generator_VariableOMCosts.tab', param=model.genVariableOMCost, format="table")
-    data.load(filename=tab_file_path + "/" + 'Generator_FuelCosts.tab', param=model.genFuelCost, format="table")
-    data.load(filename=tab_file_path + "/" + 'Generator_CCSCostTSVariable.tab', param=model.CCSCostTSVariable, format="table")
-    data.load(filename=tab_file_path + "/" + 'Generator_Efficiency.tab', param=model.genEfficiency, format="table")
-    data.load(filename=tab_file_path + "/" + 'Generator_RefInitialCap.tab', param=model.genRefInitCap, format="table")
-    data.load(filename=tab_file_path + "/" + 'Generator_ScaleFactorInitialCap.tab', param=model.genScaleInitCap, format="table")
-    data.load(filename=tab_file_path + "/" + 'Generator_InitialCapacity.tab', param=model.genInitCap, format="table") #node_generator_intial_capacity.xlsx
-    data.load(filename=tab_file_path + "/" + 'Generator_MaxBuiltCapacity.tab', param=model.genMaxBuiltCap, format="table")#?
-    data.load(filename=tab_file_path + "/" + 'Generator_MaxInstalledCapacity.tab', param=model.genMaxInstalledCapRaw, format="table")#maximum_capacity_constraint_040317_high
-    data.load(filename=tab_file_path + "/" + 'Generator_CO2Content.tab', param=model.genCO2TypeFactor, format="table")
-    data.load(filename=tab_file_path + "/" + 'Generator_RampRate.tab', param=model.genRampUpCap, format="table")
-    data.load(filename=tab_file_path + "/" + 'Generator_GeneratorTypeAvailability.tab', param=model.genCapAvailTypeRaw, format="table")
-    data.load(filename=tab_file_path + "/" + 'Generator_Lifetime.tab', param=model.genLifetime, format="table") 
+    data.load(filename=str(tab_file_path / 'Generator_CapitalCosts.tab'), param=model.genCapitalCost, format="table")
+    data.load(filename=str(tab_file_path / 'Generator_FixedOMCosts.tab'), param=model.genFixedOMCost, format="table")
+    data.load(filename=str(tab_file_path / 'Generator_VariableOMCosts.tab'), param=model.genVariableOMCost, format="table")
+    data.load(filename=str(tab_file_path / 'Generator_FuelCosts.tab'), param=model.genFuelCost, format="table")
+    data.load(filename=str(tab_file_path / 'Generator_CCSCostTSVariable.tab'), param=model.CCSCostTSVariable, format="table")
+    data.load(filename=str(tab_file_path / 'Generator_Efficiency.tab'), param=model.genEfficiency, format="table")
+    data.load(filename=str(tab_file_path / 'Generator_RefInitialCap.tab'), param=model.genRefInitCap, format="table")
+    data.load(filename=str(tab_file_path / 'Generator_ScaleFactorInitialCap.tab'), param=model.genScaleInitCap, format="table")
+    data.load(filename=str(tab_file_path / 'Generator_InitialCapacity.tab'), param=model.genInitCap, format="table") #node_generator_intial_capacity.xlsx
+    data.load(filename=str(tab_file_path / 'Generator_MaxBuiltCapacity.tab'), param=model.genMaxBuiltCap, format="table")#?
+    data.load(filename=str(tab_file_path / 'Generator_MaxInstalledCapacity.tab'), param=model.genMaxInstalledCapRaw, format="table")#maximum_capacity_constraint_040317_high
+    data.load(filename=str(tab_file_path / 'Generator_CO2Content.tab'), param=model.genCO2TypeFactor, format="table")
+    data.load(filename=str(tab_file_path / 'Generator_RampRate.tab'), param=model.genRampUpCap, format="table")
+    data.load(filename=str(tab_file_path / 'Generator_GeneratorTypeAvailability.tab'), param=model.genCapAvailTypeRaw, format="table")
+    data.load(filename=str(tab_file_path / 'Generator_Lifetime.tab'), param=model.genLifetime, format="table") 
 
-    data.load(filename=tab_file_path + "/" + 'Transmission_InitialCapacity.tab', param=model.transmissionInitCap, format="table")
-    data.load(filename=tab_file_path + "/" + 'Transmission_MaxBuiltCapacity.tab', param=model.transmissionMaxBuiltCap, format="table")
-    data.load(filename=tab_file_path + "/" + 'Transmission_MaxInstallCapacityRaw.tab', param=model.transmissionMaxInstalledCapRaw, format="table")
-    data.load(filename=tab_file_path + "/" + 'Transmission_Length.tab', param=model.transmissionLength, format="table")
-    data.load(filename=tab_file_path + "/" + 'Transmission_TypeCapitalCost.tab', param=model.transmissionTypeCapitalCost, format="table")
-    data.load(filename=tab_file_path + "/" + 'Transmission_TypeFixedOMCost.tab', param=model.transmissionTypeFixedOMCost, format="table")
-    data.load(filename=tab_file_path + "/" + 'Transmission_lineEfficiency.tab', param=model.lineEfficiency, format="table")
-    data.load(filename=tab_file_path + "/" + 'Transmission_Lifetime.tab', param=model.transmissionLifetime, format="table")
+    data.load(filename=str(tab_file_path / 'Transmission_InitialCapacity.tab'), param=model.transmissionInitCap, format="table")
+    data.load(filename=str(tab_file_path / 'Transmission_MaxBuiltCapacity.tab'), param=model.transmissionMaxBuiltCap, format="table")
+    data.load(filename=str(tab_file_path / 'Transmission_MaxInstallCapacityRaw.tab'), param=model.transmissionMaxInstalledCapRaw, format="table")
+    data.load(filename=str(tab_file_path / 'Transmission_Length.tab'), param=model.transmissionLength, format="table")
+    data.load(filename=str(tab_file_path / 'Transmission_TypeCapitalCost.tab'), param=model.transmissionTypeCapitalCost, format="table")
+    data.load(filename=str(tab_file_path / 'Transmission_TypeFixedOMCost.tab'), param=model.transmissionTypeFixedOMCost, format="table")
+    data.load(filename=str(tab_file_path / 'Transmission_lineEfficiency.tab'), param=model.lineEfficiency, format="table")
+    data.load(filename=str(tab_file_path / 'Transmission_Lifetime.tab'), param=model.transmissionLifetime, format="table")
 
-    data.load(filename=tab_file_path + "/" + 'Storage_StorageBleedEfficiency.tab', param=model.storageBleedEff, format="table")
-    data.load(filename=tab_file_path + "/" + 'Storage_StorageChargeEff.tab', param=model.storageChargeEff, format="table")
-    data.load(filename=tab_file_path + "/" + 'Storage_StorageDischargeEff.tab', param=model.storageDischargeEff, format="table")
-    data.load(filename=tab_file_path + "/" + 'Storage_StoragePowToEnergy.tab', param=model.storagePowToEnergy, format="table")
-    data.load(filename=tab_file_path + "/" + 'Storage_EnergyCapitalCost.tab', param=model.storENCapitalCost, format="table")
-    data.load(filename=tab_file_path + "/" + 'Storage_EnergyFixedOMCost.tab', param=model.storENFixedOMCost, format="table")
-    data.load(filename=tab_file_path + "/" + 'Storage_EnergyInitialCapacity.tab', param=model.storENInitCap, format="table")
-    data.load(filename=tab_file_path + "/" + 'Storage_EnergyMaxBuiltCapacity.tab', param=model.storENMaxBuiltCap, format="table")
-    data.load(filename=tab_file_path + "/" + 'Storage_EnergyMaxInstalledCapacity.tab', param=model.storENMaxInstalledCapRaw, format="table")
-    data.load(filename=tab_file_path + "/" + 'Storage_StorageInitialEnergyLevel.tab', param=model.storOperationalInit, format="table")
-    data.load(filename=tab_file_path + "/" + 'Storage_PowerCapitalCost.tab', param=model.storPWCapitalCost, format="table")
-    data.load(filename=tab_file_path + "/" + 'Storage_PowerFixedOMCost.tab', param=model.storPWFixedOMCost, format="table")
-    data.load(filename=tab_file_path + "/" + 'Storage_InitialPowerCapacity.tab', param=model.storPWInitCap, format="table")
-    data.load(filename=tab_file_path + "/" + 'Storage_PowerMaxBuiltCapacity.tab', param=model.storPWMaxBuiltCap, format="table")
-    data.load(filename=tab_file_path + "/" + 'Storage_PowerMaxInstalledCapacity.tab', param=model.storPWMaxInstalledCapRaw, format="table")
-    data.load(filename=tab_file_path + "/" + 'Storage_Lifetime.tab', param=model.storageLifetime, format="table")
+    data.load(filename=str(tab_file_path / 'Storage_StorageBleedEfficiency.tab'), param=model.storageBleedEff, format="table")
+    data.load(filename=str(tab_file_path / 'Storage_StorageChargeEff.tab'), param=model.storageChargeEff, format="table")
+    data.load(filename=str(tab_file_path / 'Storage_StorageDischargeEff.tab'), param=model.storageDischargeEff, format="table")
+    data.load(filename=str(tab_file_path / 'Storage_StoragePowToEnergy.tab'), param=model.storagePowToEnergy, format="table")
+    data.load(filename=str(tab_file_path / 'Storage_EnergyCapitalCost.tab'), param=model.storENCapitalCost, format="table")
+    data.load(filename=str(tab_file_path / 'Storage_EnergyFixedOMCost.tab'), param=model.storENFixedOMCost, format="table")
+    data.load(filename=str(tab_file_path / 'Storage_EnergyInitialCapacity.tab'), param=model.storENInitCap, format="table")
+    data.load(filename=str(tab_file_path / 'Storage_EnergyMaxBuiltCapacity.tab'), param=model.storENMaxBuiltCap, format="table")
+    data.load(filename=str(tab_file_path / 'Storage_EnergyMaxInstalledCapacity.tab'), param=model.storENMaxInstalledCapRaw, format="table")
+    data.load(filename=str(tab_file_path / 'Storage_StorageInitialEnergyLevel.tab'), param=model.storOperationalInit, format="table")
+    data.load(filename=str(tab_file_path / 'Storage_PowerCapitalCost.tab'), param=model.storPWCapitalCost, format="table")
+    data.load(filename=str(tab_file_path / 'Storage_PowerFixedOMCost.tab'), param=model.storPWFixedOMCost, format="table")
+    data.load(filename=str(tab_file_path / 'Storage_InitialPowerCapacity.tab'), param=model.storPWInitCap, format="table")
+    data.load(filename=str(tab_file_path / 'Storage_PowerMaxBuiltCapacity.tab'), param=model.storPWMaxBuiltCap, format="table")
+    data.load(filename=str(tab_file_path / 'Storage_PowerMaxInstalledCapacity.tab'), param=model.storPWMaxInstalledCapRaw, format="table")
+    data.load(filename=str(tab_file_path / 'Storage_Lifetime.tab'), param=model.storageLifetime, format="table")
 
-    data.load(filename=tab_file_path + "/" + 'Node_NodeLostLoadCost.tab', param=model.nodeLostLoadCost, format="table")
-    data.load(filename=tab_file_path + "/" + 'Node_ElectricAnnualDemand.tab', param=model.sloadAnnualDemand, format="table") 
-    data.load(filename=tab_file_path + "/" + 'Node_HydroGenMaxAnnualProduction.tab', param=model.maxHydroNode, format="table") 
+    data.load(filename=str(tab_file_path / 'Node_NodeLostLoadCost.tab'), param=model.nodeLostLoadCost, format="table")
+    data.load(filename=str(tab_file_path / 'Node_ElectricAnnualDemand.tab'), param=model.sloadAnnualDemand, format="table") 
+    data.load(filename=str(tab_file_path / 'Node_HydroGenMaxAnnualProduction.tab'), param=model.maxHydroNode, format="table") 
     
     if scenariogeneration:
         scenariopath = tab_file_path
     else:
         scenariopath = scenario_data_path
 
-    data.load(filename=scenariopath + "/" + 'Stochastic_HydroGenMaxSeasonalProduction.tab', param=model.maxRegHydroGenRaw, format="table")
-    data.load(filename=scenariopath + "/" + 'Stochastic_StochasticAvailability.tab', param=model.genCapAvailStochRaw, format="table") 
-    data.load(filename=scenariopath + "/" + 'Stochastic_ElectricLoadRaw.tab', param=model.sloadRaw, format="table") 
+    data.load(filename=str(scenariopath / 'Stochastic_HydroGenMaxSeasonalProduction.tab'), param=model.maxRegHydroGenRaw, format="table")
+    data.load(filename=str(scenariopath / 'Stochastic_StochasticAvailability.tab'), param=model.genCapAvailStochRaw, format="table") 
+    data.load(filename=str(scenariopath / 'Stochastic_ElectricLoadRaw.tab'), param=model.sloadRaw, format="table") 
 
-    data.load(filename=tab_file_path + "/" + 'General_seasonScale.tab', param=model.seasScale, format="table") 
+    data.load(filename=str(tab_file_path / 'General_seasonScale.tab'), param=model.seasScale, format="table") 
 
     if EMISSION_CAP:
-        data.load(filename=tab_file_path + "/" + 'General_CO2Cap.tab', param=model.CO2cap, format="table")
+        data.load(filename=str(tab_file_path / 'General_CO2Cap.tab'), param=model.CO2cap, format="table")
     else:
-        data.load(filename=tab_file_path + "/" + 'General_CO2Price.tab', param=model.CO2price, format="table")
+        data.load(filename=str(tab_file_path / 'General_CO2Price.tab'), param=model.CO2price, format="table")
 
     print("Constructing parameter values...")
 
@@ -449,7 +446,7 @@ def run_empire(name, tab_file_path, result_file_path, scenariogeneration, scenar
     	#Build load profiles for all periods
 
         counter = 0
-        f = open(result_file_path + '/AdjustedNegativeLoad_' + name + '.txt', 'w')
+        f = open(result_file_path / f"AdjustedNegativeLoad_{name}.txt", 'w')
         for n in model.Node:
             for i in model.PeriodActive:
                 noderawdemand = 0
@@ -817,7 +814,7 @@ def run_empire(name, tab_file_path, result_file_path, scenariogeneration, scenar
     if solver == "GLPK":
         opt = SolverFactory("glpk", Verbose=True)
 
-    results = opt.solve(instance, tee=True, logfile=result_file_path + '\logfile_' + name + '.log')#, keepfiles=True, symbolic_solver_labels=True)
+    opt.solve(instance, tee=True, logfile=result_file_path / f"logfile_{name}.log")#, keepfiles=True, symbolic_solver_labels=True)
 
     if PICKLE_INSTANCE:
         start = time.time()
@@ -845,11 +842,11 @@ def run_empire(name, tab_file_path, result_file_path, scenariogeneration, scenar
         my_string = str(value(2015+int(i)*LeapYearsInvestment))+"-"+str(value(2020+int(i)*LeapYearsInvestment))
         inv_per.append(my_string)
 
-    f = open(result_file_path + "/" + 'results_objective.csv', 'w', newline='')
+    f = open(result_file_path / 'results_objective.csv', 'w', newline='')
     writer = csv.writer(f)
     writer.writerow(["Objective function value:" + str(value(instance.Obj))])
 
-    f = open(result_file_path + "/" + 'results_output_gen.csv', 'w', newline='')
+    f = open(result_file_path / 'results_output_gen.csv', 'w', newline='')
     writer = csv.writer(f)
     my_string = ["Node","GeneratorType","Period","genInvCap_MW","genInstalledCap_MW","genExpectedCapacityFactor","DiscountedInvestmentCost_Euro","genExpectedAnnualProduction_GWh"]
     writer.writerow(my_string)
@@ -862,7 +859,7 @@ def run_empire(name, tab_file_path, result_file_path, scenariogeneration, scenar
             writer.writerow(my_string)
     f.close()
 
-    f = open(result_file_path + "/" + 'results_output_stor.csv', 'w', newline='')
+    f = open(result_file_path / 'results_output_stor.csv', 'w', newline='')
     writer = csv.writer(f)
     writer.writerow(["Node","StorageType","Period","storPWInvCap_MW","storPWInstalledCap_MW","storENInvCap_MWh","storENInstalledCap_MWh","DiscountedInvestmentCostPWEN_EuroPerMWMWh","ExpectedAnnualDischargeVolume_GWh","ExpectedAnnualLossesChargeDischarge_GWh"])
     for (n,b) in instance.StoragesOfNode:
@@ -874,7 +871,7 @@ def run_empire(name, tab_file_path, result_file_path, scenariogeneration, scenar
             value(sum(instance.sceProbab[w]*instance.seasScale[s]*((1 - instance.storageDischargeEff[b])*instance.storDischarge[n,b,h,i,w] + (1 - instance.storageChargeEff[b])*instance.storCharge[n,b,h,i,w])/1000 for (s,h) in instance.HoursOfSeason for w in instance.Scenario))])
     f.close()
 
-    f = open(result_file_path + "/" + 'results_output_transmision.csv', 'w', newline='')
+    f = open(result_file_path / 'results_output_transmision.csv', 'w', newline='')
     writer = csv.writer(f)
     writer.writerow(["BetweenNode","AndNode","Period","transmisionInvCap_MW","transmissionInstalledCap_MW","DiscountedInvestmentCost_EuroPerMW","transmisionExpectedAnnualVolume_GWh","ExpectedAnnualLosses_GWh"])
     for (n1,n2) in instance.BidirectionalArc:
@@ -885,7 +882,7 @@ def run_empire(name, tab_file_path, result_file_path, scenariogeneration, scenar
             value(sum(instance.sceProbab[w]*instance.seasScale[s]*((1 - instance.lineEfficiency[n1,n2])*instance.transmisionOperational[n1,n2,h,i,w] + (1 - instance.lineEfficiency[n2,n1])*instance.transmisionOperational[n2,n1,h,i,w])/1000 for (s,h) in instance.HoursOfSeason for w in instance.Scenario))])
     f.close()
 
-    f = open(result_file_path + "/" + 'results_output_transmision_operational.csv', 'w', newline='')
+    f = open(result_file_path / 'results_output_transmision_operational.csv', 'w', newline='')
     writer = csv.writer(f)
     writer.writerow(["FromNode","ToNode","Period","Season","Scenario","Hour","TransmissionRecieved_MW","Losses_MW"])
     for (n1,n2) in instance.DirectionalLink:
@@ -897,7 +894,7 @@ def run_empire(name, tab_file_path, result_file_path, scenariogeneration, scenar
                     value((1 - instance.lineEfficiency[n1,n2])*instance.transmisionOperational[n1,n2,h,i,w])])
     f.close()
     
-    f = open(result_file_path + "/" + 'results_output_Operational.csv', 'w', newline='')
+    f = open(result_file_path / 'results_output_Operational.csv', 'w', newline='')
     writer = csv.writer(f)
     my_header = ["Node","Period","Scenario","Season","Hour","AllGen_MW","Load_MW","Net_load_MW"]
     for g in instance.Generator:
@@ -932,7 +929,7 @@ def run_empire(name, tab_file_path, result_file_path, scenariogeneration, scenar
                     writer.writerow(my_string)
     f.close()
 
-    f = open(result_file_path + "/" + 'results_output_curtailed_prod.csv', 'w', newline='')
+    f = open(result_file_path / 'results_output_curtailed_prod.csv', 'w', newline='')
     writer = csv.writer(f)
     writer.writerow(["Node","RESGeneratorType","Period","ExpectedAnnualCurtailment_GWh"])
     for t in instance.Technology:
@@ -944,7 +941,7 @@ def run_empire(name, tab_file_path, result_file_path, scenariogeneration, scenar
                         value(sum(instance.sceProbab[w]*instance.seasScale[s]*(instance.genCapAvail[n,g,h,w,i]*instance.genInstalledCap[n,g,i] - instance.genOperational[n,g,h,i,w])/1000 for w in instance.Scenario for (s,h) in instance.HoursOfSeason))])
     f.close()
 
-    f = open(result_file_path + "/" + 'results_output_EuropePlot.csv', 'w', newline='')
+    f = open(result_file_path / 'results_output_EuropePlot.csv', 'w', newline='')
     writer = csv.writer(f)
     writer.writerow(["Period","genInstalledCap_MW"])
     my_string=[""]
@@ -1006,7 +1003,7 @@ def run_empire(name, tab_file_path, result_file_path, scenariogeneration, scenar
         writer.writerow(my_string)
     f.close()
 
-    f = open(result_file_path + "/" + 'results_output_EuropeSummary.csv', 'w', newline='')
+    f = open(result_file_path / 'results_output_EuropeSummary.csv', 'w', newline='')
     writer = csv.writer(f)
     writer.writerow(["Period","Scenario","AnnualCO2emission_Ton","CO2Price_EuroPerTon","CO2Cap_Ton","AnnualGeneration_GWh","AvgCO2factor_TonPerMWh","AvgELPrice_EuroPerMWh","TotAnnualCurtailedRES_GWh","TotAnnualLossesChargeDischarge_GWh","AnnualLossesTransmission_GWh"])
     for i in instance.PeriodActive:
@@ -1182,6 +1179,6 @@ def run_empire(name, tab_file_path, result_file_path, scenariogeneration, scenar
         
         f = f.groupby(['model','scenario','region','variable','unit','subannual']).sum().reset_index() #NB! DOES NOT WORK FOR UNIT COSTS; SHOULD BE FIXED
         
-        if not os.path.exists(result_file_path + "/" + 'IAMC'):
-            os.makedirs(result_file_path + "/" + 'IAMC')
-        f.to_csv(result_file_path + "/" + 'IAMC/empire_iamc.csv', index=None)
+        if not os.path.exists(result_file_path / 'IAMC'):
+            os.makedirs(result_file_path / 'IAMC')
+        f.to_csv(result_file_path / 'IAMC/empire_iamc.csv', index=None)

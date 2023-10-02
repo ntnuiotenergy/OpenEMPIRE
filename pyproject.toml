@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "OpenEmpire"
+version = "0.1.1"
+description = "Stochastic linear program for investments in the European power system."
+authors = ["Stian Backe <stian.backe@ntnu.no>"]
+maintainers = ["Stian Backe <stian.backe@ntnu.no>"]
+license = "LICENSE"
+readme = "README.md"
+repository = "https://github.com/ntnuiotenergy/OpenEMPIRE"
+
+[tool.black]
+line-lenght = 88
+

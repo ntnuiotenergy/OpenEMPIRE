@@ -1,16 +1,17 @@
 #!/usr/bin/env python
 from reader import generate_tab_files
 from Empire import run_empire
-from scenario_random import generate_random_scenario
+from Empire.scenario_random import generate_random_scenario
 from datetime import datetime
 from yaml import safe_load
+from pathlib import Path
 
 __author__ = "Stian Backe"
 __license__ = "MIT"
 __maintainer__ = "Stian Backe"
 __email__ = "stian.backe@ntnu.no"
 
-UserRunTimeConfig = safe_load(open("config_run.yaml"))
+UserRunTimeConfig = safe_load(open("config/run.yaml"))
 
 USE_TEMP_DIR = UserRunTimeConfig["USE_TEMP_DIR"]
 temp_dir = UserRunTimeConfig["temp_dir"]
@@ -54,14 +55,16 @@ name = version + '_reg' + str(lengthRegSeason) + \
     '_peak' + str(lengthPeakSeason) + \
     '_sce' + str(NoOfScenarios)
 if scenariogeneration and not fix_sample:
-        name = name + "_randomSGR"
+    name = name + "_randomSGR"
 else:
-	name = name + "_noSGR"
+    name = name + "_noSGR"
 name = name + str(datetime.now().strftime("_%Y%m%d%H%M"))
-workbook_path = 'Data handler/' + version
-tab_file_path = 'Data handler/' + version + '/Tab_Files_' + name
-scenario_data_path = 'Data handler/' + version + '/ScenarioData'
-result_file_path = 'Results/' + name
+
+data_handler_path = Path.cwd() / "Data handler"
+workbook_path = data_handler_path / version
+tab_file_path = data_handler_path / version / f'Tab_Files_{name}'
+scenario_data_path = data_handler_path / version / 'ScenarioData'
+result_file_path = Path.cwd() / 'Results' / name
 FirstHoursOfRegSeason = [lengthRegSeason*i + 1 for i in range(NoOfRegSeason)]
 FirstHoursOfPeakSeason = [lengthRegSeason*NoOfRegSeason + lengthPeakSeason*i + 1 for i in range(NoOfPeakSeason)]
 Period = [i + 1 for i in range(int((Horizon-2020)/LeapYearsInvestment))]
@@ -105,7 +108,7 @@ print('ID: ' + name)
 print('++++++++')
 
 if scenariogeneration:
-    generate_random_scenario(filepath = scenario_data_path,
+    generate_random_scenario(file_path = scenario_data_path,
                              tab_file_path = tab_file_path,
                              scenarios = NoOfScenarios,
                              seasons = regular_seasons,
@@ -117,7 +120,7 @@ if scenariogeneration:
 			                 fix_sample = fix_sample,
                              north_sea = north_sea)
 
-generate_tab_files(filepath = workbook_path, tab_file_path = tab_file_path)
+generate_tab_files(file_path = workbook_path, tab_file_path = tab_file_path)
 
 run_empire(name = name, 
            tab_file_path = tab_file_path,

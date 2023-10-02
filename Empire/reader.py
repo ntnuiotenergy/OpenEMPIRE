@@ -1,14 +1,11 @@
-import pandas as pd
 import os
-__author__ = "Stian Backe"
-__license__ = "MIT"
-__maintainer__ = "Stian Backe"
-__email__ = "stian.backe@ntnu.no"
+from pathlib import Path
+
+import pandas as pd
 
 
-def read_file(excelfile, sheet, columns, tab_file_path, filename, skipheaders=0):
-    #input_sheet = pd.read_excel(filepath + "/" +excel, sheet, skiprows=2)
-
+def read_file(excelfile, sheet, columns, tab_file_path: Path, filename, skipheaders=0):
+    
     input_sheet = excelfile[sheet]
     data_table = input_sheet.iloc[skipheaders:, columns]
     data_table.columns = pd.Series(data_table.columns).str.replace(' ', '_')
@@ -20,12 +17,11 @@ def read_file(excelfile, sheet, columns, tab_file_path, filename, skipheaders=0)
 
     if not os.path.exists(tab_file_path):
         os.makedirs(tab_file_path)
-    #excel = excel.replace(".xlsx", "_")
-    #excel = excel.replace("Excel/", "")
-    save_csv_frame.to_csv(tab_file_path + "/" + filename + "_" + sheet + '.tab', header=True, index=None, sep='\t', mode='w')
-    #save_csv_frame.to_csv(excel.replace(".xlsx", '_') + sheet + '.tab', header=True, index=None, sep='\t', mode='w')
+    
+    save_csv_frame.to_csv(tab_file_path / f"{filename}_{sheet}.tab", header=True, index=None, sep='\t', mode='w')
+    
 
-def read_sets(excelfile, sheet, tab_file_path, filename, skipheaders=0):
+def read_sets(excelfile, sheet, tab_file_path: Path, filename, skipheaders=0):
     
     input_sheet = excelfile[sheet]
 
@@ -37,12 +33,10 @@ def read_sets(excelfile, sheet, tab_file_path, filename, skipheaders=0):
         save_csv_frame.replace('\s', '', regex=True, inplace=True)
         if not os.path.exists(tab_file_path):
             os.makedirs(tab_file_path)
-        #excel = excel.replace(".xlsx", "_")
-        #excel = excel.replace("Excel/", "")
-        save_csv_frame.to_csv(tab_file_path + "/" + filename + "_" + column + '.tab', header=True, index=None, sep='\t', mode='w')
-        #save_csv_frame.to_csv(excel.replace(".xlsx", '_') + column + '.tab', header=True, index=None, sep='\t', mode='w')
+        save_csv_frame.to_csv(tab_file_path / f"{filename}_{column}.tab", header=True, index=None, sep='\t', mode='w')
+        
 
-def generate_tab_files(filepath, tab_file_path):
+def generate_tab_files(file_path, tab_file_path):
     # Function description: read column value from excel sheet and save as .tab file "sheet.tab"
     # Input: excel name, sheet name, the number of columns to be read
     # Output:  .tab file
@@ -54,7 +48,7 @@ def generate_tab_files(filepath, tab_file_path):
     if not os.path.exists(tab_file_path):
         os.makedirs(tab_file_path)
 
-    SetsExcelData = pd.read_excel(filepath + "/Sets.xlsx", sheet_name=None)
+    SetsExcelData = pd.read_excel(file_path / "Sets.xlsx", sheet_name=None)
     read_sets(SetsExcelData, 'Nodes', tab_file_path, "Sets")
     read_sets(SetsExcelData, 'OffshoreNodes', tab_file_path, "Sets")
     read_sets(SetsExcelData, 'Horizon', tab_file_path, "Sets")
@@ -69,7 +63,7 @@ def generate_tab_files(filepath, tab_file_path):
     read_file(SetsExcelData, 'LineTypeOfDirectionalLines', [0, 1, 2], tab_file_path, "Sets", skipheaders=2)
 
     # Reading GeneratorPeriod
-    GeneratorExcelData = pd.read_excel(filepath + "/Generator.xlsx", sheet_name=None)
+    GeneratorExcelData = pd.read_excel(file_path / "Generator.xlsx", sheet_name=None)
     read_file(GeneratorExcelData, 'FixedOMCosts', [0, 1, 2], tab_file_path, "Generator", skipheaders=2)
     read_file(GeneratorExcelData, 'CapitalCosts', [0, 1, 2], tab_file_path, "Generator", skipheaders=2)
     read_file(GeneratorExcelData, 'VariableOMCosts', [0, 1], tab_file_path, "Generator", skipheaders=2)
@@ -87,7 +81,7 @@ def generate_tab_files(filepath, tab_file_path):
     read_file(GeneratorExcelData, 'Lifetime', [0, 1], tab_file_path, "Generator", skipheaders=2)
 
     #Reading InterConnector
-    TransmissionExcelData = pd.read_excel(filepath + "/Transmission.xlsx", sheet_name=None)
+    TransmissionExcelData = pd.read_excel(file_path / "Transmission.xlsx", sheet_name=None)
     read_file(TransmissionExcelData, 'lineEfficiency', [0, 1, 2], tab_file_path,  "Transmission", skipheaders=2)
     read_file(TransmissionExcelData, 'MaxInstallCapacityRaw', [0, 1, 2, 3], tab_file_path,  "Transmission", skipheaders=2)
     read_file(TransmissionExcelData, 'MaxBuiltCapacity', [0, 1, 2, 3], tab_file_path,  "Transmission", skipheaders=2)
@@ -98,19 +92,19 @@ def generate_tab_files(filepath, tab_file_path):
     read_file(TransmissionExcelData, 'Lifetime', [0, 1, 2], tab_file_path,  "Transmission", skipheaders=2)
 
     #Reading Node
-    NodeExcelData = pd.read_excel(filepath + "/Node.xlsx", sheet_name=None)
+    NodeExcelData = pd.read_excel(file_path / "Node.xlsx", sheet_name=None)
     read_file(NodeExcelData , 'ElectricAnnualDemand', [0, 1, 2],tab_file_path,  "Node", skipheaders=2)
     read_file(NodeExcelData , 'NodeLostLoadCost', [0, 1, 2],tab_file_path,  "Node", skipheaders=2)
     read_file(NodeExcelData , 'HydroGenMaxAnnualProduction', [0, 1],tab_file_path,  "Node", skipheaders=2)
 
     #Reading Season
-    GeneralExcelData = pd.read_excel(filepath + "/General.xlsx", sheet_name=None)
+    GeneralExcelData = pd.read_excel(file_path / "General.xlsx", sheet_name=None)
     read_file(GeneralExcelData, 'seasonScale', [0, 1], tab_file_path, "General", skipheaders=2)
     read_file(GeneralExcelData, 'CO2Cap', [0, 1], tab_file_path, "General", skipheaders=2)
     read_file(GeneralExcelData, 'CO2Price', [0, 1], tab_file_path, "General", skipheaders=2)
     
     #Reading Storage
-    StorageExcelData = pd.read_excel(filepath + "/Storage.xlsx", sheet_name=None)
+    StorageExcelData = pd.read_excel(file_path / "Storage.xlsx", sheet_name=None)
     read_file(StorageExcelData, 'StorageBleedEfficiency', [0, 1], tab_file_path, "Storage", skipheaders=2)
     read_file(StorageExcelData, 'StorageChargeEff', [0, 1], tab_file_path, "Storage", skipheaders=2)
     read_file(StorageExcelData, 'StorageDischargeEff', [0, 1], tab_file_path, "Storage", skipheaders=2)
