@@ -98,6 +98,7 @@ class SetsClient(BaseClient):
 class GeneratorClient(BaseClient):
     DEFAULT_SKIPROWS = 2
     DEFAULT_STARTROW = 2
+    DEFAULT_USECOLS = [0, 1, 2]
 
     def __init__(self, file: Path, engine: str = "openpyxl"):
         self.file = file
@@ -118,7 +119,7 @@ class GeneratorClient(BaseClient):
         self._write_to_sheet(df, self.file, "FixedOMCosts")
 
     def get_variable_om_costs(self):
-        return self._read_from_sheet(self.file, "VariableOMCosts")
+        return self._read_from_sheet(self.file, "VariableOMCosts", usecols=[0, 1])
 
     def set_variable_om_costs(self, df: pd.DataFrame):
         self._write_to_sheet(df, self.file, "VariableOMCosts")
@@ -128,6 +129,12 @@ class GeneratorClient(BaseClient):
 
     def set_fuel_costs(self, df: pd.DataFrame):
         self._write_to_sheet(df, self.file, "FuelCosts")
+
+    def get_ccs_cost_ts_variable(self):
+        return self._read_from_sheet(self.file, "CCSCostTSVariable", usecols=[0, 1])
+
+    def set_ccs_cost_ts_variable(self, df: pd.DataFrame):
+        self._write_to_sheet(df, self.file, "CCSCostTSVariable")
 
     def get_efficiency(self):
         return self._read_from_sheet(self.file, "Efficiency")
@@ -147,24 +154,55 @@ class GeneratorClient(BaseClient):
     def set_scale_factor_initial_capacity(self, df: pd.DataFrame):
         self._write_to_sheet(df, self.file, "ScaleFactorInitialCap")
 
+    def get_initial_capacity(self):
+        return self._read_from_sheet(self.file, "InitialCapacity", usecols=[0, 1, 2, 3])
+
+    def set_initial_capacity(self, df: pd.DataFrame):
+        self._write_to_sheet(df, self.file, "InitialCapacity")
+
     def get_max_built_capacity(self):
-        return self._read_from_sheet(self.file, "MaxBuiltCapacity")
+        return self._read_from_sheet(
+            self.file, "MaxBuiltCapacity", usecols=[0, 1, 2, 3]
+        )
 
     def set_max_built_capacity(self, df: pd.DataFrame):
         self._write_to_sheet(df, self.file, "MaxBuiltCapacity")
 
     def get_max_installed_capacity(self):
-        return self._read_from_sheet(
-            self.file, "MaxInstalledCapacity", usecols=[0, 1, 2]
-        )
+        return self._read_from_sheet(self.file, "MaxInstalledCapacity")
 
     def set_max_installed_capacity(self, df: pd.DataFrame):
         self._write_to_sheet(df, self.file, "MaxInstalledCapacity")
+
+    def get_ramp_rate(self):
+        return self._read_from_sheet(self.file, "RampRate", usecols=[0,1])
+
+    def set_ramp_rate(self, df: pd.DataFrame):
+        self._write_to_sheet(df, self.file, "RampRate")
+
+    def get_generator_type_availability(self):
+        return self._read_from_sheet(self.file, "GeneratorTypeAvailability", usecols=[0,1])
+
+    def set_generator_type_availability(self, df: pd.DataFrame):
+        self._write_to_sheet(df, self.file, "GeneratorTypeAvailability")
+
+    def get_co2_content(self):
+        return self._read_from_sheet(self.file, "CO2Content", usecols=[0,1])
+
+    def set_co2_content(self, df: pd.DataFrame):
+        self._write_to_sheet(df, self.file, "CO2Content")
+
+    def get_lifetime(self):
+        return self._read_from_sheet(self.file, "Lifetime", usecols=[0,1])
+
+    def set_lifetime(self, df: pd.DataFrame):
+        self._write_to_sheet(df, self.file, "Lifetime")
 
 
 class NodeClient(BaseClient):
     DEFAULT_STARTROW = 2
     DEFAULT_SKIPROWS = 2
+    DEFAULT_USECOLS = [0, 1, 2]
 
     def __init__(self, file: Path, engine: str = "openpyxl"):
         self.file = file
@@ -173,15 +211,13 @@ class NodeClient(BaseClient):
         self.validate()
 
     def get_electric_annual_demand(self):
-        return self._read_from_sheet(
-            self.file, "ElectricAnnualDemand", usecols=[0, 1, 2]
-        )
+        return self._read_from_sheet(self.file, "ElectricAnnualDemand")
 
     def set_electric_annual_demand(self, df: pd.DataFrame):
         self._write_to_sheet(df, self.file, "ElectricAnnualDemand")
 
     def get_node_lost_load_cost(self):
-        return self._read_from_sheet(self.file, "NodeLostNodeCost", usecols=[0, 1, 2])
+        return self._read_from_sheet(self.file, "NodeLostNodeCost")
 
     def set_node_lost_load_cost(self, df: pd.DataFrame):
         self._write_to_sheet(df, self.file, "NodeLostNodeCost")
@@ -198,6 +234,7 @@ class NodeClient(BaseClient):
 class TransmissionClient(BaseClient):
     DEFAULT_SKIPROWS = 2
     DEFAULT_STARTROW = 2
+    DEFAULT_USECOLS = [0, 1, 2]
 
     def __init__(self, file: Path, engine: str = "openpyxl"):
         self.file = file
@@ -206,7 +243,7 @@ class TransmissionClient(BaseClient):
         self.validate()
 
     def get_line_efficiency(self):
-        return self._read_from_sheet(self.file, "lineEfficiency", usecols=[0, 1, 2])
+        return self._read_from_sheet(self.file, "lineEfficiency")
 
     def set_line_efficiency(self, df: pd.DataFrame):
         self._write_to_sheet(df, self.file, "lineEfficiency")
@@ -220,19 +257,19 @@ class TransmissionClient(BaseClient):
         self._write_to_sheet(df, self.file, "MaxBuiltCapacity")
 
     def get_length(self):
-        return self._read_from_sheet(self.file, "Length", usecols=[0, 1, 2])
+        return self._read_from_sheet(self.file, "Length")
 
     def set_length(self, df: pd.DataFrame):
         self._write_to_sheet(df, self.file, "Length")
 
     def get_type_capital_cost(self):
-        return self._read_from_sheet(self.file, "TypeCapitalCost", usecols=[0, 1, 2])
+        return self._read_from_sheet(self.file, "TypeCapitalCost")
 
     def set_type_capital_cost(self, df: pd.DataFrame):
         self._write_to_sheet(df, self.file, "TypeCapitalCost")
 
     def get_type_fixed_om_cost(self):
-        return self._read_from_sheet(self.file, "TypeFixedOMCost", usecols=[0, 1, 2])
+        return self._read_from_sheet(self.file, "TypeFixedOMCost")
 
     def set_type_fixed_om_cost(self, df: pd.DataFrame):
         self._write_to_sheet(df, self.file, "TypeFixedOMCost")
@@ -252,7 +289,7 @@ class TransmissionClient(BaseClient):
         self._write_to_sheet(df, self.file, "MaxInstallCapacityRaw")
 
     def get_lifetime(self):
-        return self._read_from_sheet(self.file, "Lifetime", usecols=[0, 1, 2])
+        return self._read_from_sheet(self.file, "Lifetime")
 
     def set_lifetime(self, df: pd.DataFrame):
         self._write_to_sheet(df, self.file, "Lifetime")
@@ -261,6 +298,7 @@ class TransmissionClient(BaseClient):
 class StorageClient(BaseClient):
     DEFAULT_STARTROW = 2
     DEFAULT_SKIPROWS = 2
+    DEFAULT_USECOLS = [0, 1]
 
     def __init__(self, file, engine: str = "openpyxl"):
         self.file = file
@@ -288,7 +326,9 @@ class StorageClient(BaseClient):
         )
 
     def set_power_max_built_capacity(self, df: pd.DataFrame):
-        self._write_to_sheet(df, self.file, "PowerMaxBuiltCapacity")
+        self._write_to_sheet(
+            df, self.file, "PowerMaxBuiltCapacity", usecols=[0, 1, 2, 3]
+        )
 
     def getEnergyCapitalCost(self):
         return self._read_from_sheet(self.file, "EnergyCapitalCost", usecols=[0, 1, 2])
@@ -329,36 +369,64 @@ class StorageClient(BaseClient):
         self._write_to_sheet(df, self.file, "PowerMaxInstalledCapacity")
 
     def get_storage_initial_energy_level(self):
-        return self._read_from_sheet(
-            self.file, "StorageInitialEnergyLevel", usecols=[0, 1]
-        )
+        return self._read_from_sheet(self.file, "StorageInitialEnergyLevel")
 
     def set_storage_initial_energy_level(self, df: pd.DataFrame):
         self._write_to_sheet(df, self.file, "StorageInitialEnergyLevel")
 
     def get_storage_charge_efficiency(self):
-        return self._read_from_sheet(self.file, "StorageChargeEff", usecols=[0, 1])
+        return self._read_from_sheet(self.file, "StorageChargeEff")
 
     def set_storage_charge_efficiency(self, df: pd.DataFrame):
         self._write_to_sheet(df, self.file, "StorageChargeEff")
 
     def get_storage_discharge_efficiency(self):
-        return self._read_from_sheet(self.file, "StorageDischargeEff", usecols=[0, 1])
+        return self._read_from_sheet(self.file, "StorageDischargeEff")
 
     def set_storage_discharge_efficiency(self, df: pd.DataFrame):
         self._write_to_sheet(df, self.file, "StorageDischargeEff")
 
     def get_storage_power_to_energt(self):
-        return self._read_from_sheet(self.file, "StoragePowToEnergy", usecols=[0, 1])
+        return self._read_from_sheet(self.file, "StoragePowToEnergy")
 
     def set_storage_power_to_energt(self, df: pd.DataFrame):
         self._write_to_sheet(df, self.file, "StoragePowToEnergy")
 
     def get_lifetime(self):
-        return self._read_from_sheet(self.file, "Lifetime", usecols=[0, 1])
+        return self._read_from_sheet(self.file, "Lifetime")
 
     def set_lifetime(self, df: pd.DataFrame):
         self._write_to_sheet(df, self.file, "Lifetime")
+
+
+class GenralClient(BaseClient):
+    DEFAULT_STARTROW = 2
+    DEFAULT_SKIPROWS = 2
+    DEFAULT_USECOLS = [0, 1]
+
+    def __init__(self, file, engine: str = "openpyxl"):
+        self.file = file
+        self.engine = engine
+
+        self.validate()
+
+    def get_season_scale(self):
+        return self._read_from_sheet(self.file, "seasonScale")
+
+    def set_season_scale(self, df: pd.DataFrame):
+        self._write_to_sheet(df, self.file, "seasonScale")
+
+    def get_co2_cap(self):
+        return self._read_from_sheet(self.file, "CO2Cap")
+
+    def set_co2_cap(self, df: pd.DataFrame):
+        self._write_to_sheet(df, self.file, "CO2Cap")
+
+    def get_co2_price(self):
+        return self._read_from_sheet(self.file, "CO2Price")
+
+    def set_co2_price(self, df: pd.DataFrame):
+        self._write_to_sheet(df, self.file, "CO2Price")
 
 
 class EmpireInputClient:

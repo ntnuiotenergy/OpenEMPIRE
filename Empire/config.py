@@ -1,8 +1,7 @@
 from pathlib import Path
 from typing import Dict
-from datetime import datetime
+
 import yaml
-from .utils import get_run_name
 
 
 def read_config_file(path: Path) -> Dict:
@@ -14,23 +13,23 @@ def read_config_file(path: Path) -> Dict:
 
 class EmpireConfiguration:
     def __init__(
-            self, 
-            use_temporary_directory: bool,
-            temporary_directory: str | Path,
-            forecast_horizon_year: int,
-            number_of_scenarios: int,
-            length_of_regular_season: int,
-            discount_rate: float,
-            wacc: float,
-            optimization_solver: str,
-            use_scenario_generation: bool,
-            use_fixed_sample: bool,
-            use_emission_cap: bool,
-            print_in_iamc_format: bool,
-            write_in_lp_format: bool,
-            serialize_instance: bool,
-            north_sea: bool,
-        ):
+        self,
+        use_temporary_directory: bool,
+        temporary_directory: str | Path,
+        forecast_horizon_year: int,
+        number_of_scenarios: int,
+        length_of_regular_season: int,
+        discount_rate: float,
+        wacc: float,
+        optimization_solver: str,
+        use_scenario_generation: bool,
+        use_fixed_sample: bool,
+        use_emission_cap: bool,
+        print_in_iamc_format: bool,
+        write_in_lp_format: bool,
+        serialize_instance: bool,
+        north_sea: bool,
+    ):
         """
         Class containing configurations for running Empire simulations.
 
@@ -66,7 +65,7 @@ class EmpireConfiguration:
         self.write_in_lp_format = write_in_lp_format
         self.serialize_instance = serialize_instance
         self.north_sea = north_sea
-        
+
         # Fixed configuration
         self.n_reg_season = 4
         self.regular_seasons = ["winter", "spring", "summer", "fall"]
@@ -74,7 +73,7 @@ class EmpireConfiguration:
         self.len_peak_season = 24
         self.leap_years_investment = 5
         self.time_format = "%d/%m/%Y %H:%M"
-        
+
         # Validate the configuration
         self.validate()
 
@@ -93,33 +92,33 @@ class EmpireConfiguration:
         :returns: An instance of EmpireConfiguration.
         """
         return cls(**config)
-    
+
 
 class EmpireRunConfiguration:
     def __init__(
-            self,
-            empire_config: EmpireConfiguration,
-            dataset_path: Path | str,
-            tab_path: Path | str,
-            scenario_data_path: Path | str,
-            results_path: Path | str,
-        ):
+        self,
+        run_name: str,
+        dataset_path: Path | str,
+        tab_path: Path | str,
+        scenario_data_path: Path | str,
+        results_path: Path | str,
+    ):
         """
         Class containing configurations for running Empire simulations.
 
+        :param run_name: Name of the run
         :param dataset_path: Folder containing the dataset.
         :param tab_path: Folder containing the .tab files.
         :param scenario_data_path: Folder containing the scenario data.
         :param results_path: Folder where the results should reside.
         """
-        
-        self.name = get_run_name(empire_config, version=dataset_path.name)
 
+        self.run_name = run_name
         self.dataset_path = dataset_path
         self.tab_file_path = tab_path
         self.scenario_data_path = scenario_data_path
         self.results_path = results_path
-        
+
         # Validate the configuration
         self.validate()
 

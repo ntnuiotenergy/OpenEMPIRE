@@ -12,7 +12,8 @@ sheets = {
         'DirectionalLines',
         'LineTypeOfDirectionalLines',
         'GeneratorsOfNode',
-        'GeneratorsOfTechnology'
+        'GeneratorsOfTechnology',
+        'Coords'
     ],
     "Generator": [
         'CapitalCosts',
