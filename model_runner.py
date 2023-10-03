@@ -133,10 +133,11 @@ def run_empire_model(
 
 
 if __name__ == "__main__":
-
+    from Empire.utils import copy_dataset, get_run_name, create_if_not_exist
+    
+    ## Read config ##
     version = "test"
 
-    ## Read config ##
     if version == "test":
         config = read_config_file(Path("config/testmyrun.yaml"))
     else:
@@ -144,10 +145,31 @@ if __name__ == "__main__":
 
     empire_config = EmpireConfiguration.from_dict(config=config)
 
+    # Original dataset
+    base_dataset = Path.cwd() / f"Data handler/{version}"
+    
+    # Input folders
+    run_name = get_run_name(empire_config=empire_config,version=version)
+    run_path = Path.cwd() / f"Results/{run_name}"
+    input_path = create_if_not_exist(run_path / "Input")
+    xlsx_path = create_if_not_exist(input_path / "Xlsx")
+    tab_path = create_if_not_exist(input_path / "Tab")
+    scenario_data_path = base_dataset / "ScenarioData"
+
+    # Copy base dataset to input folder
+    copy_dataset(base_dataset, xlsx_path)
+
+    # Output folders
+    results_path = create_if_not_exist(run_path / "Output")
+
     run_config = EmpireRunConfiguration(
         empire_config=empire_config,
-        dataset_path=Path.cwd() / f"Data handler/{version}",
-        results_path=Path.cwd() / "Results",
+        dataset_path = xlsx_path,
+        tab_path=tab_path,
+        scenario_data_path = scenario_data_path,
+        results_path = results_path,
     )
 
     run_empire_model(empire_config=empire_config, run_config=run_config)
+
+

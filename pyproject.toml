@@ -11,10 +11,10 @@ maintainers = ["Stian Backe <stian.backe@ntnu.no>"]
 readme = "README.md"
 
 [tool.black]
-line-lenght = 88
+line-lenght = 120
 
 [tool.ruff]
-line-length = 88
+line-length = 120
 
 [tool.poetry.dependencies]
 python = ">=3.7"

@@ -31,7 +31,7 @@ sheets = {
         'CO2Content',
         'Lifetime'
     ],
-    "Nodes": [
+    "Node": [
         'ElectricAnnualDemand',
         'NodeLostLoadCost',
         'HydroGenMaxAnnualProduction'
@@ -46,7 +46,7 @@ sheets = {
         'MaxInstallCapacityRaw',
         'Lifetime'
     ],
-    "Storages": [
+    "Storage": [
         'InitialPowerCapacity',
         'PowerCapitalCost',
         'PowerFixedOMCost',

@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import Dict
 from datetime import datetime
 import yaml
+from .utils import get_run_name
 
 
 def read_config_file(path: Path) -> Dict:
@@ -99,30 +100,25 @@ class EmpireRunConfiguration:
             self,
             empire_config: EmpireConfiguration,
             dataset_path: Path | str,
-            results_path: Path | str
+            tab_path: Path | str,
+            scenario_data_path: Path | str,
+            results_path: Path | str,
         ):
         """
         Class containing configurations for running Empire simulations.
 
         :param dataset_path: Folder containing the dataset.
+        :param tab_path: Folder containing the .tab files.
+        :param scenario_data_path: Folder containing the scenario data.
         :param results_path: Folder where the results should reside.
         """
         
-        name = (
-            f"{dataset_path.name}_reg{empire_config.length_of_regular_season}" 
-            +f"_peak{empire_config.len_peak_season}_sce{empire_config.number_of_scenarios}"
-        )
-        
-        if empire_config.use_scenario_generation and not empire_config.use_fixed_sample:
-            name = name + "_randomSGR"
-        else:
-            name = name + "_noSGR"
-        self.name = name + str(datetime.now().strftime("_%Y%m%d%H%M"))
+        self.name = get_run_name(empire_config, version=dataset_path.name)
 
         self.dataset_path = dataset_path
-        self.tab_file_path = dataset_path / f"Tab_Files_{name}"
-        self.scenario_data_path = dataset_path / "ScenarioData"
-        self.results_path = results_path / self.name
+        self.tab_file_path = tab_path
+        self.scenario_data_path = scenario_data_path
+        self.results_path = results_path
         
         # Validate the configuration
         self.validate()

@@ -1,12 +1,14 @@
 from __future__ import division
-from pyomo.environ import *
-from pyomo.common.tempfiles import TempfileManager
+
 import csv
-import sys
-import cloudpickle
-import time
 import os
+import sys
+import time
 from pathlib import Path
+
+import cloudpickle
+from pyomo.common.tempfiles import TempfileManager
+from pyomo.environ import *
 
 
 def run_empire(name, tab_file_path: Path, result_file_path: Path, scenariogeneration, scenario_data_path,
