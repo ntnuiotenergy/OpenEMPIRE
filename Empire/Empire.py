@@ -1,6 +1,7 @@
 from __future__ import division
 
 import csv
+import logging
 import os
 import sys
 import time
@@ -9,6 +10,8 @@ from pathlib import Path
 import cloudpickle
 from pyomo.common.tempfiles import TempfileManager
 from pyomo.environ import *
+
+logger = logging.getLogger(__name__)
 
 
 def run_empire(name, tab_file_path: Path, result_file_path: Path, scenariogeneration, scenario_data_path,
@@ -30,13 +33,13 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenariogenera
     ###########
 
     if solver == "CPLEX":
-        print("Solver: CPLEX")
+        logger.info("Solver: CPLEX")
     elif solver == "Xpress":
-        print("Solver: Xpress")
+        logger.info("Solver: Xpress")
     elif solver == "Gurobi":
-        print("Solver: Gurobi")
+        logger.info("Solver: Gurobi")
     elif solver == "GLPK":
-        print("Solver: GLPK")
+        logger.info("Solver: GLPK")
     else:
         sys.exit("ERROR! Invalid solver! Options: CPLEX, Xpress, Gurobi")
 
@@ -45,15 +48,15 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenariogenera
     ##########
 
     if WRITE_LP:
-        print("Will write LP-file...")
+        logger.info("Will write LP-file...")
 
     if PICKLE_INSTANCE:
-        print("Will pickle instance...")
+        logger.info("Will pickle instance...")
 
     if EMISSION_CAP:
-        print("Absolute emission cap in each scenario...")
+        logger.info("Absolute emission cap in each scenario...")
     else:
-        print("No absolute emission cap...")
+        logger.info("No absolute emission cap...")
     
     ########
     ##SETS##
@@ -61,7 +64,7 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenariogenera
 
     #Define the sets
 
-    print("Declaring sets...")
+    logger.info("Declaring sets...")
 
     #Supply technology sets
     model.Generator = Set(ordered=True) #g
@@ -96,7 +99,7 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenariogenera
     model.FirstHoursOfRegSeason = Set(within=model.Operationalhour, ordered=True, initialize=FirstHoursOfRegSeason)
     model.FirstHoursOfPeakSeason = Set(within=model.Operationalhour, ordered=True, initialize=FirstHoursOfPeakSeason)
 
-    print("Reading sets...")
+    logger.info("Reading sets...")
 
     #Load the data
 
@@ -118,7 +121,7 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenariogenera
     data.load(filename=str(tab_file_path / 'Sets_GeneratorsOfNode.tab'),format="set", set=model.GeneratorsOfNode)
     data.load(filename=str(tab_file_path / 'Sets_StorageOfNodes.tab'),format="set", set=model.StoragesOfNode)
 
-    print("Constructing sub sets...")
+    logger.info("Constructing sub sets...")
 
     #Build arc subsets
 
@@ -144,7 +147,7 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenariogenera
 
     #Define the parameters
 
-    print("Declaring parameters...")
+    logger.info("Declaring parameters...")
 
     #Scaling
 
@@ -235,7 +238,7 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenariogenera
 
     #Load the parameters
 
-    print("Reading parameters...")
+    logger.info("Reading parameters...")
 
     data.load(filename=str(tab_file_path / 'Generator_CapitalCosts.tab'), param=model.genCapitalCost, format="table")
     data.load(filename=str(tab_file_path / 'Generator_FixedOMCosts.tab'), param=model.genFixedOMCost, format="table")
@@ -299,7 +302,7 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenariogenera
     else:
         data.load(filename=str(tab_file_path / 'General_CO2Price.tab'), param=model.CO2price, format="table")
 
-    print("Constructing parameter values...")
+    logger.info("Constructing parameter values...")
 
     def prepSceProbab_rule(model):
     	#Build an equiprobable probability distribution for scenarios
@@ -473,13 +476,13 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenariogenera
 
     model.build_sload = BuildAction(rule=prepSload_rule)
 
-    print("Sets and parameters declared and read...")
+    logger.info("Sets and parameters declared and read...")
 
     #############
     ##VARIABLES##
     #############
 
-    print("Declaring variables...")
+    logger.info("Declaring variables...")
 
     model.genInvCap = Var(model.GeneratorsOfNode, model.PeriodActive, domain=NonNegativeReals)
     model.transmisionInvCap = Var(model.BidirectionalArc, model.PeriodActive, domain=NonNegativeReals)
@@ -745,9 +748,9 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenariogenera
     ##RUN##
     #######
 
-    print("Objective and constraints read...")
+    logger.info("Objective and constraints read...")
 
-    print("Building instance...")
+    logger.info("Building instance...")
 
     start = time.time()
 
@@ -755,47 +758,46 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenariogenera
     instance.dual = Suffix(direction=Suffix.IMPORT) #Make sure the dual value is collected into solver results (if solver supplies dual information)
 
     end = time.time()
-    print("Building instance took [sec]:")
-    print(end - start)
+    logger.info("Building instance took [sec]: %d", end - start)
 
     #import pdb; pdb.set_trace()
     #instance.CO2price.pprint()
 
-    print("----------------------Problem Statistics---------------------")
-    print("Nodes: "+ str(len(instance.Node)))
-    print("Lines: "+str(len(instance.BidirectionalArc)))
-    print("")
-    print("GeneratorTypes: "+str(len(instance.Generator)))
-    print("TotalGenerators: "+str(len(instance.GeneratorsOfNode)))
-    print("StorageTypes: "+str(len(instance.Storage)))
-    print("TotalStorages: "+str(len(instance.StoragesOfNode)))
-    print("")
-    print("InvestmentUntil: "+str(value(2020+int(len(instance.PeriodActive)*LeapYearsInvestment))))
-    print("Scenarios: "+str(len(instance.Scenario)))
-    print("TotalOperationalHoursPerScenario: "+str(len(instance.Operationalhour)))
-    print("TotalOperationalHoursPerInvYear: "+str(len(instance.Operationalhour)*len(instance.Scenario)))
-    print("Seasons: "+str(len(instance.Season)))
-    print("RegularSeasons: "+str(len(instance.FirstHoursOfRegSeason)))
-    print("LengthRegSeason: "+str(value(instance.lengthRegSeason)))
-    print("PeakSeasons: "+str(len(instance.FirstHoursOfPeakSeason)))
-    print("LengthPeakSeason: "+str(value(instance.lengthPeakSeason)))
-    print("")
-    print("Discount rate: "+str(value(instance.discountrate)))
-    print("Operational discount scale: "+str(value(instance.operationalDiscountrate)))
-    print("--------------------------------------------------------------")
-
+    logger.info("----------------------Problem Statistics---------------------")
+    logger.info("Nodes: %s", len(instance.Node))
+    logger.info("Lines: %s", len(instance.BidirectionalArc))
+    logger.info("")
+    logger.info("GeneratorTypes: %s", len(instance.Generator))
+    logger.info("TotalGenerators: %s", len(instance.GeneratorsOfNode))
+    logger.info("StorageTypes: %s", len(instance.Storage))
+    logger.info("TotalStorages: %s", len(instance.StoragesOfNode))
+    logger.info("")
+    logger.info("InvestmentUntil: %s", value(2020+int(len(instance.PeriodActive)*LeapYearsInvestment)))
+    logger.info("Scenarios: %s", len(instance.Scenario))
+    logger.info("TotalOperationalHoursPerScenario: %s", len(instance.Operationalhour))
+    logger.info("TotalOperationalHoursPerInvYear: %s", len(instance.Operationalhour)*len(instance.Scenario))
+    logger.info("Seasons: %s", len(instance.Season))
+    logger.info("RegularSeasons: %s", len(instance.FirstHoursOfRegSeason))
+    logger.info("LengthRegSeason: %s", value(instance.lengthRegSeason))
+    logger.info("PeakSeasons: %s", len(instance.FirstHoursOfPeakSeason))
+    logger.info("LengthPeakSeason: %s", value(instance.lengthPeakSeason))
+    logger.info("")
+    logger.info("Discount rate: %s", value(instance.discountrate))
+    logger.info("Operational discount scale: %s", value(instance.operationalDiscountrate))
+    logger.info("--------------------------------------------------------------")
+    
     if WRITE_LP:
-        print("Writing LP-file...")
+        logger.info("Writing LP-file...")
         start = time.time()
         lpstring = 'LP_' + name + '.lp'
         if USE_TEMP_DIR:
             lpstring = temp_dir + '/LP_'+ name + '.lp'
         instance.write(lpstring, io_options={'symbolic_solver_labels': True})
         end = time.time()
-        print("Writing LP-file took [sec]:")
-        print(end - start)
+        logger.info("Writing LP-file took [sec]: %d", end - start)
 
-    print("Solving...")
+
+    logger.info("Solving...")
 
     if solver == "CPLEX":
         opt = SolverFactory("cplex", Verbose=True)
@@ -826,8 +828,7 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenariogenera
         with open(picklestring, mode='wb') as file:
             cloudpickle.dump(instance, file)
         end = time.time()
-        print("Pickling instance took [sec]:")
-        print(end - start)
+        logger.info("Pickling instance took [sec]: %d", end - start)
             	
     #instance.display('outputs_gurobi.txt')
 
@@ -837,7 +838,7 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenariogenera
     ##RESULTS##
     ###########
 
-    print("Writing results to .csv...")
+    logger.info("Writing results to .csv...")
 
     inv_per = []
     for i in instance.PeriodActive:
@@ -1135,7 +1136,7 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenariogenera
         EUR10perEUR18 = 154/171 #Source: https://www.inflationtool.com/euro 
         USD10perEUR18 = USD10perEUR10*EUR10perEUR18 
 
-        print("Writing standard output to .csv...")
+        logger.info("Writing standard output to .csv...")
         
         f = pd.DataFrame(columns=["model", "scenario", "region", "variable", "unit", "subannual"]+[value(2020+(i)*instance.LeapYearsInvestment) for i in instance.PeriodActive])
 

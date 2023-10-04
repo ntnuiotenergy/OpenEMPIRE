@@ -1,19 +1,23 @@
+import logging
 import os
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
+logger = logging.getLogger(__name__)
 
-def season_month(season):
+def season_month(season: str):
     if season=="winter":
         return [1, 2, 3]
-    elif season=="spring":
+    if season=="spring":
         return [4, 5, 6]
-    elif season=="summer":
+    if season=="summer":
         return [7, 8, 9]
-    elif season=="fall":
+    if season=="fall":
         return [10, 11, 12]
+    
+    raise ValueError(f"{season} is not a valid season.")
 
 def year_season_filter(data, sample_year, season):
     data = data.loc[data.year.isin([sample_year]), :]
@@ -254,9 +258,9 @@ def generate_random_scenario(file_path: Path, tab_file_path: Path, scenarios, se
                              north_sea):
     
     if fix_sample:
-        print("Generating scenarios according to key...")
+        logger.info("Generating scenarios according to key...")
     else:
-        print("Generating random scenarios...")
+        logger.info("Generating random scenarios...")
 
     # Generate dataframes to print as stochastic-files
     genAvail = pd.DataFrame()
