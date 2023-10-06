@@ -63,12 +63,13 @@ class BaseClient:
 
 class SetsClient(BaseClient):
     DEFAULT_SKIPROWS = 0
+    DEFAULT_USECOLS = [0]
 
     def __init__(self, file, engine: str = "openpyxl"):
         self.file = file
         self.engine = engine
 
-        self.validate()
+        # self.validate()
 
     def get_nodes(self):
         return self._read_from_sheet(self.file, "Nodes")
@@ -82,17 +83,63 @@ class SetsClient(BaseClient):
     def set_offshore_nodes(self, df: pd.DataFrame):
         self._write_to_sheet(df, self.file, "OffshoreNodes")
 
+    def get_horizon(self):
+        return self._read_from_sheet(self.file, "Horizon")
+
+    def set_horizon(self, df: pd.DataFrame):
+        self._write_to_sheet(df, self.file, "Horizon")
+
     def get_technology(self):
         return self._read_from_sheet(self.file, "Technology")
 
     def set_technology(self, df: pd.DataFrame):
         self._write_to_sheet(df, self.file, "Technology")
 
+    def get_storage_of_nodes(self):
+        return self._read_from_sheet(
+            self.file, "StorageOfNodes", usecols=[0, 1], skiprows=2
+        )
+
+    def set_storage_of_nodes(self, df: pd.DataFrame):
+        self._write_to_sheet(df, self.file, "StorageOfNodes")
+
     def get_directional_lines(self):
-        return self._read_from_sheet(self.file, "DirectionalLines", skiprows=2)
+        return self._read_from_sheet(
+            self.file, "DirectionalLines", skiprows=2, usecols=[0, 1]
+        )
 
     def set_directional_lines(self, df: pd.DataFrame):
         self._write_to_sheet(df, self.file, "DirectionalLines", startrow=2)
+
+    def get_line_type_of_directional_lines(self):
+        return self._read_from_sheet(
+            self.file, "LineTypeOfDirectionalLines", skiprows=2, usecols=[0, 1, 2]
+        )
+
+    def set_line_type_of_directional_lines(self, df: pd.DataFrame):
+        self._write_to_sheet(df, self.file, "LineTypeOfDirectionalLines", startrow=2)
+
+    def get_generators_of_node(self):
+        return self._read_from_sheet(
+            self.file, "GeneratorsOfNode", skiprows=2, usecols=[0, 1]
+        )
+
+    def set_generators_of_node(self, df: pd.DataFrame):
+        self._write_to_sheet(df, self.file, "GeneratorsOfNode", startrow=2)
+
+    def get_generators_of_technology(self):
+        return self._read_from_sheet(
+            self.file, "GeneratorsOfTechnology", skiprows=2, usecols=[0, 1]
+        )
+
+    def set_generators_of_technology(self, df: pd.DataFrame):
+        self._write_to_sheet(df, self.file, "GeneratorsOfTechnology", startrow=2)
+
+    def get_coordinates(self):
+        return self._read_from_sheet(self.file, "Coords", skiprows=2, usecols=[0, 1, 2])
+
+    def set_coordinates(self, df: pd.DataFrame):
+        self._write_to_sheet(df, self.file, "Coords", startrow=2)
 
 
 class GeneratorClient(BaseClient):
@@ -175,25 +222,27 @@ class GeneratorClient(BaseClient):
         self._write_to_sheet(df, self.file, "MaxInstalledCapacity")
 
     def get_ramp_rate(self):
-        return self._read_from_sheet(self.file, "RampRate", usecols=[0,1])
+        return self._read_from_sheet(self.file, "RampRate", usecols=[0, 1])
 
     def set_ramp_rate(self, df: pd.DataFrame):
         self._write_to_sheet(df, self.file, "RampRate")
 
     def get_generator_type_availability(self):
-        return self._read_from_sheet(self.file, "GeneratorTypeAvailability", usecols=[0,1])
+        return self._read_from_sheet(
+            self.file, "GeneratorTypeAvailability", usecols=[0, 1]
+        )
 
     def set_generator_type_availability(self, df: pd.DataFrame):
         self._write_to_sheet(df, self.file, "GeneratorTypeAvailability")
 
     def get_co2_content(self):
-        return self._read_from_sheet(self.file, "CO2Content", usecols=[0,1])
+        return self._read_from_sheet(self.file, "CO2Content", usecols=[0, 1])
 
     def set_co2_content(self, df: pd.DataFrame):
         self._write_to_sheet(df, self.file, "CO2Content")
 
     def get_lifetime(self):
-        return self._read_from_sheet(self.file, "Lifetime", usecols=[0,1])
+        return self._read_from_sheet(self.file, "Lifetime", usecols=[0, 1])
 
     def set_lifetime(self, df: pd.DataFrame):
         self._write_to_sheet(df, self.file, "Lifetime")
