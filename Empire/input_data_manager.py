@@ -10,7 +10,20 @@ class IDataManager(ABC):
 
 
 class AvailabilityManager(IDataManager):
+    """
+    Manager responsible for updating the availability/capacity factor for specific generator technologies within a 
+    given dataset.
+    """
     def __init__(self, client: EmpireInputClient, generator: str, availability: float):
+        """
+        Initializes the AvailabilityManager with the provided parameters.
+
+        Parameters:
+        -----------
+        :param client: The client interface for retrieving and setting generator data.
+        :param generator: The specific generator technology to be updated.
+        :param availability: The new availability value to be set for the specified generator.
+        """
         self.client = client
         self.generator = generator
         self.availability = availability
@@ -30,9 +43,22 @@ class AvailabilityManager(IDataManager):
 
 
 class CapitalCostManager(IDataManager):
+    """
+    Manager responsible for updating the capital cost for specific generator technologies within a  given dataset.
+    """
+
     def __init__(
         self, client: EmpireInputClient, generator_technology: str, capital_cost: float
     ) -> None:
+        """
+        Initializes the CapitalCostManager with the provided parameters.
+
+        Parameters:
+        -----------
+        :param client: The client interface for retrieving and setting generator data.
+        :param generator_technology: The specific generator technology to be updated.
+        :param capital_cost: The new capital cost value to be set for the specified generator technology.
+        """
         self.client = client
         self.generator_technology = generator_technology
         self.capital_cost = capital_cost
@@ -49,7 +75,7 @@ class CapitalCostManager(IDataManager):
 
 class MaxInstalledCapacityManager(IDataManager):
     """
-    Manager responsible for updating the maximum installed capacities for specific generator technologies within a 
+    Manager responsible for updating the maximum installed capacities for specific generator technologies within a
     given dataset.
     """
 

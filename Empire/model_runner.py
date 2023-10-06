@@ -12,7 +12,7 @@ from Empire.utils import copy_dataset, create_if_not_exist, get_run_name
 from Empire.input_data_manager import IDataManager
 
 
-logger = logging.getLogger("Empire")
+logger = logging.getLogger(__name__)
 
 
 def run_empire_model(
