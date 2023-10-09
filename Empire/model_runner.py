@@ -4,12 +4,12 @@ import logging
 import pprint
 from pathlib import Path
 
-from Empire import run_empire
-from Empire.config import EmpireConfiguration, EmpireRunConfiguration, read_config_file
-from Empire.reader import generate_tab_files
-from Empire.scenario_random import generate_random_scenario
-from Empire.utils import copy_dataset, create_if_not_exist, get_run_name
-from Empire.input_data_manager import IDataManager
+from empire import run_empire
+from empire.config import EmpireConfiguration, EmpireRunConfiguration, read_config_file
+from empire.reader import generate_tab_files
+from empire.scenario_random import generate_random_scenario
+from empire.utils import copy_dataset, create_if_not_exist, get_run_name
+from empire.input_data_manager import IDataManager
 
 
 logger = logging.getLogger(__name__)

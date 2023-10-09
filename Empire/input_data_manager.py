@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from Empire.input_client.client import EmpireInputClient
+from empire.input_client.client import EmpireInputClient
 
 
 class IDataManager(ABC):
@@ -11,9 +11,10 @@ class IDataManager(ABC):
 
 class AvailabilityManager(IDataManager):
     """
-    Manager responsible for updating the availability/capacity factor for specific generator technologies within a 
+    Manager responsible for updating the availability/capacity factor for specific generator technologies within a
     given dataset.
     """
+
     def __init__(self, client: EmpireInputClient, generator: str, availability: float):
         """
         Initializes the AvailabilityManager with the provided parameters.
@@ -47,9 +48,7 @@ class CapitalCostManager(IDataManager):
     Manager responsible for updating the capital cost for specific generator technologies within a  given dataset.
     """
 
-    def __init__(
-        self, client: EmpireInputClient, generator_technology: str, capital_cost: float
-    ) -> None:
+    def __init__(self, client: EmpireInputClient, generator_technology: str, capital_cost: float) -> None:
         """
         Initializes the CapitalCostManager with the provided parameters.
 
@@ -104,17 +103,13 @@ class MaxInstalledCapacityManager(IDataManager):
     def apply(self) -> None:
         df_max_installed = self.client.generator.get_max_installed_capacity()
 
-        condition = df_max_installed["Node"].isin(self.nodes) & df_max_installed[
-            "GeneratorTechnology"
-        ].isin([self.generator_technology])
+        condition = df_max_installed["Node"].isin(self.nodes) & df_max_installed["GeneratorTechnology"].isin(
+            [self.generator_technology]
+        )
 
         if not condition.any():
-            raise ValueError(
-                f"No rows found for nodes {self.nodes} and technology {self.generator_technology}."
-            )
+            raise ValueError(f"No rows found for nodes {self.nodes} and technology {self.generator_technology}.")
 
-        df_max_installed.loc[
-            condition, "generatorMaxInstallCapacity  in MW"
-        ] = self.max_installed_capacity
+        df_max_installed.loc[condition, "generatorMaxInstallCapacity  in MW"] = self.max_installed_capacity
 
         self.client.generator.set_max_installed_capacity(df_max_installed)

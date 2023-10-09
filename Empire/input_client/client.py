@@ -3,7 +3,7 @@ from pathlib import Path
 import openpyxl
 import pandas as pd
 
-from Empire.input_client.sheets_structure import sheets
+from empire.input_client.sheets_structure import sheets
 
 
 class BaseClient:

@@ -5,7 +5,7 @@ import pandas as pd
 from mpl_toolkits.basemap import Basemap
 
 
-def build_graph(coordinates, results, period):
+def build_graph_with_results(coordinates, results, period):
     results_p = results[results["Period"] == period].reset_index(drop=True)
     G = nx.Graph()
 
@@ -16,12 +16,29 @@ def build_graph(coordinates, results, period):
         G.add_edge(
             row["BetweenNode"],
             row["AndNode"],
-            weight=(row["transmisionInstalledCap_MW"] / 2500) + 0.6,
+            weight=(row["transmisionInstalledCap_MW"] / 2500),
             label=row["transmisionInstalledCap_MW"],
         )
 
     return G
 
+
+
+def build_graph_with_lines(coordinates, lines: pd.DataFrame):
+    
+    G = nx.Graph()
+
+    for _, row in coordinates.iterrows():
+        G.add_node(row["Location"], pos=(row["Longitude"], row["Latitude"]))
+
+    for _, row in lines.iterrows():
+        G.add_edge(
+            row["NodeFrom"],
+            row["NodeTo"],
+            weight=1
+        )
+
+    return G
 
 def plot_graph(G: nx.Graph) -> plt.Figure:
     """
@@ -85,7 +102,7 @@ def plot_results(results_path: Path, save_to_file: bool = False):
     plot_path.mkdir(parents=True, exist_ok=True)
 
     for period in results["Period"].unique():
-        G = build_graph(coordinates, results, period)
+        G = build_graph_with_results(coordinates, results, period)
         fig = plot_graph(G)
         plt.title(f"{period}")
 

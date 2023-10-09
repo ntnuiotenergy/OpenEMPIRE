@@ -11,6 +11,8 @@ Other python package dependencies can be found in the file environment.yml.
 
 To download, you need to install Git and clone the repository. Note that the repository makes use of Git Large File Storage (LFS) which also needs to be installed for input data-files to be downloaded when cloning the repository. Once both Git and Git LFS has been successfully installed, the model is downloaded to the desired directory.
 
+To plot figures with Basemap, please follow the following instructions for installing it: https://github.com/matplotlib/basemap.
+
 # Software Structure
 EMPIRE consists of five programming scripts: 
 

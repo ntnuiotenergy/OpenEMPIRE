@@ -3,7 +3,7 @@ requires = ["poetry-core>=1.0.8"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
-name = "Empire"
+name = "empire"
 version = "0.1.1"
 description = "Stochastic linear program for investments in the European power system."
 authors = ["Stian Backe <stian.backe@ntnu.no>"]
@@ -11,7 +11,7 @@ maintainers = ["Stian Backe <stian.backe@ntnu.no>"]
 readme = "README.md"
 
 [tool.black]
-line-lenght = 120
+line-length = 120
 
 [tool.ruff]
 line-length = 120

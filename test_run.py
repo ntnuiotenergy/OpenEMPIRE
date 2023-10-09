@@ -1,7 +1,7 @@
 #!/usr/bin/env python
-from Empire.reader import generate_tab_files
-from Empire import run_empire
-from Empire.scenario_random import generate_random_scenario
+from empire.reader import generate_tab_files
+from empire import run_empire
+from empire.scenario_random import generate_random_scenario
 from datetime import datetime
 from yaml import safe_load
 from pathlib import Path

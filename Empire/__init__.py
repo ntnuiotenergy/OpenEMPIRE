@@ -1,1 +1,1 @@
-from Empire.Empire import run_empire
+from empire.empire import run_empire
