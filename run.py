@@ -23,6 +23,12 @@ WACC = UserRunTimeConfig["WACC"]
 solver = UserRunTimeConfig["solver"]
 scenariogeneration = UserRunTimeConfig["scenariogeneration"]
 fix_sample = UserRunTimeConfig["fix_sample"]
+LOADCHANGEMODULE = UserRunTimeConfig["LOADCHANGEMODULE"]
+filter_make = UserRunTimeConfig["filter_make"] 
+filter_use = UserRunTimeConfig["filter_use"]
+n_cluster = UserRunTimeConfig["n_cluster"]
+moment_matching = UserRunTimeConfig["moment_matching"]
+n_tree_compare = UserRunTimeConfig["n_tree_compare"]
 EMISSION_CAP = UserRunTimeConfig["EMISSION_CAP"]
 IAMC_PRINT = UserRunTimeConfig["IAMC_PRINT"]
 WRITE_LP = UserRunTimeConfig["WRITE_LP"]
@@ -37,8 +43,6 @@ NoOfRegSeason = 4
 regular_seasons = ["winter", "spring", "summer", "fall"]
 NoOfPeakSeason = 2
 lengthPeakSeason = 24
-discountrate = 0.05
-WACC = 0.05
 LeapYearsInvestment = 5
 time_format = "%d/%m/%Y %H:%M"
 if version in ["europe_v50"]:
@@ -57,6 +61,10 @@ if scenariogeneration and not fix_sample:
         name = name + "_randomSGR"
 else:
 	name = name + "_noSGR"
+if filter_use:
+    name = name + "_filter" + str(n_cluster)
+if moment_matching:
+    name = name + "_moment" + str(n_tree_compare)
 name = name + str(datetime.now().strftime("_%Y%m%d%H%M"))
 workbook_path = 'Data handler/' + version
 tab_file_path = 'Data handler/' + version + '/Tab_Files_' + name
@@ -98,6 +106,7 @@ dict_countries = {"AT": "Austria", "BA": "BosniaH", "BE": "Belgium",
 print('++++++++')
 print('+EMPIRE+')
 print('++++++++')
+print('LOADCHANGEMODULE: ' + str(LOADCHANGEMODULE))
 print('Solver: ' + solver)
 print('Scenario Generation: ' + str(scenariogeneration))
 print('++++++++')
@@ -113,9 +122,15 @@ if scenariogeneration:
                              regularSeasonHours = lengthRegSeason,
                              peakSeasonHours = lengthPeakSeason,
                              dict_countries = dict_countries,
-			                 time_format = time_format,
-			                 fix_sample = fix_sample,
-                             north_sea = north_sea)
+                             time_format = time_format,
+                             filter_make = filter_make,
+                             filter_use = filter_use,
+                             n_cluster = n_cluster,
+                             moment_matching = moment_matching,
+                             n_tree_compare = n_tree_compare,
+                             fix_sample = fix_sample,
+                             north_sea = north_sea,
+                             LOADCHANGEMODULE = LOADCHANGEMODULE)
 
 generate_tab_files(filepath = workbook_path, tab_file_path = tab_file_path)
 
@@ -142,4 +157,5 @@ run_empire(name = name,
            WRITE_LP = WRITE_LP, 
            PICKLE_INSTANCE = PICKLE_INSTANCE, 
            EMISSION_CAP = EMISSION_CAP,
-           USE_TEMP_DIR = USE_TEMP_DIR)
+           USE_TEMP_DIR = USE_TEMP_DIR,
+           LOADCHANGEMODULE = LOADCHANGEMODULE)

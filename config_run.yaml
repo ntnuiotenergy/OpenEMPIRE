@@ -12,6 +12,12 @@ WACC : 0.05
 solver : "Xpress" # "Gurobi"  # #"CPLEX"
 scenariogeneration : True #False
 fix_sample : False #True
+LOADCHANGEMODULE : False #True
+filter_make : False #True #
+filter_use : False #True #
+n_cluster : 10
+moment_matching : False #True
+n_tree_compare : 20
 EMISSION_CAP : True #False
 IAMC_PRINT : True #False
 WRITE_LP : False #True
