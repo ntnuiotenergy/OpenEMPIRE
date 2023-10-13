@@ -23,6 +23,7 @@ WACC = UserRunTimeConfig["WACC"]
 solver = UserRunTimeConfig["solver"]
 scenariogeneration = UserRunTimeConfig["scenariogeneration"]
 fix_sample = UserRunTimeConfig["fix_sample"]
+LOADCHANGEMODULE = UserRunTimeConfig["LOADCHANGEMODULE"]
 filter_make = UserRunTimeConfig["filter_make"] 
 filter_use = UserRunTimeConfig["filter_use"]
 n_cluster = UserRunTimeConfig["n_cluster"]
@@ -91,6 +92,7 @@ dict_countries = {"DE": "Germany", "DK": "Denmark", "FR": "France"}
 print('++++++++')
 print('+EMPIRE+')
 print('++++++++')
+print('LOADCHANGEMODULE: ' + str(LOADCHANGEMODULE))
 print('Solver: ' + solver)
 print('Scenario Generation: ' + str(scenariogeneration))
 print('++++++++')
@@ -113,7 +115,8 @@ if scenariogeneration:
                              moment_matching = moment_matching,
                              n_tree_compare = n_tree_compare,
                              fix_sample = fix_sample,
-                             north_sea = False)
+                             north_sea = False,
+                             LOADCHANGEMODULE = LOADCHANGEMODULE)
 
 generate_tab_files(filepath = workbook_path, tab_file_path = tab_file_path)
 
@@ -140,4 +143,5 @@ run_empire(name = name,
            WRITE_LP = WRITE_LP, 
            PICKLE_INSTANCE = PICKLE_INSTANCE, 
            EMISSION_CAP = EMISSION_CAP,
-           USE_TEMP_DIR = USE_TEMP_DIR)
+           USE_TEMP_DIR = USE_TEMP_DIR,
+           LOADCHANGEMODULE = LOADCHANGEMODULE)

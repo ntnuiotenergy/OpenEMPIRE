@@ -332,7 +332,8 @@ def generate_random_scenario(filepath, tab_file_path, scenarios, seasons,
                              Periods, regularSeasonHours, peakSeasonHours, 
                              dict_countries, time_format, filter_make,
                              filter_use, n_cluster, moment_matching,
-                             n_tree_compare, fix_sample, north_sea):
+                             n_tree_compare, fix_sample, north_sea,
+                             LOADCHANGEMODULE):
     
     if fix_sample:
         print("Generating scenarios according to key...")
@@ -344,6 +345,9 @@ def generate_random_scenario(filepath, tab_file_path, scenarios, seasons,
     elecLoad = pd.DataFrame()
     hydroSeasonal = pd.DataFrame()
     
+    if LOADCHANGEMODULE:
+        elecLoadMod = pd.DataFrame()
+
     # Load all the raw scenario data
     solar_data = pd.read_csv(filepath + "/solar.csv")
     windonshore_data = pd.read_csv(filepath + "/windonshore.csv")
@@ -351,6 +355,9 @@ def generate_random_scenario(filepath, tab_file_path, scenarios, seasons,
     hydroror_data = pd.read_csv(filepath + "/hydroror.csv")
     hydroseasonal_data = pd.read_csv(filepath + "/hydroseasonal.csv")
     electricload_data = pd.read_csv(filepath + "/electricload.csv")
+
+    if LOADCHANGEMODULE:
+        elecLoadMod_data = pd.read_csv(filepath + "/LoadchangeModule/elec_load_mod.csv")
 
     # Make datetime columns
     solar_data = make_datetime(solar_data, time_format)
@@ -360,7 +367,8 @@ def generate_random_scenario(filepath, tab_file_path, scenarios, seasons,
     hydroseasonal_data = make_datetime(hydroseasonal_data, time_format)
     electricload_data = make_datetime(electricload_data, time_format)
 
-    
+    if LOADCHANGEMODULE:
+        elecLoadMod_data = make_datetime(elecLoadMod_data, "%Y-%m-%d %H:%M")
     
     if filter_make:
         print("Making stratified filter...")
@@ -450,22 +458,26 @@ def generate_random_scenario(filepath, tab_file_path, scenarios, seasons,
                     electricload_season = year_season_filter(electricload_data,
                                                              sample_year,
                                                              s)
-                    
+
+                    if LOADCHANGEMODULE:
+                        elecLoadMod_period = elecLoadMod_data.loc[elecLoadMod_data.Period.isin([i])]
+                        elecLoadMod_period = elecLoadMod_period.drop(columns=['Period'])
+                        elecLoadMod_season = year_season_filter(elecLoadMod_period,
+                                                                sample_year,
+                                                                s)
                     
                     # Filter the sample range by K-means if filter_sample=True
                     
                     if filter_use:
                         sample_hour = np.random.choice(valid_pick['SampleIndex'])
-                    else:
-                        sample_hour = np.random.randint(
-                            0, solar_season.shape[0] - regularSeasonHours - 1)
-                    
 
                     # Choose sample_hour from key or save sampling key
 
                     if fix_sample:
                         sample_hour = sampling_key.loc[(i,scenario,s),'Hour']
                     else:
+                        sample_hour = np.random.randint(
+                            0, solar_season.shape[0] - regularSeasonHours - 1)
                         df = pd.DataFrame(data={'Period': i,
                                                 'Scenario': scenario,
                                                 'Season': s,
@@ -542,6 +554,15 @@ def generate_random_scenario(filepath, tab_file_path, scenarios, seasons,
                                                             seasons=seasons, period=i,
                                                             sample_hour=sample_hour)],
                                               ignore_index=True)
+                    
+                    if LOADCHANGEMODULE:
+                        elecLoadMod = pd.concat([elecLoadMod,
+                                                 sample_load(data=elecLoadMod_season,
+                                                             regularSeasonHours=regularSeasonHours,
+                                                             scenario=scenario, season=s,
+                                                             seasons=seasons, period=i,
+                                                             sample_hour=sample_hour)],
+                                                ignore_index=True)
                 
                 ################
                 ##PEAK SEASONS##
@@ -569,7 +590,10 @@ def generate_random_scenario(filepath, tab_file_path, scenarios, seasons,
                 hydroror_data_year = hydroror_data.loc[hydroror_data.year.isin([sample_year]), :]
                 hydroseasonal_data_year = hydroseasonal_data.loc[hydroseasonal_data.year.isin([sample_year]), :]
                 electricload_data_year = electricload_data.loc[electricload_data.year.isin([sample_year]), :]
-    
+
+                if LOADCHANGEMODULE:
+                	elecLoadMod_data_year = elecLoadMod_period.loc[elecLoadMod_period.year.isin([sample_year])]
+
                 #Peak1: The highest load when all loads are summed together
                 electricload_data_year_notime = remove_time_index(electricload_data_year)
                 overall_sample = electricload_data_year_notime.sum(axis=1).idxmax()
@@ -662,7 +686,18 @@ def generate_random_scenario(filepath, tab_file_path, scenarios, seasons,
                                                              country_sample=country_sample)],
                                           ignore_index=True)
 
-        
+                # Sample the change of load
+                if LOADCHANGEMODULE:
+                    elecLoadMod = pd.concat([elecLoadMod,
+                                             sample_load_peak(data=elecLoadMod_data_year,
+                                                              seasons=seasons,
+                                                              scenario=scenario, period=i,
+                                                              regularSeasonHours=regularSeasonHours,
+                                                              peakSeasonHours=peakSeasonHours,
+                                                              overall_sample=overall_sample,
+                                                              country_sample=country_sample)],
+                                            ignore_index=True)
+
         if moment_matching:
             #Save the tree
             genAvail_dict[tree] = genAvail
@@ -702,6 +737,9 @@ def generate_random_scenario(filepath, tab_file_path, scenarios, seasons,
     elecLoad = elecLoad.replace({"Node": dict_countries})
     hydroSeasonal = hydroSeasonal.replace({"Node": dict_countries})
 
+    if LOADCHANGEMODULE:
+        elecLoadMod = elecLoadMod.replace({"Node": dict_countries})
+
     #Make header for .tab-file
     genAvail = genAvail[["Node", "IntermitentGenerators", "Operationalhour",
                          "Scenario", "Period",
@@ -715,7 +753,10 @@ def generate_random_scenario(filepath, tab_file_path, scenarios, seasons,
     genAvail.loc[genAvail["GeneratorStochasticAvailabilityRaw"] <= 0.001,"GeneratorStochasticAvailabilityRaw"] = 0
     elecLoad.loc[elecLoad['ElectricLoadRaw_in_MW'] <= 0.001,'ElectricLoadRaw_in_MW'] = 0
     hydroSeasonal.loc[hydroSeasonal["HydroGeneratorMaxSeasonalProduction"] <= 0.001,"HydroGeneratorMaxSeasonalProduction"] = 0
-    
+
+    if LOADCHANGEMODULE:
+        elecLoadMod = elecLoadMod[["Node", "Operationalhour", "Scenario",
+                                   "Period", 'ElectricLoadRaw_in_MW']]
 
     #Make filepath (if it does not exist) and print .tab-files
     if not os.path.exists(tab_file_path):
@@ -738,3 +779,10 @@ def generate_random_scenario(filepath, tab_file_path, scenarios, seasons,
     hydroSeasonal.to_csv(
         tab_file_path + "/Stochastic_HydroGenMaxSeasonalProduction" + '.tab',
         header=True, index=None, sep='\t', mode='w')
+
+    if LOADCHANGEMODULE:
+        if not os.path.exists(tab_file_path + "/LoadchangeModule"):
+            os.makedirs(tab_file_path + "/LoadchangeModule")
+        elecLoadMod.to_csv(
+            tab_file_path + "/LoadchangeModule/Stochastic_ElectricLoadMod" + '.tab',
+            header=True, index=None, sep='\t', mode='w')

@@ -11,11 +11,12 @@ discountrate : 0.05
 WACC : 0.05
 solver : "GLPK" #"Gurobi" #"Xpress" # #"CPLEX"
 scenariogeneration : True #False
+LOADCHANGEMODULE : False #True
 fix_sample : False #True
 filter_make : False #True #
 filter_use : False #True #
 n_cluster : 10
-moment_matching : True #True
+moment_matching : False #True
 n_tree_compare : 20
 EMISSION_CAP : False #True
 IAMC_PRINT : True #False
