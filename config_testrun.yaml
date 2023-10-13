@@ -12,6 +12,11 @@ WACC : 0.05
 solver : "GLPK" #"Gurobi" #"Xpress" # #"CPLEX"
 scenariogeneration : True #False
 fix_sample : False #True
+filter_make : False #True #
+filter_use : False #True #
+n_cluster : 10
+moment_matching : True #True
+n_tree_compare : 20
 EMISSION_CAP : False #True
 IAMC_PRINT : True #False
 WRITE_LP : False #True

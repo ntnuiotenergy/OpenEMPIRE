@@ -10,8 +10,7 @@ __license__ = "MIT"
 __maintainer__ = "Stian Backe"
 __email__ = "stian.backe@ntnu.no"
 
-
-UserRunTimeConfig= safe_load(open("config_testrun.yaml"))
+UserRunTimeConfig = safe_load(open("config_testrun.yaml"))
 
 USE_TEMP_DIR = UserRunTimeConfig["USE_TEMP_DIR"]
 temp_dir = UserRunTimeConfig["temp_dir"]
@@ -24,6 +23,11 @@ WACC = UserRunTimeConfig["WACC"]
 solver = UserRunTimeConfig["solver"]
 scenariogeneration = UserRunTimeConfig["scenariogeneration"]
 fix_sample = UserRunTimeConfig["fix_sample"]
+filter_make = UserRunTimeConfig["filter_make"] 
+filter_use = UserRunTimeConfig["filter_use"]
+n_cluster = UserRunTimeConfig["n_cluster"]
+moment_matching = UserRunTimeConfig["moment_matching"]
+n_tree_compare = UserRunTimeConfig["n_tree_compare"]
 EMISSION_CAP = UserRunTimeConfig["EMISSION_CAP"]
 IAMC_PRINT = UserRunTimeConfig["IAMC_PRINT"]
 WRITE_LP = UserRunTimeConfig["WRITE_LP"]
@@ -34,13 +38,16 @@ PICKLE_INSTANCE = UserRunTimeConfig["PICKLE_INSTANCE"]
 ##Non configurable settings##
 #############################
 
-NoOfRegSeason = 2
-lengthRegSeason = 24
-regular_seasons = ["winter", "spring"] #, "summer", "fall"]
+NoOfRegSeason = 4
+regular_seasons = ["winter", "spring", "summer", "fall"]
 NoOfPeakSeason = 2
 lengthPeakSeason = 24
 LeapYearsInvestment = 5
 time_format = "%d/%m/%Y %H:%M"
+if version in ["europe_v50"]:
+    north_sea = False
+else:
+    north_sea = True
 
 #######
 ##RUN##
@@ -53,11 +60,15 @@ if scenariogeneration and not fix_sample:
         name = name + "_randomSGR"
 else:
 	name = name + "_noSGR"
+if filter_use:
+    name = name + "_filter" + str(n_cluster)
+if moment_matching:
+    name = name + "_moment" + str(n_tree_compare)
 name = name + str(datetime.now().strftime("_%Y%m%d%H%M"))
 workbook_path = 'Data handler/' + version
 tab_file_path = 'Data handler/' + version + '/Tab_Files_' + name
 scenario_data_path = 'Data handler/' + version + '/ScenarioData'
-result_file_path = 'Results' + "\\" + name
+result_file_path = 'Results/' + name
 FirstHoursOfRegSeason = [lengthRegSeason*i + 1 for i in range(NoOfRegSeason)]
 FirstHoursOfPeakSeason = [lengthRegSeason*NoOfRegSeason + lengthPeakSeason*i + 1 for i in range(NoOfPeakSeason)]
 Period = [i + 1 for i in range(int((Horizon-2020)/LeapYearsInvestment))]
@@ -95,8 +106,13 @@ if scenariogeneration:
                              regularSeasonHours = lengthRegSeason,
                              peakSeasonHours = lengthPeakSeason,
                              dict_countries = dict_countries,
-			                 time_format = time_format,
-			                 fix_sample = fix_sample,
+                             time_format = time_format,
+                             filter_make = filter_make,
+                             filter_use = filter_use,
+                             n_cluster = n_cluster,
+                             moment_matching = moment_matching,
+                             n_tree_compare = n_tree_compare,
+                             fix_sample = fix_sample,
                              north_sea = False)
 
 generate_tab_files(filepath = workbook_path, tab_file_path = tab_file_path)
