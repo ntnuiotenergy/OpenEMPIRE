@@ -1,14 +1,14 @@
-The OpenEMPIRE model
+OpenEMPIRE
 ====================
 
-.. image:: images/image1.png 
+.. image:: _static/images/image1.png 
     :alt: NTNU – Store norske leksikon                                 
     :width: 1.75972in                                                  
     :height: 0.33429in                                                 
                                                                           
 
 **The Department of Industrial Economics and Technology Management (IØT)**
-                                                               
+
 **The Norwegian University of Science and Technology (NTNU)**         
    
     *Compiled by:                                                       
@@ -16,7 +16,7 @@ The OpenEMPIRE model
     NTNU                                                                
     Email: stian.backe@ntnu.no                                          
                                                                         
-.. image:: images/image2.png 
+.. image:: _static/images/image2.png 
     :width: 5.72302in                                                  
     :height: 4.73082in                                                 
    
@@ -295,7 +295,7 @@ EMPIRE is a multi-horizon stochastic linear program, and it has been designed to
 
 The abstract stochastic programming model can be formulated in the following way:
 
-.. image:: images/math_description.png
+.. image:: _static/images/math_description.png
    :width: 6.29861in
    :height: 2.02986in
 
@@ -881,7 +881,7 @@ This section explains the scenario generation routine implemented for the OpenEM
 
 The scenario generation routine works as follows:
 
-.. image:: images/algo.png
+.. image:: _static/images/algo.png
    :width: 5.26012in
    :height: 6.22979in
 
@@ -1103,7 +1103,7 @@ From most of the output files, meaningful charts can be created. Typical charts 
 results_output_curtailed_prod.csv
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. image:: images/image6.png
+.. image:: _static/images/image6.png
    :width: 7.12708in
    :height: 8.35417in
 
@@ -1112,7 +1112,7 @@ results_output_curtailed_prod.csv
 results_output_EuropePlot.csv
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. image:: images/image7.png
+.. image:: _static/images/image7.png
    :width: 6.30069in
    :height: 4.62708in
 
@@ -1121,7 +1121,7 @@ results_output_EuropePlot.csv
 results_output_EuropeSummary.csv
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. image:: images/image8.png
+.. image:: _static/images/image8.png
    :width: 6.04722in
    :height: 3.94722in
 
@@ -1132,6 +1132,6 @@ results_output_transmision.csv
 
 EMPIRE can provide the necessary data to geographically plot the intra-European energy transmission paths and capacities. In the figure below, each transmission link has its own thickness equivalent to the expected annual capacity expansion for all investment periods.
 
-.. image:: images/results_transmission.png
+.. image:: _static/images/results_transmission.png
    :width: 6.29861in
    :height: 6.06042in
