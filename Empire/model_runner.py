@@ -6,11 +6,10 @@ from pathlib import Path
 
 from empire import run_empire
 from empire.config import EmpireConfiguration, EmpireRunConfiguration, read_config_file
+from empire.input_data_manager import IDataManager
 from empire.reader import generate_tab_files
 from empire.scenario_random import generate_random_scenario
 from empire.utils import copy_dataset, create_if_not_exist, get_run_name
-from empire.input_data_manager import IDataManager
-
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +18,7 @@ def run_empire_model(
     empire_config: EmpireConfiguration,
     run_config: EmpireRunConfiguration,
     data_managers: IDataManager,
+    test_run: bool,
 ):
     for manager in data_managers:
         manager.apply()
@@ -53,17 +53,12 @@ def run_empire_model(
     #######
 
     FirstHoursOfRegSeason = [len_reg_season * i + 1 for i in range(NoOfRegSeason)]
-    FirstHoursOfPeakSeason = [
-        len_reg_season * NoOfRegSeason + len_peak_season * i + 1
-        for i in range(NoOfPeakSeason)
-    ]
+    FirstHoursOfPeakSeason = [len_reg_season * NoOfRegSeason + len_peak_season * i + 1 for i in range(NoOfPeakSeason)]
     Period = [i + 1 for i in range(int((horizon - 2020) / LeapYearsInvestment))]
     Scenario = ["scenario" + str(i + 1) for i in range(NoOfScenarios)]
     peak_seasons = ["peak" + str(i + 1) for i in range(NoOfPeakSeason)]
     Season = regular_seasons + peak_seasons
-    Operationalhour = [
-        i + 1 for i in range(FirstHoursOfPeakSeason[-1] + len_peak_season - 1)
-    ]
+    Operationalhour = [i + 1 for i in range(FirstHoursOfPeakSeason[-1] + len_peak_season - 1)]
     HoursOfRegSeason = [
         (s, h)
         for s in regular_seasons
@@ -83,13 +78,8 @@ def run_empire_model(
         if h
         in list(
             range(
-                len_reg_season * len(regular_seasons)
-                + peak_seasons.index(s) * len_peak_season
-                + 1,
-                len_reg_season * len(regular_seasons)
-                + peak_seasons.index(s) * len_peak_season
-                + len_peak_season
-                + 1,
+                len_reg_season * len(regular_seasons) + peak_seasons.index(s) * len_peak_season + 1,
+                len_reg_season * len(regular_seasons) + peak_seasons.index(s) * len_peak_season + len_peak_season + 1,
             )
         )
     ]
@@ -123,40 +113,39 @@ def run_empire_model(
 
     generate_tab_files(file_path=workbook_path, tab_file_path=tab_file_path)
 
-    run_empire(
-        name=run_config.run_name,
-        tab_file_path=tab_file_path,
-        result_file_path=result_file_path,
-        scenariogeneration=use_scen_generation,
-        scenario_data_path=scenario_data_path,
-        solver=empire_config.optimization_solver,
-        temp_dir=empire_config.temporary_directory,
-        FirstHoursOfRegSeason=FirstHoursOfRegSeason,
-        FirstHoursOfPeakSeason=FirstHoursOfPeakSeason,
-        lengthRegSeason=len_reg_season,
-        lengthPeakSeason=len_peak_season,
-        Period=Period,
-        Operationalhour=Operationalhour,
-        Scenario=Scenario,
-        Season=Season,
-        HoursOfSeason=HoursOfSeason,
-        discountrate=discountrate,
-        WACC=empire_config.wacc,
-        LeapYearsInvestment=LeapYearsInvestment,
-        IAMC_PRINT=empire_config.print_in_iamc_format,
-        WRITE_LP=empire_config.write_in_lp_format,
-        PICKLE_INSTANCE=empire_config.serialize_instance,
-        EMISSION_CAP=empire_config.use_emission_cap,
-        USE_TEMP_DIR=empire_config.use_temporary_directory,
-    )
+    if not test_run:
+        run_empire(
+            name=run_config.run_name,
+            tab_file_path=tab_file_path,
+            result_file_path=result_file_path,
+            scenariogeneration=use_scen_generation,
+            scenario_data_path=scenario_data_path,
+            solver=empire_config.optimization_solver,
+            temp_dir=empire_config.temporary_directory,
+            FirstHoursOfRegSeason=FirstHoursOfRegSeason,
+            FirstHoursOfPeakSeason=FirstHoursOfPeakSeason,
+            lengthRegSeason=len_reg_season,
+            lengthPeakSeason=len_peak_season,
+            Period=Period,
+            Operationalhour=Operationalhour,
+            Scenario=Scenario,
+            Season=Season,
+            HoursOfSeason=HoursOfSeason,
+            discountrate=discountrate,
+            WACC=empire_config.wacc,
+            LeapYearsInvestment=LeapYearsInvestment,
+            IAMC_PRINT=empire_config.print_in_iamc_format,
+            WRITE_LP=empire_config.write_in_lp_format,
+            PICKLE_INSTANCE=empire_config.serialize_instance,
+            EMISSION_CAP=empire_config.use_emission_cap,
+            USE_TEMP_DIR=empire_config.use_temporary_directory,
+        )
 
     with open(run_config.results_path / "config.txt", "w", encoding="utf-8") as file:
         pprint.pprint(empire_config.__dict__, stream=file, indent=4, width=80)
 
 
-def setup_run_paths(
-    version: str, empire_config: EmpireConfiguration
-) -> EmpireRunConfiguration:
+def setup_run_paths(version: str, empire_config: EmpireConfiguration, run_path: Path) -> EmpireRunConfiguration:
     """
     Setup run paths for Empire.
 
@@ -170,7 +159,6 @@ def setup_run_paths(
 
     # Input folders
     run_name = get_run_name(empire_config=empire_config, version=version)
-    run_path = Path.cwd() / f"Results/{run_name}"
     input_path = create_if_not_exist(run_path / "Input")
     xlsx_path = create_if_not_exist(input_path / "Xlsx")
     tab_path = create_if_not_exist(input_path / "Tab")
