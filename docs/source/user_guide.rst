@@ -758,7 +758,7 @@ The file ‘Storage.xlsx’ contains data regarding the storage technologies:
 -  **Storage Bleed Efficiency**
 
    -  The hourly percentage of spillage (self-discharge) in two columns (value = 1 means no self-discharge):
-   
+
       -  Index: Storage Type
       -  Value: Storage Bleed Efficiency (default: 1)
 
