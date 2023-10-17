@@ -10,3 +10,7 @@ dependencies:
   - python>=3.7
   - pyyaml>=5.1
   - glpk>=4.65
+  - python==3.11
+  - pip
+  - pip:
+      - -e .
