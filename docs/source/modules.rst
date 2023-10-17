@@ -1,7 +1,7 @@
-Empire
-======
+Empire Package Documentation
+============================
 
 .. toctree::
    :maxdepth: 4
 
-   Empire
+   empire

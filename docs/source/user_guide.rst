@@ -11,8 +11,8 @@ OpenEMPIRE
 
 **The Norwegian University of Science and Technology (NTNU)**         
    
-    *Compiled by:                                                       
-    *\ Stian Backe                                                      
+    Compiled by:                                                       
+    Stian Backe                                                      
     NTNU                                                                
     Email: stian.backe@ntnu.no                                          
                                                                         
@@ -409,6 +409,7 @@ The file ‘Generator.xlsx’ contains different data regarding the generator te
    *Source:* `PRIMES 2018 <https://ec.europa.eu/energy/sites/ener/files/documents/2018_06_27_technology_pathways_-_finalreportmain2.pdf>`__
 
    -  Capital costs per kW of all generator types in all investment periods in three columns:
+
       -  Index: Generator type
       -  Index: Period
       -  Value: Total capital costs in EUR per kW (default: 0)
@@ -418,6 +419,7 @@ The file ‘Generator.xlsx’ contains different data regarding the generator te
    *Source:* `PRIMES 2018 <https://ec.europa.eu/energy/sites/ener/files/documents/2018_06_27_technology_pathways_-_finalreportmain2.pdf>`__
 
    -  Fixed annual operation and maintenance costs for generator technologies in EUR per kW-year in three columns:
+
       -  Index: Generator type
       -  Index: Period
       -  Value: Fixed OM Costs in EUR per kW (default: 0)
@@ -428,6 +430,7 @@ The file ‘Generator.xlsx’ contains different data regarding the generator te
    2018 <https://ec.europa.eu/energy/sites/ener/files/documents/2018_06_27_technology_pathways_-_finalreportmain2.pdf>`__
 
    -  Operation dependent operation and maintenance costs for generator types in EUR per MWh/h in three columns:
+
       -  Index: Generator type
       -  Index: Period
       -  Value: Variable OM Costs in EUR per MWh (default: 0)
@@ -437,6 +440,7 @@ The file ‘Generator.xlsx’ contains different data regarding the generator te
    *Source:* `EC decarbonisation scenario 2016 <https://doi.org/10.1016/j.esr.2018.06.009>`__
 
    -  Period dependent fuel costs for generator types in EUR per GJ in three columns:
+
       -  Index: Generator Technology
       -  Index: Period
       -  Value: Fuel Costs in EUR per GJ (default: 0)
@@ -446,6 +450,7 @@ The file ‘Generator.xlsx’ contains different data regarding the generator te
    *Source:* `Zero Emission Platform (ZEP) <https://www.etipbioenergy.eu/supporting-initiatives-and-platforms/related-european-technology-platforms-and-jtis/zero-emissions-platform>`__
 
    -  Costs of transporting and storing captured CO2 in EUR per tonCO2eq. in two columns:
+
       -  Index: Period
       -  Value: CCS TS costs in euro per tCO2 (default: 0)
 
@@ -454,6 +459,7 @@ The file ‘Generator.xlsx’ contains different data regarding the generator te
    *Source:* `PRIMES 2018 <https://ec.europa.eu/energy/sites/ener/files/documents/2018_06_27_technology_pathways_-_finalreportmain2.pdf>`__
 
    -  Efficiency of converting fuel to electricity for generator types in each period in three columns:
+
       -  Index: Generator type
       -  Index: Period
       -  Value: Generator Efficiency in MWh-electricity per MWh-fuel (default: 1)
@@ -463,6 +469,7 @@ The file ‘Generator.xlsx’ contains different data regarding the generator te
    *Source:* `Statistical factsheet 2018 (ENTSO-E) <https://eepublicdownloads.azureedge.net/clean-documents/Publications/Statistics/Factsheet/entsoe_sfs2018_web.pdf>`__
 
    -  The capacity in the reference investment period in three columns:
+
       -  Index: Node
       -  Index: Generator type
       -  Value: Generator Reference Initial Capacity in MW (default: 0)
@@ -482,6 +489,7 @@ The file ‘Generator.xlsx’ contains different data regarding the generator te
    Factor Initial Cap’)**
 
    -  The initial capacity in all investment periods in four columns:
+
       -  Index: Node
       -  Index: Generator type
       -  Index: Period
@@ -490,6 +498,7 @@ The file ‘Generator.xlsx’ contains different data regarding the generator te
 -  **Maximum Built Capacity**
 
    -  Use to restrict the capacity expansion of certain technologies. The generation capacity that can maximally be built in an investment period for any country in four columns:
+
       -  Index: Node
       -  Index: Technology **(NB! Technology, NOT generator type)**
       -  Index: Period
@@ -503,6 +512,7 @@ The file ‘Generator.xlsx’ contains different data regarding the generator te
    -  The maximum capacity that can exist of a generator technology
       (resource limit) in any country or investment period in three
       columns:
+
       -  Index: Node
       -  Index: Technology **(NB! Technology, NOT generator type)**
       -  Value: Maximum Installed Capacity in MW (default: 0)
@@ -512,6 +522,7 @@ The file ‘Generator.xlsx’ contains different data regarding the generator te
    *Source: IEA, NEA*
 
    -  The maximum change of output from one hour to the next hour for thermal generators in two columns:
+
       -  Index: Thermal Generator
       -  Value: Ramp Rate (default: 0)
 
@@ -522,6 +533,7 @@ The file ‘Generator.xlsx’ contains different data regarding the generator te
    *Source: IEA, NEA*
 
    -  The availability factor as a share of installed capacity for all defined generators in two columns:
+
       -  Index: Generator
       -  Value: Availability (default: 0)
 
@@ -530,6 +542,7 @@ The file ‘Generator.xlsx’ contains different data regarding the generator te
    *Source:* `IPCC <https://www.ipcc-nggip.iges.or.jp/public/2006gl/pdf/2_Volume2/V2_2_Ch2_Stationary_Combustion.pdf>`__
 
    -  The CO2 intensity of generator type depending on fuel in two columns:
+
       -  Index: Generator type
       -  Value: CO2 Content in tCO2/GJ (default: 0)
 
@@ -538,6 +551,7 @@ The file ‘Generator.xlsx’ contains different data regarding the generator te
    *Source:* `PRIMES 2018 <https://ec.europa.eu/energy/sites/ener/files/documents/2018_06_27_technology_pathways_-_finalreportmain2.pdf>`__
 
    -  The lifetime of a generator type in years in two columns:
+
       -  Index: Generator type
       -  Value: Lifetime in years (default: 0)
 
@@ -551,6 +565,7 @@ The file ‘Node.xlsx’ contains the data specific to all specified countries:
    *Source:* `EC decarbonisation scenario 2016 <https://doi.org/10.1016/j.esr.2018.06.009>`__ *+ NVE*
 
    -  The annual demand in nodes used to adjust hourly load profiles for future investment periods in three columns:
+
       -  Index: Node
       -  Index: Period
       -  Value: Annual electric demand in MWh (default: 0)
@@ -569,6 +584,7 @@ The file ‘Node.xlsx’ contains the data specific to all specified countries:
    *Source: National Renewable Energy Action Plan (NREAP) from EEA, ENSTO-E, Eurelectric*
 
    -  The maximum production of all regulated hydro generators in a country per year in two columns:
+
       -  Index: Node
       -  Value: Max production in MWh
 
@@ -580,6 +596,7 @@ The file ‘General.xlsx’ contains the scale factor for all seasons and data r
 -  **Season Scale**
 
    -  The scaling of each representative season to add up to a full year in two columns:
+
       -  Index: Season
       -  Value: Season Scale (default: 1)
 
@@ -590,6 +607,7 @@ The file ‘General.xlsx’ contains the scale factor for all seasons and data r
    *Source:* `A Clean Planet for all - A European strategic long-term vision for a prosperous, modern, competitive and climate neutral economy <https://ec.europa.eu/clima/policies/strategies/2050_en>`__
 
    -  The maximum allowed annual emissions for all countries combined in any scenario of an investment period in two columns:
+
       -  Index: Period
       -  Value: CO2 Cap in Mton CO2 per year (default: 5 000)
 
@@ -600,6 +618,7 @@ The file ‘General.xlsx’ contains the scale factor for all seasons and data r
    *Source:* `EC decarbonisation scenario 2016 <https://doi.org/10.1016/j.esr.2018.06.009>`__
 
    -  The assumed CO2 price adding to the operational costs of CO2 emitting generators in two columns:
+
       -  Index: Period
       -  Value: CO2 price in EUR per tCO2 (default: 0)
 
@@ -613,6 +632,7 @@ The file ‘Storage.xlsx’ contains data regarding the storage technologies:
    *Source:* `Statistical factsheet 2018 (ENTSO-E) <https://eepublicdownloads.azureedge.net/clean-documents/Publications/Statistics/Factsheet/entsoe_sfs2018_web.pdf>`__
 
    -  The initial capacity of charging/discharging storage capacity for a period in four columns:
+
       -  Index: Nodes
       -  Index: Storage Types
       -  Index: Period
@@ -623,6 +643,7 @@ The file ‘Storage.xlsx’ contains data regarding the storage technologies:
    *Source: Battery cost medish (Cole et al 2016)*
 
    -  The capital cost for investing in charging/discharging storage capacity in three columns:
+
       -  Index: Storage Type
       -  Index: Period
       -  Value: Capital Cost in Euro per kW (default: 0)
@@ -632,6 +653,7 @@ The file ‘Storage.xlsx’ contains data regarding the storage technologies:
    *Source: Battery cost medish (Cole et al 2016)*
 
    -  The fixed operation and maintenance cost for investing in charging/discharging storage capacity in three columns:
+
       -  Index: Storage Type
       -  Index: Period
       -  Value: Fixed OM Costs in Euro per kW (default: 0)
@@ -639,6 +661,7 @@ The file ‘Storage.xlsx’ contains data regarding the storage technologies:
 -  **Power Max Built Capacity**
 
    -  The maximum capacity of charging/discharging storage capacity that can be built in a period in four columns:
+
       -  Index: Nodes
       -  Index: Storage Types
       -  Index: Period
@@ -649,6 +672,7 @@ The file ‘Storage.xlsx’ contains data regarding the storage technologies:
    *Source: Eurelectric, ISO, ENTSO-E, ZEP (+50% of installed capacity)*
 
    -  The maximum installed charging/discharging storage capacity in any period in three columns:
+
       -  Index: Nodes
       -  Index: Storage Types
       -  Value: Max installed Capacity in MW (default: 0)
@@ -658,6 +682,7 @@ The file ‘Storage.xlsx’ contains data regarding the storage technologies:
    *Source: Battery cost medish (Cole et al 2016)*
 
    -  The capital cost for investing in energy storage capacity in three columns:
+
       -  Index: Storage Type
       -  Index: Period
       -  Value: Capital Cost in EUR per kWh (default: 0)
@@ -665,7 +690,9 @@ The file ‘Storage.xlsx’ contains data regarding the storage technologies:
 -  **Energy Fixed OM Costs**
 
    *Source: Battery cost medish (Cole et al 2016)*
+
    -  The fixed operation and maintenance cost for investing in energy storage capacity in three columns:
+      
       -  Index: Storage Type
       -  Index: Period
       -  Value: Fixed OM Costs in EUR per kWh (default: 0)
@@ -675,6 +702,7 @@ The file ‘Storage.xlsx’ contains data regarding the storage technologies:
    *Source: Eurelectric, ISO, ENTSO-E, ZEP*
 
    -  The initial energy storages capacity in a period in four columns:
+
       -  Index: Nodes
       -  Index: Storage Types
       -  Index: Period
@@ -683,6 +711,7 @@ The file ‘Storage.xlsx’ contains data regarding the storage technologies:
 -  **Energy max Built Capacity**
 
    -  The maximum energy storage capacity that can be built in a period in four columns:
+
       -  Index: Nodes
       -  Index: Storage Types
       -  Index: Period
@@ -693,6 +722,7 @@ The file ‘Storage.xlsx’ contains data regarding the storage technologies:
    *Source: Eurelectric: 'Hydro in Europe: Powering Renewables' (+10% of existing capacity)*
 
    -  The maximum installed energy storage capacity in any period in three columns:
+
       -  Index: Nodes
       -  Index: Storage Types
       -  Value: Max installed Capacity in MWh (default: 0)
@@ -700,30 +730,35 @@ The file ‘Storage.xlsx’ contains data regarding the storage technologies:
 -  **Storage Initial Energy Level**
 
    -  The initial energy level of a storage as a percentage of the installed energy capacity in two columns:
+
       -  Index: Storage Type
       -  Value: Initial Energy Level as percentage of Installed Energy Capacity (default: 0)
 
 -  **Storage Charge Efficiency**
 
    -  The efficiency of charging a storage (non-spillage during charging) in two columns:
+
       -  Index: Storage Type
       -  Value: Storage Charging Efficiency (default: 1)
 
 -  **Storage Discharge Efficiency**
 
    -  The efficiency of discharging a storage (non-spillage during discharging) in two columns:
+
       -  Index: Storage Type
       -  Value: Storage Discharging Efficiency (default: 1)
 
 -  **Storage Power to Energy**
 
    -  The required ratio between installed power and energy storage for dependent storage in two columns:
+
       -  Index: Dependent Storage Type
       -  Value: Storage Ratio (default: 1)
 
 -  **Storage Bleed Efficiency**
 
    -  The hourly percentage of spillage (self-discharge) in two columns (value = 1 means no self-discharge):
+   
       -  Index: Storage Type
       -  Value: Storage Bleed Efficiency (default: 1)
 
@@ -732,6 +767,7 @@ The file ‘Storage.xlsx’ contains data regarding the storage technologies:
    *Source: Battery cost medish (Cole et al 2016)*
 
    -  Lifetime of storage types in years in two columns:
+
       -  Index: Storage Type
       -  Value: Lifetime in years (default: 0)
 
@@ -743,6 +779,7 @@ The file ‘Transmission.xlsx’ contains the data specific to all transmission 
 -  **Line Efficiency**
 
    -  The percentage of transmission that reaches destination in any time step in three columns:
+
       -  Index: From Node
       -  Index: To Node
       -  Value: Line Efficiency (default: 0.97)
@@ -752,6 +789,7 @@ The file ‘Transmission.xlsx’ contains the data specific to all transmission 
    *Source: ENTSO-E*
 
    -  The maximum allowed capacity of transmission between nodes in the given investment period in four columns:
+
       -  Index: From Node
       -  Index: To Node
       -  Index: Period
@@ -762,6 +800,7 @@ The file ‘Transmission.xlsx’ contains the data specific to all transmission 
    *Source: Distances defined by map (approx cog, normalized st BE-NL is 175)*
 
    -  The maximum transmission capacity that can be built in a period in four columns:
+
       -  Index: From Node
       -  Index: To Node
       -  Index: Period
@@ -770,6 +809,7 @@ The file ‘Transmission.xlsx’ contains the data specific to all transmission 
 -  **Length**
 
    -  The length of net transfer capacity between two nodes in three columns:
+
       -  Index: From Node
       -  Index: To Node
       -  Value: Line length in km (default: 0)
@@ -779,6 +819,7 @@ The file ‘Transmission.xlsx’ contains the data specific to all transmission 
    *Source: A scenario analysis for an optimal RES integration into the European transmission grid up to 2050*
 
    -  This sheet contains the cost per MW-km of investing in a transmission with a given line type in three columns:
+
       -  Index: Line Type
       -  Index: Period
       -  Value: Type Capital Costs in EUR per MW-km (default: 0)
@@ -788,6 +829,7 @@ The file ‘Transmission.xlsx’ contains the data specific to all transmission 
    *Source: Assumed 5 % of capital cost (see Type Capital Cost)*
 
    -  The cost for operation and maintenance of transmission line types in three columns:
+
       -  Index: Line Type
       -  Index Period
       -  Value: Fixed OM Cost in EUR per MW (default: 0)
@@ -797,6 +839,7 @@ The file ‘Transmission.xlsx’ contains the data specific to all transmission 
    *Source: SUSPLAN, ENTSO-E*
 
    -  The initial transmission capacity in a period in four columns:
+
       -  Index: From Node
       -  Index: To Node
       -  Index: Period
@@ -805,6 +848,7 @@ The file ‘Transmission.xlsx’ contains the data specific to all transmission 
 -  **Lifetime**
 
    -  The lifetime of transmission Lines in years in three columns:
+
       -  Index: From Node
       -  Index: To Node
       -  Value: Lifetime in years (default: 40)

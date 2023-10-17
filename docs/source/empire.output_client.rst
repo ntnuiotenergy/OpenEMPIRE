@@ -1,13 +1,13 @@
-Empire.output\_client package
+empire.output\_client package
 =============================
 
 Submodules
 ----------
 
-Empire.output\_client.maps module
+empire.output\_client.maps module
 ---------------------------------
 
-.. automodule:: Empire.output_client.maps
+.. automodule:: empire.output_client.maps
    :members:
    :undoc-members:
    :show-inheritance:
@@ -15,7 +15,7 @@ Empire.output\_client.maps module
 Module contents
 ---------------
 
-.. automodule:: Empire.output_client
+.. automodule:: empire.output_client
    :members:
    :undoc-members:
    :show-inheritance:

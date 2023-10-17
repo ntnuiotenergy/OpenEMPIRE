@@ -1,5 +1,5 @@
-Empire package
-==============
+The empire package
+==================
 
 Subpackages
 -----------
@@ -7,72 +7,72 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
-   Empire.input_client
-   Empire.output_client
+   empire.input_client
+   empire.output_client
 
 Submodules
 ----------
 
-Empire.config module
+empire.config module
 --------------------
 
-.. automodule:: Empire.config
+.. automodule:: empire.config
    :members:
    :undoc-members:
    :show-inheritance:
 
-Empire.empire module
+empire.empire module
 --------------------
 
-.. automodule:: Empire.empire
+.. automodule:: empire.empire
    :members:
    :undoc-members:
    :show-inheritance:
 
-Empire.input\_data\_manager module
+empire.input\_data\_manager module
 ----------------------------------
 
-.. automodule:: Empire.input_data_manager
+.. automodule:: empire.input_data_manager
    :members:
    :undoc-members:
    :show-inheritance:
 
-Empire.logger module
+empire.logger module
 --------------------
 
-.. automodule:: Empire.logger
+.. automodule:: empire.logger
    :members:
    :undoc-members:
    :show-inheritance:
 
-Empire.model\_runner module
+empire.model\_runner module
 ---------------------------
 
-.. automodule:: Empire.model_runner
+.. automodule:: empire.model_runner
    :members:
    :undoc-members:
    :show-inheritance:
 
-Empire.reader module
+empire.reader module
 --------------------
 
-.. automodule:: Empire.reader
+.. automodule:: empire.reader
    :members:
    :undoc-members:
    :show-inheritance:
 
-Empire.scenario\_random module
+empire.scenario\_random module
 ------------------------------
 
-.. automodule:: Empire.scenario_random
+.. automodule:: empire.scenario_random
    :members:
    :undoc-members:
    :show-inheritance:
 
-Empire.utils module
+empire.utils module
 -------------------
 
-.. automodule:: Empire.utils
+.. automodule:: empire.utils
    :members:
    :undoc-members:
    :show-inheritance:
@@ -80,7 +80,7 @@ Empire.utils module
 Module contents
 ---------------
 
-.. automodule:: Empire
+.. automodule:: empire
    :members:
    :undoc-members:
    :show-inheritance:
