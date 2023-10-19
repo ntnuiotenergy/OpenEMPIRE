@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 def run_empire_model(
     empire_config: EmpireConfiguration,
     run_config: EmpireRunConfiguration,
-    data_managers: IDataManager,
+    data_managers: list[IDataManager],
     test_run: bool,
 ):
     for manager in data_managers:

@@ -55,6 +55,10 @@ empire_config = EmpireConfiguration.from_dict(config=config)
 run_path = Path.cwd() / "Results/norway_analysis/ncc{ncc}_na{na}_w{w}_wog{wog}".format(
     ncc=capital_cost, na=nuclear_availability, w=max_onshore_wind_norway, wog=max_offshore_wind_grounded_norway
 )
+
+if (run_path / "Output/results_objective.csv").exists():
+    raise ValueError("There already exists results for this analysis run.")
+
 run_config = setup_run_paths(version=version, empire_config=empire_config, run_path=run_path)
 logger = get_empire_logger(run_config=run_config)
 

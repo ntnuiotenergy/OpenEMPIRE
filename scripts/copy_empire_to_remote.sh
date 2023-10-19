@@ -24,13 +24,13 @@ elif [[ $CLUSTER = "IDUN" ]]; then
 fi
 
 
-
 # Compress files while excluding certain directories on the local machine
 cd $LOCAL_DIR
 tar --exclude='./.*' \
     --exclude='./Results/*/' \
     --exclude='./docs/*/' \
     --exclude='./notebooks/*/' \
+    --exclude='*__pycache__*' \
     -cvzf myfiles.tar.gz *
     
 # Transfer the compressed file to the remote server

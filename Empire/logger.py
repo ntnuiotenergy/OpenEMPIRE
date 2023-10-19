@@ -28,10 +28,10 @@ def get_empire_logger(run_config: EmpireRunConfiguration) -> logging.Logger:
         except yaml.YAMLError as e:
             raise RuntimeError(f"Error parsing logging configuration: {e}")
 
-    if "Empire" not in log_config.get("loggers", {}):
-        raise ValueError("Logger named 'Empire' not found in the logging configuration.")
+    if "empire" not in log_config.get("loggers", {}):
+        raise ValueError("Logger named 'empire' not found in the logging configuration.")
 
     log_config["handlers"]["file_handler"]["filename"] = run_config.results_path / "logs.txt"
     logging.config.dictConfig(log_config)
     
-    return logging.getLogger("Empire")
+    return logging.getLogger("empire")
