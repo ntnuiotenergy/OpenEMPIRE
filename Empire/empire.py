@@ -14,7 +14,7 @@ from pyomo.environ import *
 logger = logging.getLogger(__name__)
 
 
-def run_empire(name, tab_file_path: Path, result_file_path: Path, scenariogeneration, scenario_data_path,
+def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_path,
                solver, temp_dir, FirstHoursOfRegSeason, FirstHoursOfPeakSeason, lengthRegSeason,
                lengthPeakSeason, Period, Operationalhour, Scenario, Season, HoursOfSeason,
                discountrate, WACC, LeapYearsInvestment, IAMC_PRINT, WRITE_LP,
@@ -286,14 +286,9 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenariogenera
     data.load(filename=str(tab_file_path / 'Node_ElectricAnnualDemand.tab'), param=model.sloadAnnualDemand, format="table") 
     data.load(filename=str(tab_file_path / 'Node_HydroGenMaxAnnualProduction.tab'), param=model.maxHydroNode, format="table") 
     
-    if scenariogeneration:
-        scenariopath = tab_file_path
-    else:
-        scenariopath = scenario_data_path
-
-    data.load(filename=str(scenariopath / 'Stochastic_HydroGenMaxSeasonalProduction.tab'), param=model.maxRegHydroGenRaw, format="table")
-    data.load(filename=str(scenariopath / 'Stochastic_StochasticAvailability.tab'), param=model.genCapAvailStochRaw, format="table") 
-    data.load(filename=str(scenariopath / 'Stochastic_ElectricLoadRaw.tab'), param=model.sloadRaw, format="table") 
+    data.load(filename=str(tab_file_path / 'Stochastic_HydroGenMaxSeasonalProduction.tab'), param=model.maxRegHydroGenRaw, format="table")
+    data.load(filename=str(tab_file_path / 'Stochastic_StochasticAvailability.tab'), param=model.genCapAvailStochRaw, format="table") 
+    data.load(filename=str(tab_file_path / 'Stochastic_ElectricLoadRaw.tab'), param=model.sloadRaw, format="table") 
 
     data.load(filename=str(tab_file_path / 'General_seasonScale.tab'), param=model.seasScale, format="table") 
 

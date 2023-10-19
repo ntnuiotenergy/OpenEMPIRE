@@ -8,7 +8,7 @@ from empire import run_empire
 from empire.config import EmpireConfiguration, EmpireRunConfiguration, read_config_file
 from empire.input_data_manager import IDataManager
 from empire.reader import generate_tab_files
-from empire.scenario_random import generate_random_scenario
+from empire.scenario_random import check_scenarios_exist_and_copy, generate_random_scenario
 from empire.utils import copy_dataset, create_if_not_exist, get_run_name
 
 logger = logging.getLogger(__name__)
@@ -28,7 +28,6 @@ def run_empire_model(
     len_reg_season = empire_config.length_of_regular_season
     discountrate = empire_config.discount_rate
     use_scen_generation = empire_config.use_scenario_generation
-    use_fix_sample = empire_config.use_fixed_sample
 
     #############################
     ##Non configurable settings##
@@ -40,8 +39,6 @@ def run_empire_model(
     len_peak_season = empire_config.len_peak_season
     discountrate = empire_config.discount_rate
     LeapYearsInvestment = empire_config.leap_years_investment
-    time_format = empire_config.time_format
-    north_sea = empire_config.north_sea
 
     workbook_path = run_config.dataset_path
     tab_file_path = run_config.tab_file_path
@@ -97,19 +94,23 @@ def run_empire_model(
     logger.info("++++++++")
 
     if use_scen_generation:
-        generate_random_scenario(
-            file_path=scenario_data_path,
-            tab_file_path=tab_file_path,
-            scenarios=NoOfScenarios,
-            seasons=regular_seasons,
-            Periods=len(Period),
-            regularSeasonHours=len_reg_season,
-            peakSeasonHours=len_peak_season,
-            dict_countries=dict_countries,
-            time_format=time_format,
-            fix_sample=use_fix_sample,
-            north_sea=north_sea,
-        )
+        if empire_config.use_fixed_sample and not (scenario_data_path / "sampling_key.csv").exists():
+            raise ValueError("Missing 'sampling_key.csv' in ScenarioData folder.")
+        else:
+            generate_random_scenario(
+                empire_config=empire_config,
+                dict_countries=dict_countries,
+                scenario_data_path=scenario_data_path,
+                tab_file_path=tab_file_path,
+            )
+            
+    else:
+        if not empire_config.use_fixed_sample:
+            logger.warning(
+                "Both 'use_scen_generation' and 'use_fixed_sample' are set to False. "
+                "Existing scenarios will be used, thus 'use_fixed_sample' should be True."
+            )
+        check_scenarios_exist_and_copy(run_config)
 
     generate_tab_files(file_path=workbook_path, tab_file_path=tab_file_path)
 
@@ -118,7 +119,6 @@ def run_empire_model(
             name=run_config.run_name,
             tab_file_path=tab_file_path,
             result_file_path=result_file_path,
-            scenariogeneration=use_scen_generation,
             scenario_data_path=scenario_data_path,
             solver=empire_config.optimization_solver,
             temp_dir=empire_config.temporary_directory,
@@ -145,13 +145,20 @@ def run_empire_model(
         pprint.pprint(empire_config.__dict__, stream=file, indent=4, width=80)
 
 
-def setup_run_paths(version: str, empire_config: EmpireConfiguration, run_path: Path) -> EmpireRunConfiguration:
+def setup_run_paths(
+    version: str,
+    empire_config: EmpireConfiguration,
+    run_path: Path,
+) -> EmpireRunConfiguration:
     """
     Setup run paths for Empire.
 
-    :param version: dataset version
-    :param empire_config: Empire configuration
-    :return: Empire run configuration
+    :param version: dataset version.
+    :param empire_config: Empire configuration.
+    :param run_path: Path containing input and output to the empire run.
+    :param scenario_data: Path to scenario data, optional.
+    :param sampling_key_path: Path to sampled keys for scenario generation, optional.
+    :return: Empire run configuration.
     """
 
     # Original dataset

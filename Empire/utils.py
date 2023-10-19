@@ -17,6 +17,19 @@ def copy_dataset(src_path: Path, dest_path: Path):
         shutil.copyfile(src_path / f"{file}.xlsx", dest_path / f"{file}.xlsx")
 
 
+def copy_file(src_file: Path, dest_file: Path):
+    """
+    Copy file from source to destination.
+
+    :param src_file: Source file
+    :param dest_file: Destination file
+    """
+    if not src_file.is_file():
+        raise ValueError(f"'{src_file}' is not a file!")
+
+    shutil.copyfile(src_file, dest_file)
+
+
 def get_run_name(empire_config, version: str):
     name = (
         f"{version}_reg{empire_config.length_of_regular_season}"
