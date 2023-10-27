@@ -29,6 +29,12 @@ class EmpireConfiguration:
         write_in_lp_format: bool,
         serialize_instance: bool,
         north_sea: bool,
+        regular_seasons: list[str] = ["winter", "spring", "summer", "fall"],
+        n_peak_seasons: int = 2,
+        len_peak_season: int = 24,
+        leap_years_investment: int = 5,
+        time_format: str = "%d/%m/%Y %H:%M",
+        **kwargs,
     ):
         """
         Class containing configurations for running Empire simulations.
@@ -48,6 +54,10 @@ class EmpireConfiguration:
         :param write_in_lp_format: Problem should be written in Linear Programming format.
         :param serialize_instance: Serialize the data structure or model for later use.
         :param use_north_sea: Whether north-sea is modelled or not.
+        :param regular_seasons: Regular seasons.
+        :param n_peak_seasons:  Peak seasons.
+        :param leap_years_investment: Years between investment decisions
+        :param time_format: Time format
         """
         # Model parameters
         self.use_temporary_directory = use_temporary_directory
@@ -66,15 +76,15 @@ class EmpireConfiguration:
         self.serialize_instance = serialize_instance
         self.north_sea = north_sea
 
-        # Fixed configuration
-        self.n_reg_season = 4
-        self.regular_seasons = ["winter", "spring", "summer", "fall"]
-        self.n_peak_seasons = 2
-        self.len_peak_season = 24
-        self.leap_years_investment = 5
-        self.time_format = "%d/%m/%Y %H:%M"
+        # Optional parameters
+        self.regular_seasons = regular_seasons
+        self.n_peak_seasons = n_peak_seasons
+        self.len_peak_season = len_peak_season
+        self.leap_years_investment = leap_years_investment
+        self.time_format = time_format
 
         # Computed attributes
+        self.n_reg_season = len(regular_seasons)
         self.periods = [i + 1 for i in range(int((self.forecast_horizon_year - 2020) / self.leap_years_investment))]
         self.n_periods = len(self.periods)
 
