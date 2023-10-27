@@ -266,7 +266,7 @@ class NodeClient(BaseClient):
         self._write_to_sheet(df, self.file, "ElectricAnnualDemand")
 
     def get_node_lost_load_cost(self):
-        return self._read_from_sheet(self.file, "NodeLostNodeCost")
+        return self._read_from_sheet(self.file, "NodeLostLoadCost")
 
     def set_node_lost_load_cost(self, df: pd.DataFrame):
         self._write_to_sheet(df, self.file, "NodeLostNodeCost")
@@ -379,18 +379,18 @@ class StorageClient(BaseClient):
             df, self.file, "PowerMaxBuiltCapacity", usecols=[0, 1, 2, 3]
         )
 
-    def getEnergyCapitalCost(self):
+    def get_energy_capital_cost(self):
         return self._read_from_sheet(self.file, "EnergyCapitalCost", usecols=[0, 1, 2])
 
-    def setEnergyCapitalCost(self, df: pd.DataFrame):
+    def set_energy_capital_cost(self, df: pd.DataFrame):
         self._write_to_sheet(df, self.file, "EnergyCapitalCost")
 
-    def get_energy_initial_capacity(self):
+    def get_initial_energy_capacity(self):
         return self._read_from_sheet(
             self.file, "EnergyInitialCapacity", usecols=[0, 1, 2, 3]
         )
 
-    def set_energy_initial_capacity(self, df: pd.DataFrame):
+    def set_initial_energy_capacity(self, df: pd.DataFrame):
         self._write_to_sheet(df, self.file, "EnergyInitialCapacity")
 
     def get_energy_max_built_capacity(self):

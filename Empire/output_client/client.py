@@ -78,7 +78,7 @@ class EmpireOutputClient:
         :param index: The index indicating which data to retrieve.
         :return: A DataFrame containing the requested data.
         """
-        index_name, columns_name = client._read_file_and_split(self.files.europe_plot)[index].split("\n")[0].split(",")
+        index_name, columns_name = self._read_file_and_split(self.files.europe_plot)[index].split("\n")[0].split(",")
         df = pd.read_csv(StringIO(self._read_file_and_split(self.files.europe_plot)[index]), index_col=0, header=1)
         df.index.name = index_name
         df.columns.name = columns_name
