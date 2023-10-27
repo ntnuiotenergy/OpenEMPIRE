@@ -1,3 +1,4 @@
+import uuid
 from argparse import ArgumentParser, ArgumentTypeError
 from pathlib import Path
 
@@ -52,8 +53,12 @@ version = "europe_v51"
 config = read_config_file(Path("config/myrun.yaml"))
 empire_config = EmpireConfiguration.from_dict(config=config)
 
-run_path = Path.cwd() / "Results/norway_analysis/ncc{ncc}_na{na}_w{w}_wog{wog}".format(
-    ncc=capital_cost, na=nuclear_availability, w=max_onshore_wind_norway, wog=max_offshore_wind_grounded_norway
+run_path = Path.cwd() / "Results/norway_analysis_{uid}/ncc{ncc}_na{na}_w{w}_wog{wog}".format(
+    uid=str(uuid.uuid4())[:4],
+    ncc=capital_cost,
+    na=nuclear_availability,
+    w=max_onshore_wind_norway,
+    wog=max_offshore_wind_grounded_norway,
 )
 
 if (run_path / "Output/results_objective.csv").exists():
