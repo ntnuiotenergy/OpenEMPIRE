@@ -49,10 +49,10 @@ rm $LOCAL_DIR/myfiles.tar.gz
 echo "Transfer complete!"
 
 
-# if [[ $CLUSTER = "Solstorm" ]]; then
-#     echo "Starting SGE job!"
-# elif [[ $CLUSTER = "IDUN" ]]; then
-#     echo "Starting SLURM job!"
-# fi
+if [[ $CLUSTER = "Solstorm" ]]; then
+    echo "Starting SGE job!"
+elif [[ $CLUSTER = "IDUN" ]]; then
+    echo "Starting SLURM job!"
+fi
 
-# ssh $REMOTE_USER@$REMOTE_SERVER "sbatch $REMOTE_DIR/$SCHEDULER_SCRIPT"
+ssh $REMOTE_USER@$REMOTE_SERVER "sbatch $REMOTE_DIR/$SCHEDULER_SCRIPT"
