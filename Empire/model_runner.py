@@ -141,7 +141,9 @@ def run_empire_model(
             USE_TEMP_DIR=empire_config.use_temporary_directory,
         )
 
-    with open(run_config.dataset_path / "config.txt", "w", encoding="utf-8") as file:
+    config_path = run_config.dataset_path / "config.txt"
+    logger.info("Writing config to: %s", config_path)
+    with open(config_path, "w", encoding="utf-8") as file:
         pprint.pprint(empire_config.__dict__, stream=file, indent=4, width=80)
 
 
