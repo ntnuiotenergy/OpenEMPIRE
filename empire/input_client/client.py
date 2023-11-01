@@ -483,22 +483,30 @@ class EmpireInputClient:
     A unified interface (facade) for accessing various input clients related to the
     Empire dataset.
 
-    Attributes:
-    - dataset_path (Path): The base directory containing all datasets.
-    - engine (str): The engine for reading/writing Excel files. Default is "openpyxl".
-    - sets (SetsClient): Client for managing 'Sets' data.
-    - generator (GeneratorClient): Client for managing 'Generator' data.
-    - nodes (NodeClient): Client for managing 'Node' data.
-    - transmission (TransmissionClient): Client for managing 'Transmission' data.
-    - storage (StorageClient): Client for managing 'Storage' data.
+    :param dataset_path: Base directory containing all datasets.
+    :type dataset_path: Path
+    :param engine: Engine to use for reading/writing Excel files. Default is "openpyxl".
+    :type engine: str
+
+    :ivar dataset_path: The base directory containing all datasets.
+    :vartype dataset_path: Path
+    :ivar engine: The engine for reading/writing Excel files. Default is "openpyxl".
+    :vartype engine: str
+    :ivar sets: Client for managing 'Sets' data.
+    :vartype sets: SetsClient
+    :ivar generator: Client for managing 'Generator' data.
+    :vartype generator: GeneratorClient
+    :ivar nodes: Client for managing 'Node' data.
+    :vartype nodes: NodeClient
+    :ivar transmission: Client for managing 'Transmission' data.
+    :vartype transmission: TransmissionClient
+    :ivar storage: Client for managing 'Storage' data.
+    :vartype storage: StorageClient
     """
 
     def __init__(self, dataset_path: Path, engine: str = "openpyxl"):
         """
         Initialize an EmpireInputClient with the given dataset path and engine.
-
-        :param dataset_path: Base directory containing all datasets.
-        :param engine: Engine to use for reading/writing Excel files. Default is "openpyxl".
         """
         self.dataset_path = dataset_path
         self.engine = engine
