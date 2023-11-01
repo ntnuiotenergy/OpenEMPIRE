@@ -27,7 +27,7 @@ else:
 
 empire_config = EmpireConfiguration.from_dict(config=config)
 
-run_path = Path.cwd() / "Results/basic_run/dataset_{args.dataset}"
+run_path = Path.cwd() / f"Results/basic_run/dataset_{args.dataset}"
 
 if (run_path / "Output/results_objective.csv").exists():
     raise ValueError("There already exists results for this analysis run.")
