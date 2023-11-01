@@ -11,18 +11,21 @@ CLUSTER="$1"
 # Specify directories and server details
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 LOCAL_DIR="$SCRIPT_DIR/.."
+CONFIG_FILE="$LOCAL_DIR/config/cluster.json"
+SAMPLE_CONFIG_FILE="$LOCAL_DIR/config/cluster.sample.json"
 
-REMOTE_USER="martihj"
-if [[ $CLUSTER = "Solstorm" ]]; then
-    REMOTE_SERVER="solstorm-login.iot.ntnu.no"
-    REMOTE_DIR="/home/martihj/OpenEMPIRE"
-    SCHEDULER_SCRIPT="./scripts/norway_analysis_sge.sh"
-elif [[ $CLUSTER = "IDUN" ]]; then
-    REMOTE_SERVER="idun-login1.hpc.ntnu.no"
-    REMOTE_DIR="/cluster/home/martihj/OpenEMPIRE"
-    SCHEDULER_SCRIPT="./scripts/norway_analysis_slurm.sh"
+# Check if config.json exists, if not, copy from sample and prompt user to edit it
+if [ ! -f "$CONFIG_FILE" ]; then
+    cp "$SAMPLE_CONFIG_FILE" "$CONFIG_FILE"
+    echo "Config file not found. A new one has been created from the sample. Please edit $CONFIG_FILE and rerun the script."
+    exit 1
 fi
 
+# Read configuration from JSON file
+REMOTE_USER=$(jq -r ".$CLUSTER.REMOTE_USER" $CONFIG_FILE)
+REMOTE_SERVER=$(jq -r ".$CLUSTER.REMOTE_SERVER" $CONFIG_FILE)
+REMOTE_DIR=$(jq -r ".$CLUSTER.REMOTE_DIR" $CONFIG_FILE)
+SCHEDULER_SCRIPT=$(jq -r ".$CLUSTER.SCHEDULER_SCRIPT" $CONFIG_FILE)
 
 # Compress files while excluding certain directories on the local machine
 cd $LOCAL_DIR

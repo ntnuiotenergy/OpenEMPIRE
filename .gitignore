@@ -142,3 +142,4 @@ data/
 report.html
 .DS_Store
 dag.png
+config/cluster.json
