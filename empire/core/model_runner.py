@@ -5,10 +5,10 @@ import pprint
 from pathlib import Path
 
 from empire import run_empire
-from empire.config import EmpireConfiguration, EmpireRunConfiguration, read_config_file
+from empire.core.config import EmpireConfiguration, EmpireRunConfiguration, read_config_file
 from empire.input_data_manager import IDataManager
-from empire.reader import generate_tab_files
-from empire.scenario_random import check_scenarios_exist_and_copy, generate_random_scenario
+from empire.core.reader import generate_tab_files
+from empire.core.scenario_random import check_scenarios_exist_and_copy, generate_random_scenario
 from empire.utils import copy_dataset, create_if_not_exist, get_run_name
 
 logger = logging.getLogger(__name__)

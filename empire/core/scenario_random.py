@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from empire.config import EmpireConfiguration, EmpireRunConfiguration
+from empire.core.config import EmpireConfiguration, EmpireRunConfiguration
 
 logger = logging.getLogger(__name__)
 

@@ -4,8 +4,8 @@ import logging
 from argparse import ArgumentParser
 from pathlib import Path
 
-from empire.config import EmpireConfiguration, read_config_file
-from empire.scenario_random import check_scenarios_exist, generate_random_scenario
+from empire.core.config import EmpireConfiguration, read_config_file
+from empire.core.scenario_random import check_scenarios_exist, generate_random_scenario
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

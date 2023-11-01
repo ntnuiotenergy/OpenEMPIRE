@@ -2,7 +2,7 @@ import yaml
 from pathlib import Path
 import logging
 import logging.config
-from empire.config import EmpireRunConfiguration
+from empire.core.config import EmpireRunConfiguration
 
 
 def get_empire_logger(run_config: EmpireRunConfiguration) -> logging.Logger:
