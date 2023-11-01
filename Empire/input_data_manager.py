@@ -1,6 +1,9 @@
+import logging
 from abc import ABC, abstractmethod
 
 from empire.input_client.client import EmpireInputClient
+
+logger = logging.getLogger(__name__)
 
 
 class IDataManager(ABC):
@@ -113,3 +116,92 @@ class MaxInstalledCapacityManager(IDataManager):
         df_max_installed.loc[condition, "generatorMaxInstallCapacity  in MW"] = self.max_installed_capacity
 
         self.client.generator.set_max_installed_capacity(df_max_installed)
+
+
+class MaxTransmissionCapacityManager(IDataManager):
+    """
+    Manager responsible for updating the maximum installed transmission capacity.
+    """
+
+    def __init__(
+        self,
+        client: EmpireInputClient,
+        from_node: str,
+        to_node: str,
+        max_installed_capacity: float,
+    ) -> None:
+        """
+        Initializes the MaxTransmissionCapacityManager with the provided parameters.
+
+        Parameters:
+        -----------
+        :param client: The client interface for retrieving and setting generator data.
+        :param from_node: From node.
+        :param to_node: To node.
+        :param max_installed_capacity: The new maximum installed capacity value.
+        """
+        self.client = client
+        self.from_node = from_node
+        self.to_node = to_node
+        self.max_installed_capacity = max_installed_capacity
+
+    def apply(self) -> None:
+        df_max_installed = self.client.transmission.get_max_install_capacity_raw()
+
+        condition = df_max_installed["InterconnectorLinks"].isin([self.from_node]) & df_max_installed["ToNode"].isin(
+            [self.to_node]
+        )
+
+        if not condition.any():
+            raise ValueError(f"No transmissoion connection found between {self.from_node} and {self.to_node}.")
+
+        df_max_installed.loc[condition, "MaxRawNotAdjustWithInitCap in MW"] = self.max_installed_capacity
+
+        logger.info(
+            f"Setting transmission capacity between {self.from_node} and {self.to_node} to {self.max_installed_capacity}"
+        )
+        self.client.transmission.set_max_install_capacity_raw(df_max_installed)
+
+
+if __name__ == "__main__":
+    from pathlib import Path
+
+    dataset_path = Path(
+        "/Users/martihj/gitsource/OpenEMPIRE/Results/norway_analysis/ncc6000.0_na0.95_w0.0_wog0.0_pTrue/Input/Xlsx"
+    )
+    input_client = EmpireInputClient(dataset_path=dataset_path)
+
+    transmission_manager = MaxTransmissionCapacityManager(
+        client=input_client, from_node="SorligeNordsjoII", to_node="UtsiraNord", max_installed_capacity=0.0
+    )
+
+    transmission_manager.apply()
+
+    # Remove international connections
+    remove_transmission = [
+        ["HollandseeKust", "DoggerBank"],
+        ["Nordsoen", "DoggerBank"],
+        ["SorligeNordsjoII", "DoggerBank"],
+        ["Borssele", "EastAnglia"],
+        ["SorligeNordsjoI", "FirthofForth"],
+        ["Nordsoen", "HelgolanderBucht"],
+        ["SorligeNordsjoI", "HelgolanderBucht"],
+        ["SorligeNordsjoII", "HelgolanderBucht"],
+        ["Borssele", "Hornsea"],
+        ["HollandseeKust", "Hornsea"],
+        ["UtsiraNord", "MorayFirth"],
+        ["Borssele", "Norfolk"],
+        ["HollandseeKust", "Norfolk"],
+        ["HollandseeKust", "Belgium"],
+        ["Hornsea", "DoggerBank"],
+        ["Borssele", "Netherlands"],
+        ["HelgolanderBucht", "Netherlands"],
+        ["SorligeNordsjoI", "Nordsoen"],
+        ["SorligeNordsjoII", "Nordsoen"],
+        ["UtsiraNord", "Nordsoen"],
+    ]
+
+    for from_node, to_node in remove_transmission:
+        MaxTransmissionCapacityManager(
+            client=input_client, from_node=from_node, to_node=to_node, max_installed_capacity=0.0
+        ).apply()

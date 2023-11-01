@@ -16,11 +16,11 @@ REMOTE_USER="martihj"
 if [[ $CLUSTER = "Solstorm" ]]; then
     REMOTE_SERVER="solstorm-login.iot.ntnu.no"
     REMOTE_DIR="/home/martihj/OpenEMPIRE"
-    SCHEDULER_SCRIPT="scripts/norway_analysis_sge.sh"
+    SCHEDULER_SCRIPT="./scripts/norway_analysis_sge.sh"
 elif [[ $CLUSTER = "IDUN" ]]; then
     REMOTE_SERVER="idun-login1.hpc.ntnu.no"
     REMOTE_DIR="/cluster/home/martihj/OpenEMPIRE"
-    SCHEDULER_SCRIPT="scripts/norway_analysis_slurm.sh"
+    SCHEDULER_SCRIPT="./scripts/norway_analysis_slurm.sh"
 fi
 
 
@@ -48,11 +48,15 @@ rm $LOCAL_DIR/myfiles.tar.gz
 
 echo "Transfer complete!"
 
+# 
+ssh $REMOTE_USER@$REMOTE_SERVER "chmod +x $REMOTE_DIR/scripts/*"
+echo "Made files in the scripts folder executable"
+
 
 if [[ $CLUSTER = "Solstorm" ]]; then
     echo "Starting SGE job!"
+    ssh $REMOTE_USER@$REMOTE_SERVER "cd $REMOTE_DIR && sh $SCHEDULER_SCRIPT"
 elif [[ $CLUSTER = "IDUN" ]]; then
     echo "Starting SLURM job!"
+    ssh $REMOTE_USER@$REMOTE_SERVER "sbatch $REMOTE_DIR/$SCHEDULER_SCRIPT"
 fi
-
-ssh $REMOTE_USER@$REMOTE_SERVER "sbatch $REMOTE_DIR/$SCHEDULER_SCRIPT"

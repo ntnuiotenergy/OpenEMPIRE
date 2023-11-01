@@ -2,6 +2,7 @@
 ncc=$1
 na=$2
 w=$3
+p=$4
 
 # Load modules and activate conda environment
 module load gurobi/10.0
@@ -19,8 +20,17 @@ if [[ "$CONDA_DEFAULT_ENV" != "empire_env" ]]; then
     fi
 fi
 
-python scripts/norway_analysis.py \
-    --nuclear-capital-cost $ncc \
-    --nuclear-availability $na \
-    --max-onshore-wind-norway $w \
-    --max-offshore-wind-grounded-norway $w
+if [ "$p" == "true" ]; then
+    python scripts/norway_analysis.py \
+        --nuclear-capital-cost $ncc \
+        --nuclear-availability $na \
+        --max-onshore-wind-norway $w \
+        --max-offshore-wind-grounded-norway $w \
+        -p
+else:
+    python scripts/norway_analysis.py \
+        --nuclear-capital-cost $ncc \
+        --nuclear-availability $na \
+        --max-onshore-wind-norway $w \
+        --max-offshore-wind-grounded-norway $w
+fi

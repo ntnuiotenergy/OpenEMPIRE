@@ -1,4 +1,3 @@
-import uuid
 from argparse import ArgumentParser, ArgumentTypeError
 from pathlib import Path
 
@@ -8,6 +7,7 @@ from empire.input_data_manager import (
     AvailabilityManager,
     CapitalCostManager,
     MaxInstalledCapacityManager,
+    MaxTransmissionCapacityManager,
 )
 from empire.logger import get_empire_logger
 from empire.model_runner import run_empire_model, setup_run_paths
@@ -39,6 +39,8 @@ parser.add_argument(
     required=True,
 )
 
+parser.add_argument("-p", "--protective", help="Protective development of north sea with no international grid connection", action="store_true")
+
 parser.add_argument("-t", "--test-run", help="Test run without optimization", action="store_true")
 
 args = parser.parse_args()
@@ -53,11 +55,12 @@ version = "europe_v51"
 config = read_config_file(Path("config/myrun.yaml"))
 empire_config = EmpireConfiguration.from_dict(config=config)
 
-run_path = Path.cwd() / "Results/norway_analysis/ncc{ncc}_na{na}_w{w}_wog{wog}".format(
+run_path = Path.cwd() / "Results/norway_analysis/ncc{ncc}_na{na}_w{w}_wog{wog}_p{p}".format(
     ncc=capital_cost,
     na=nuclear_availability,
     w=max_onshore_wind_norway,
     wog=max_offshore_wind_grounded_norway,
+    p=args.protective
 )
 
 if (run_path / "Output/results_objective.csv").exists():
@@ -65,6 +68,13 @@ if (run_path / "Output/results_objective.csv").exists():
 
 run_config = setup_run_paths(version=version, empire_config=empire_config, run_path=run_path)
 logger = get_empire_logger(run_config=run_config)
+
+logger.info("Running norway analysis with:")
+logger.info(f"Nuclear capital cost: {capital_cost}")
+logger.info(f"Nuclear availability: {nuclear_availability}")
+logger.info(f"Max installed onshore wind per elspot area in Norway: {max_onshore_wind_norway}")
+logger.info(f"Max installed grounded offshore wind per elspot area in Norway: {max_offshore_wind_grounded_norway}")
+logger.info(f"Dataset version: {version}")
 
 client = EmpireInputClient(dataset_path=run_config.dataset_path)
 
@@ -79,6 +89,37 @@ data_managers = [
     ),
 ]
 
+if args.protective:
+    logger.info("Protective north-sea transmission policy with no collaboration on transmission capacity between countries.")
+    # Remove international connections
+    remove_transmission = [
+        ["HollandseeKust", "DoggerBank"],
+        ["Nordsoen", "DoggerBank"],
+        ["SorligeNordsjoII", "DoggerBank"],
+        ["Borssele", "EastAnglia"],
+        ["SorligeNordsjoI", "FirthofForth"],
+        ["Nordsoen", "HelgolanderBucht"],
+        ["SorligeNordsjoI", "HelgolanderBucht"],
+        ["SorligeNordsjoII", "HelgolanderBucht"],
+        ["Borssele", "Hornsea"],
+        ["HollandseeKust", "Hornsea"],
+        ["UtsiraNord", "MorayFirth"],
+        ["Borssele", "Norfolk"],
+        ["HollandseeKust", "Norfolk"],
+        ["HollandseeKust", "Belgium"],
+        ["Hornsea", "DoggerBank"],
+        ["Borssele", "Netherlands"],
+        ["HelgolanderBucht", "Netherlands"],
+        ["SorligeNordsjoI", "Nordsoen"],
+        ["SorligeNordsjoII", "Nordsoen"],
+        ["UtsiraNord", "Nordsoen"],
+    ]
+
+    for from_node, to_node in remove_transmission:
+        data_managers.append(
+            MaxTransmissionCapacityManager(client=client, from_node=from_node, to_node=to_node, max_installed_capacity=0.0)
+        )
+
 if max_offshore_wind_grounded_norway is not None:
     data_managers.append(
         MaxInstalledCapacityManager(
@@ -89,12 +130,6 @@ if max_offshore_wind_grounded_norway is not None:
         )
     )
 
-logger.info("Running norway analysis with:")
-logger.info(f"Nuclear capital cost: {capital_cost}")
-logger.info(f"Nuclear availability: {nuclear_availability}")
-logger.info(f"Max installed onshore wind per elspot area in Norway: {max_onshore_wind_norway}")
-logger.info(f"Max installed grounded offshore wind per elspot area in Norway: {max_offshore_wind_grounded_norway}")
-logger.info(f"Dataset version: {version}")
 
 ## Run empire model
 run_empire_model(
