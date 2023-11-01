@@ -11,6 +11,7 @@ dependencies:
   - pyyaml>=5.1
   - glpk>=4.65
   - python==3.11
+  - streamlit
   - pip
   - pip:
       - -e .
