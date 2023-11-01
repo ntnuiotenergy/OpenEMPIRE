@@ -1,18 +1,18 @@
-# This is an example OpenEMPIRE configuration file. 
-# To be used with the execution script OpenEMPIRE/test_run.py
+# This is an OpenEMPIRE configuration file used for test runs.
+# To be used with the execution script run.py
 
-USE_TEMP_DIR : True #
-temp_dir : './'
-version : 'test'
-Horizon : 2030
-NoOfScenarios : 2
-lengthRegSeason : 24
-discountrate : 0.05
-WACC : 0.05
-solver : "Gurobi" #"Gurobi" #"Xpress" # #"CPLEX"
-scenariogeneration : True #False
-fix_sample : False #True
-EMISSION_CAP : False #True
-IAMC_PRINT : True #False
-WRITE_LP : False #True
-PICKLE_INSTANCE : False #True 
+use_temporary_directory: True       # Specifies whether to use a temporary directory for operations
+temporary_directory: './'           # Path to the temporary directory used for certain operations
+forecast_horizon_year: 2030         # Target or end year for a simulation or forecast
+number_of_scenarios: 2              # Number of scenarios to consider in the simulation or modeling
+length_of_regular_season: 24        # Length of a regulatory or regular season (e.g., in hours)
+discount_rate: 0.05                 # Rate used to discount future cash flows to present value
+wacc: 0.05                          # Represents the firm's cost of capital in percentage
+optimization_solver: "Gurobi"       # Mathematical solver used for optimization tasks
+use_scenario_generation: True       # Indicates if scenarios should be generated dynamically
+use_fixed_sample: False             # Specifies if a certain sample or set of data is fixed
+use_emission_cap: False             # Indicates if there's a cap on emissions
+print_in_iamc_format: True          # Output should be printed in a specific format (e.g., IAMC-compatible)
+write_in_lp_format: False           # Problem should be written in Linear Programming format
+serialize_instance: False           # Serialize the data structure or model for later use
+north_sea: False                    # Whether to north sea is modelled or not

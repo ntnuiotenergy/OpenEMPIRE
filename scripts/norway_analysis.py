@@ -1,4 +1,4 @@
-from argparse import ArgumentParser, ArgumentTypeError
+from argparse import ArgumentParser
 from pathlib import Path
 
 from empire.config import EmpireConfiguration, read_config_file
@@ -11,14 +11,7 @@ from empire.input_data_manager import (
 )
 from empire.logger import get_empire_logger
 from empire.model_runner import run_empire_model, setup_run_paths
-
-
-def restricted_float(x):
-    x = float(x)
-    if x < 0.0 or x > 1.0:
-        raise ArgumentTypeError(f"{x} not in range [0.0, 1.0]")
-    return x
-
+from empire.utils import restricted_float
 
 parser = ArgumentParser(description="A CLI script to run the Empire model.")
 
@@ -39,7 +32,12 @@ parser.add_argument(
     required=True,
 )
 
-parser.add_argument("-p", "--protective", help="Protective development of north sea with no international grid connection", action="store_true")
+parser.add_argument(
+    "-p",
+    "--protective",
+    help="Protective development of north sea with no international grid connection",
+    action="store_true",
+)
 
 parser.add_argument("-t", "--test-run", help="Test run without optimization", action="store_true")
 
@@ -60,7 +58,7 @@ run_path = Path.cwd() / "Results/norway_analysis/ncc{ncc}_na{na}_w{w}_wog{wog}_p
     na=nuclear_availability,
     w=max_onshore_wind_norway,
     wog=max_offshore_wind_grounded_norway,
-    p=args.protective
+    p=args.protective,
 )
 
 if (run_path / "Output/results_objective.csv").exists():
@@ -90,7 +88,9 @@ data_managers = [
 ]
 
 if args.protective:
-    logger.info("Protective north-sea transmission policy with no collaboration on transmission capacity between countries.")
+    logger.info(
+        "Protective north-sea transmission policy with no collaboration on transmission capacity between countries."
+    )
     # Remove international connections
     remove_transmission = [
         ["HollandseeKust", "DoggerBank"],
@@ -117,7 +117,9 @@ if args.protective:
 
     for from_node, to_node in remove_transmission:
         data_managers.append(
-            MaxTransmissionCapacityManager(client=client, from_node=from_node, to_node=to_node, max_installed_capacity=0.0)
+            MaxTransmissionCapacityManager(
+                client=client, from_node=from_node, to_node=to_node, max_installed_capacity=0.0
+            )
         )
 
 if max_offshore_wind_grounded_norway is not None:

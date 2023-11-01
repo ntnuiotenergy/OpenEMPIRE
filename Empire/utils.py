@@ -1,4 +1,5 @@
 import shutil
+from argparse import ArgumentTypeError
 from datetime import datetime
 from pathlib import Path
 
@@ -49,3 +50,10 @@ def create_if_not_exist(path: Path) -> Path:
     if not path.exists():
         path.mkdir(parents=True)
     return path
+
+
+def restricted_float(x) -> float:
+    x = float(x)
+    if x < 0.0 or x > 1.0:
+        raise ArgumentTypeError(f"{x} not in range [0.0, 1.0]")
+    return x
