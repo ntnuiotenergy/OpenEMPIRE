@@ -8,6 +8,7 @@ Welcome to OpenEMPIREe's documentation!
 
 .. toctree::
    :maxdepth: 2
+   :numbered:
    :caption: User guide:
 
    user_guide
