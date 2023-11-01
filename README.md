@@ -11,20 +11,26 @@ Other python package dependencies can be found in the file environment.yml.
 
 To download, you need to install Git and clone the repository. Note that the repository makes use of Git Large File Storage (LFS) which also needs to be installed for input data-files to be downloaded when cloning the repository. Once both Git and Git LFS has been successfully installed, the model is downloaded to the desired directory.
 
-To plot figures with Basemap, please follow the following instructions for installing it: https://github.com/matplotlib/basemap.
-
 # Software Structure
-EMPIRE consists of five programming scripts: 
+EMPIRE consists of a programming script used to run the model: 
 
-<b>(1)	run.py:</b> The main script used to run EMPIRE. It links to all other scripts. This is the only script a user of EMPIRE needs to use and potentially modify.  
+<b>	scripts/run.py:</b> The main script used to run EMPIRE. This is the only script a user of EMPIRE needs to use and potentially modify.  
 
-<b>(2)	Empire.py:</b> Contains the abstract formulation of EMPIRE in Pyomo. This script also contains code related to printing the results.
+**Note:** The main run-script (scipts/run.py), can run a small test instance of EMPIRE that usually finishes in 1-2 min. A normal test instance requires around 140 GB RAM and thus needs to be run on a high performance cluster (HPC). 
 
-<b>(3)	scenario_random.py:</b> Generates random operational scenarios as .tab-files through sampling.
+The run script uses the empire package that consists of these core modules:
 
-<b>(4)	reader.py:</b> Generates .tab-files input based on data provided in Excel workbooks. 
+<b>(1)	empire.py:</b> Contains the abstract formulation of EMPIRE in Pyomo. This script also contains code related to printing the results.
 
-<b>(5)	test_run.py:</b> Same as the main run-script (run.py), but it is linked to a small test instance of EMPIRE that usually finishes in 1-2 min. 
+<b>(2)	scenario_random.py:</b> Generates random operational scenarios as .tab-files through sampling.
+
+<b>(3)	reader.py:</b> Generates .tab-files input based on data provided in Excel workbooks. 
+
+<b>(4)	config.py:</b> Defines two configuration objects used by Empire.
+
+<b>(5)	model_runner.py:</b> Methods used for setting up an Empire run.
+
+In addition there are modules containing input and output clients, that can be used to read and alter input data, and read ouput/results data. 
 
 In the repository, the ‘Data handler’-folder contains the Excel workbooks that are used to store and modify input data. The workbooks are contained within folders representing instance-versions of EMPIRE, e.g. ‘europe_v50’. The ‘test’-folder contains input data for a small test-instance of EMPIRE. Within an instance-version in the ‘Data handler’-folder, there is a folder called ‘ScenarioData’ containing large data sets used to generate stochastic scenarios in EMPIRE. If EMPIRE is run with random scenario generation, representative time series are sampled once per scenario and season for each random input parameter.
 
@@ -41,104 +47,118 @@ For more details, please refer to the software documentation in the repository.
     <th>Description</th> 
   </tr>
   <tr>
-    <td>USE_TEMP_DIR</td>
+    <td>use_temporary_directory</td>
     <td>True/False</td> 
     <td>False</td> 
-    <td>If true, all instance-files related to solving EMPIRE is stored in the directory defined by temp_dir (see below). This is useful when running a large instance of EMPIRE to avoid memory problems. </td> 
+    <td>If true, all instance-files related to solving EMPIRE is stored in the directory defined by temporary_directory (see below). This is useful when running a large instance of EMPIRE to avoid memory problems. </td> 
   </tr>
   <tr>
-    <td>temp_dir</td>
+    <td>temporary_directory</td>
     <td>String</td>
     <td>'./'</td>
-    <td>The path to which temporary files will be stored if USE_TEMP_DIR = True; .lp-file is stored if WRITE_LP = True; and .plk-file is stored if PICKLE_INSTANCE = True. </td>
+    <td>The path to which temporary files will be stored if use_temporary_directory = True; .lp-file is stored if write_in_lp_format = True; and .plk-file is stored if serialize_instance = True. </td>
   </tr>
   <tr>
-    <td>version</td>
-    <td>String</td>
-    <td>'europe_v50'</td>
-    <td>The name of the version to be run. Note that this is the folder-name containing input data in ‘Data handler’. </td>
-  </tr>
-  <tr>
-    <td>Horizon</td>
+    <td>forecast_horizon_year</td>
     <td>Integer</td>
     <td>2060</td>
     <td>The last strategic (investment) period used in the optimization run. </td>
   </tr>
   <tr>
-    <td>NoOfScenarios</td>
+    <td>number_of_scenarios</td>
     <td>Integer</td>
     <td>3</td>
     <td>The number of scenarios in every investment period.  </td>
   </tr>
   <tr>
-    <td>lengthRegSeason</td>
+    <td>length_of_regular_season</td>
     <td>Integer</td>
     <td>168</td>
     <td>The number of hours to use in a regular season for optimization of system operation in every investment period. </td>
   </tr>
   <tr>
-    <td>discountrate</td>
+    <td>discount_rate</td>
     <td>Float</td>
     <td>0.05</td>
     <td>The discount rate. </td>
   </tr>
   <tr>
-    <td>WACC</td>
+    <td>wacc</td>
     <td>Float</td>
     <td>0.05</td>
     <td>The weighted average cost of capital (WACC). </td>
   </tr>
   <tr>
-    <td>solver</td>
+    <td>optimization_solver</td>
     <td>String</td>
     <td>"Xpress"</td>
     <td>Specifies the solver. Options: “Xpress”, “Gurobi”, “CPLEX”. </td>
   </tr>
   <tr>
-    <td>scenariogeneration</td>
+    <td>use_scenario_generation</td>
     <td>True/False</td>
     <td>True</td>
     <td>If true, new operational scenarios will be generated. NB! If false, .tab-files or sampling key must be manually added to the ‘ScenarioData’-folder in the version. </td>
   </tr>
   <tr>
-    <td>fix_sample</td>
+    <td>use_fixed_sample</td>
     <td>True/False</td>
     <td>False</td>
     <td>If true, new operational scenarios will be generated. NB! If false, .tab-files or sampling key must be manually added to the ‘ScenarioData’-folder in the version. </td>
   </tr>
   <tr>
-    <td>EMISSION_CAP</td>
+    <td>use_emission_cap</td>
     <td>True/False</td>
     <td>True</td>
     <td>If true, emissions in every scenario are capped according to the specified cap in ‘General.xlsx’. If false, the CO2-price specified in ‘General.xlsx’ applies. </td>
   </tr>
   <tr>
-    <td>IAMC_PRINT</td>
+    <td>print_in_iamc_format</td>
     <td>True/False</td>
     <td>True</td>
     <td>If true, selected results are printed on the standard IAMC-format in addition to the normal EMPIRE print. </td>
   </tr>
   <tr>
-    <td>WRITE_LP</td>
+    <td>write_in_lp_format</td>
     <td>True/False</td>
     <td>False</td>
     <td>If true, the solver-file will be saved. Useful for debugging.  </td>
   </tr>
   <tr>
-    <td>PICKLE_INSTANCE</td>
+    <td>serialize_instance</td>
     <td>True/False</td>
     <td>False</td>
     <td>If true, instance will be saved/pickled. Useful for printing alternative results. </td>
   </tr>
-  
+  <tr>
+    <td>north_sea</td>
+    <td>True/False</td>
+    <td>False</td>
+    <td>Whether the north sea is modelled or not. </td>
+  </tr>
 </table>
 
+
 # Test Run
-Note that building the instance in Pyomo for a base case of EMPIRE can take around 40 min. Therefore, it is good to run the ‘test_run.py’ first to confirm whether your computer or cluster connects to the preferred solver or not.
+Building the instance in Pyomo for a base case of EMPIRE can take around 40 min and require around 140 GB RAM. Therefore, it is good practice to run a test run with the test dataset first to confirm whether your computer or cluster connects to the preferred solver or not.  
+
+```python
+C:\Users\name\path_to_folder> scripts/python run.py -d test
+```
+
+One can also do a test run where optimization is not performed by running
+```python
+C:\Users\name\path_to_folder> scripts/python run.py --test-run -d test
+```
 
 # Running
-When all Pyomo and the preferred solver has been installed, the model is run by running the script ‘run.py’ in a Python interface. The code is run by using the following commands:
+When Pyomo and the preferred solver has been installed, the model is run by running the script ‘run.py’ in a Python interface. The code is run by using the following commands, for a given dataset defined in the Data handler folder:
 
-C:\Users\name> cd <path_to_folder>   
+```python
+C:\Users\name\path_to_folder> scripts/python run.py  -d europe_v51
+```
 
-C:\Users\name\path_to_folder> python run.py 
+## Example for running on a HPC
+
+To showcase how to run multiple cases on a HPC see `scripts/copy_and_run_empire_on_hpc.sh`. The script read configuration located at `config/cluster.json` and is meant to be executed on one of two HPC clusters at NTNU ([Solstorm](https://solstorm.iot.ntnu.no/wordpress/) and [Idun](https://www.hpc.ntnu.no/idun/)).
+
