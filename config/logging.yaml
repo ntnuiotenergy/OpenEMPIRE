@@ -15,7 +15,7 @@ handlers:
     formatter: simple
     filename: logs.txt 
 loggers:
-  Empire:
+  empire:
     level: DEBUG
     handlers: [console, file_handler]
     propagate: no
