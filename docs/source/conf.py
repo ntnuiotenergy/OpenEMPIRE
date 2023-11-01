@@ -14,7 +14,7 @@ release = "0.1.1"
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = ["sphinx.ext.autodoc"]
+extensions = ["sphinx.ext.autodoc", "sphinx.ext.napoleon"]
 
 templates_path = ["_templates"]
 exclude_patterns = []
@@ -29,3 +29,5 @@ html_theme = "furo"
 html_static_path = ["_static"]
 
 html_favicon = "_static/images/ntnu_logo.png"
+
+autodoc_typehints = "description"

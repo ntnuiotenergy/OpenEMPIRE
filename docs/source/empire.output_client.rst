@@ -4,10 +4,10 @@ empire.output\_client package
 Submodules
 ----------
 
-empire.output\_client.maps module
----------------------------------
+empire.output\_client.client module
+-----------------------------------
 
-.. automodule:: empire.output_client.maps
+.. automodule:: empire.output_client.client
    :members:
    :undoc-members:
    :show-inheritance:

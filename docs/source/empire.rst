@@ -1,5 +1,5 @@
-The empire package
-==================
+empire package
+==============
 
 Subpackages
 -----------
@@ -7,27 +7,12 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
+   empire.core
    empire.input_client
    empire.output_client
 
 Submodules
 ----------
-
-empire.config module
---------------------
-
-.. automodule:: empire.config
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-empire.empire module
---------------------
-
-.. automodule:: empire.empire
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
 empire.input\_data\_manager module
 ----------------------------------
@@ -41,30 +26,6 @@ empire.logger module
 --------------------
 
 .. automodule:: empire.logger
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-empire.model\_runner module
----------------------------
-
-.. automodule:: empire.model_runner
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-empire.reader module
---------------------
-
-.. automodule:: empire.reader
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-empire.scenario\_random module
-------------------------------
-
-.. automodule:: empire.scenario_random
    :members:
    :undoc-members:
    :show-inheritance:

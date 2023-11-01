@@ -123,7 +123,7 @@ Table of Contents
 Introduction
 ============
 
-The EMPIRE model is a stochastic linear programming model to analyze developments of the European power market. It was created as part of Dr. C. Skar’s doctoral thesis supervised by Prof. A. Tomasgard, and it has been used to analyze decarbonization of the European power system focusing on the supply side of the power market. The purpose of the model is to support long-term capacity expansion of the power system under short-term operational uncertainty with a special focus of representing variable renewable energy sources (VRES), namely wind, solar and hydro power. Energy demand, as well as investment options for energy supply technologies, their related costs and operational characteristics, are exogenous input data in the model. The output supports decisions regarding technology choices, investment volume and investment timing with requirements of ensuring a reliable energy system at minimum cost. The model output also supports short-term operational decisions of energy system components under uncertainty. The model is subject to operational uncertainty, so the stochastic scenarios represent different realizations of the following: (1) Availability of VRES (wind and solar), (2) availability of hydro reservoirs and (3) hourly electricity loads.
+The EMPIRE model is a stochastic linear programming model to analyze developments of the European power market. It was created as part of Dr. C. Skar’s `doctoral thesis <https://ntnuopen.ntnu.no/ntnu-xmlui/handle/11250/2399924>`__ supervised by `Prof. A. Tomasgard <https://www.ntnu.edu/employees/asgeir.tomasgard>`__ and Prof. G. Doorman, and it has been used to analyze decarbonization of the European power system focusing on the supply side of the power market. The purpose of the model is to support long-term capacity expansion of the power system under short-term operational uncertainty with a special focus of representing variable renewable energy sources (VRES), namely wind, solar and hydro power. Energy demand, as well as investment options for energy supply technologies, their related costs and operational characteristics, are exogenous input data in the model. The output supports decisions regarding technology choices, investment volume and investment timing with requirements of ensuring a reliable energy system at minimum cost. The model output also supports short-term operational decisions of energy system components under uncertainty. The model is subject to operational uncertainty, so the stochastic scenarios represent different realizations of the following: (1) Availability of VRES (wind and solar), (2) availability of hydro reservoirs and (3) hourly electricity loads.
 
 This documentation contains three main parts. Firstly, where to download and run the EMPIRE model is explained. The licensing and how to contribute working on EMPIRE are also described. Furthermore, a short overview on the mathematical formulation and the preprocessed calculations is presented. Secondly, the documentation gives a detailed explanation about the input data. This contains information about the input structure, as well as different kinds of data needed to run the model. The input data can be provided as Excel files, or as .tab-files, which is also further explained in this chapter. Lastly, you will find a description of the output data and what kind results EMPIRE produces. It also shows possibilities to visualize and interpret results.
 
@@ -137,7 +137,7 @@ Required Software
 
 The EMPIRE model is available in the Python-based, open-source optimization modelling language Pyomo. Running the model thus requires some coding skills in Python. To run the model, make sure Python, Pyomo and a third-party solver like Gurobi or CPLEX is installed and loaded to the respective computer or cluster. More information on how to install Python and Pyomo can be found `here <http://www.pyomo.org/installation>`__.
 
-All scripts and data can be downloaded from the Git repository called ‘OpenEMPIRE’. To download, you need to install `Git <https://git-scm.com/>`__ and `clone the repository. <https://git-scm.com/book/en/v2/Git-Basics-Getting-a-Git-Repository>`__ Note that the repository makes use of `Git Large File Storage (LFS) <https://git-lfs.github.com/>`__ which also needs to be installed for input data-files to be downloaded when cloning the repository. Once both Git and Git LFS has been successfully installed, the model is downloaded to the desired directory with the following commands in the command prompt or Git BASH:
+All scripts and data can be downloaded from the Git repository `OpenEMPIRE <https://github.com/ntnuiotenergy/OpenEMPIRE>`__. To download, you need to install `Git <https://git-scm.com/>`__ and `clone the repository. <https://git-scm.com/book/en/v2/Git-Basics-Getting-a-Git-Repository>`__ Note that the repository makes use of `Git Large File Storage (LFS) <https://git-lfs.github.com/>`__ which also needs to be installed for input data-files to be downloaded when cloning the repository. Once both Git and Git LFS has been successfully installed, the model is downloaded to the desired directory with the following commands in the command prompt or Git BASH:
 
 .. code-block:: console
 
@@ -146,140 +146,95 @@ All scripts and data can be downloaded from the Git repository called ‘OpenEMP
 
 Git-Repository
 --------------
+EMPIRE consists of a programming script used to run the model: 
 
-EMPIRE consists of five programming scripts:
+<b>	scripts/run.py:</b> The main script used to run EMPIRE. This is the only script a user of EMPIRE needs to use and potentially modify.  
 
-(1) **run.py:** The main script used to run EMPIRE. It links to all other scripts. This is the only script a *user* of EMPIRE needs to use and potentially modify.
+**Note:** The main run-script (scipts/run.py), can run a small test instance of EMPIRE that usually finishes in 1-2 min. A normal test instance requires around 140 GB RAM and thus needs to be run on a high performance cluster (HPC). 
 
-(2) **Empire.py:** Contains the abstract formulation of EMPIRE in Pyomo. This script also contains code related to printing the results.
+The run script uses the empire package that consists of these core modules:
 
-(3) **scenario_random.py:** Generates random operational scenarios as .tab-files through sampling.
+**(1)	empire.py:** Contains the abstract formulation of EMPIRE in Pyomo. This script also contains code related to printing the results.
 
-(4) **reader.py:** Generates .tab-files input based on data provided in Excel workbooks.
+**(2)	scenario_random.py:** Generates random operational scenarios as .tab-files through sampling.
 
-(5) **test_run.py:** Same as the main run-script (run.py), but it is linked to a small test instance of EMPIRE that usually finishes in 1-2 min.
+**(3)	reader.py:** Generates .tab-files input based on data provided in Excel workbooks. 
+
+**(4)	config.py:** Defines two configuration objects used by Empire.
+
+**(5)	model_runner.py:** Methods used for setting up an Empire run.
+
+In addition there are modules containing input and output clients, that can be used to read and alter input data, and read ouput/results data. 
 
 In the repository, the ‘Data handler’-folder contains the Excel workbooks that are used to store and modify input data. The workbooks are contained within folders representing instance-versions of EMPIRE, e.g. ‘europe_v50’. The ‘test’-folder contains input data for a small test-instance of EMPIRE. For more details regarding input data, see Section 3.
 
-Within an instance-version in the ‘Data handler’-folder, there is a folder called ‘ScenarioData’ containing large data sets used to generate stochastic scenarios in EMPIRE. If EMPIRE is run with random scenario generation, representative time series are sampled once per scenario and season for each random input parameter. For more details on scenario generation, see Section 4.
+Within an instance-version in the ‘Data handler’-folder, there is a folder called ‘ScenarioData’ containing large data sets used to generate stochastic scenarios in EMPIRE. If EMPIRE is run with random scenario generation, representative time series are sampled once per scenario and season for each random input parameter.For more details on scenario generation, see Section 4.
+
+The EMPIRE Model reads .tab-files, which provide all needed sets and input data. For editing and storing the data, excel-files are used. There are seven excel-files in total of which six contain indexed input data and one is to provide the indices/sets. The excel-files are sorted by the following categories: General data, generation data, country/node data, set/index data, transmission data, and storage data.  These files contain multiple tables regarding for example investment costs and initial capacity. 
 
 Running 
 --------
 
-To run EMPIRE, make sure Python, `Pyomo <http://www.pyomo.org/installation>`__ and a third-party solver like Gurobi or CPLEX is installed and loaded to the respective computer or cluster. Additional third-party dependencies can be found in the ‘environtment.yml’ file. Before staring your EMPIRE-run, you should perform a test run by running the ‘test_run.py’ script to check that Pyomo and a third-party solver is installed properly. Both of the execution scripts ‘test_run.py’ and ‘run.py’ read user configuration from separate yaml files, ‘config_testrun.yaml’ and ‘config_run.yaml’, respectively. These files are used to set up a number of run-time settings, including e.g. details on which instance-version you are running, the temporal dimensions of your instance, and whether or not to generate new stochastic scenarios. An overview and description of user settings description to be confirmed/edited before running EMPIRE is presented in Table 1.
+To run EMPIRE, make sure Python, `Pyomo <http://www.pyomo.org/installation>`__ and a third-party solver like Gurobi or CPLEX is installed and loaded to the respective computer or cluster. Additional third-party dependencies can be found in the ‘environtment.yml’ file. Before staring your EMPIRE-run, you should perform a test run by running the test dataset ‘scripts/run.py -d test’ to check that Pyomo and a third-party solver is installed properly. Both of the execution scripts ‘test_run.py’ and ‘run.py’ read user configuration from separate yaml files, ‘config/testrun.yaml’ and ‘config/run.yaml’, respectively. These files are used to set up a number of run-time settings, including e.g. details on which instance-version you are running, the temporal dimensions of your instance, and whether or not to generate new stochastic scenarios. An overview and description of user settings description to be confirmed/edited before running EMPIRE is presented in Table 1.
 
 EMPIRE is run from the directory in which EMPIRE was cloned by calling the ‘run.py’-script:
 
 .. code-block:: console
 
     $ C:\\Users\\name> cd <path to directory> #Change directory
-    $ C:\\Users\\name\\path_to_folder> python run.py #Run the code
+    $ C:\\Users\\name\\path_to_folder> python scripts/run.py #Run the code
 
 Note that generating scenarios and building the instance in Pyomo for a base case of EMPIRE can take around 40 min.
 
-+------------------+-------+-----------------+-------------------------+
-| Input name       | Type  | Default         | Description             |
-+==================+=======+=================+=========================+
-| USE_TEMP_DIR     | True/ | False           | If true, all            |
-|                  | False |                 | instance-files related  |
-|                  |       |                 | to solving EMPIRE is    |
-|                  |       |                 | stored in the directory |
-|                  |       |                 | defined by **temp_dir** |
-|                  |       |                 | (see below). This is    |
-|                  |       |                 | useful when running a   |
-|                  |       |                 | large instance of       |
-|                  |       |                 | EMPIRE to avoid memory  |
-|                  |       |                 | problems.               |
-+------------------+-------+-----------------+-------------------------+
-| temp_dir         | T     | './'            | The path to which       |
-|                  | ext-s |                 | temporary files will be |
-|                  | tring |                 | stored if               |
-|                  |       |                 | **USE_TEMP_DIR =        |
-|                  |       |                 | True**; .lp-file is     |
-|                  |       |                 | stored if **WRITE_LP =  |
-|                  |       |                 | True**; and .plk-file   |
-|                  |       |                 | is stored if            |
-|                  |       |                 | **PICKLE_INSTANCE =     |
-|                  |       |                 | True.**                 |
-+------------------+-------+-----------------+-------------------------+
-| version          | T     | 'europe_v50'    | The name of the version |
-|                  | ext-s |                 | to be run. Note that    |
-|                  | tring |                 | this is the folder-name |
-|                  |       |                 | containing input data   |
-|                  |       |                 | in ‘Data handler’       |
-+------------------+-------+-----------------+-------------------------+
-| Horizon          | In    | 2060            | The last strategic      |
-|                  | teger |                 | (investment) period     |
-|                  |       |                 | used in the             |
-|                  |       |                 | optimization run. NB!   |
-|                  |       |                 | Must correspond with    |
-|                  |       |                 | data for version        |
-+------------------+-------+-----------------+-------------------------+
-| NoOfScenarios    | In    | 3               | The number of scenarios |
-|                  | teger |                 | in every investment     |
-|                  |       |                 | period.                 |
-+------------------+-------+-----------------+-------------------------+
-| lengthRegSeason  | In    | 168             | The number of           |
-|                  | teger |                 | chronological time      |
-|                  |       |                 | steps in a regular      |
-|                  |       |                 | season. NB! Must        |
-|                  |       |                 | correspond with data    |
-|                  |       |                 | for version             |
-+------------------+-------+-----------------+-------------------------+
-| discountrate     | Float | 0.05            | The discount rate       |
-+------------------+-------+-----------------+-------------------------+
-| WACC             | Float | 0.05            | The weighted average    |
-|                  |       |                 | cost of capital (WACC)  |
-+------------------+-------+-----------------+-------------------------+
-| solver           | T     | “Xpress”        | Specifies the solver.   |
-|                  | ext-s |                 | Options: “Xpress”,      |
-|                  | tring |                 | “Gurobi”, “CPLEX”       |
-+------------------+-------+-----------------+-------------------------+
-| sc               | True/ | True            | If true, new            |
-| enariogeneration | False |                 | operational scenarios   |
-|                  |       |                 | will be generated. NB!  |
-|                  |       |                 | If false, .tab-files or |
-|                  |       |                 | sampling key must be    |
-|                  |       |                 | manually added to the   |
-|                  |       |                 | ‘ScenarioData’-folder   |
-|                  |       |                 | in the **version**.     |
-+------------------+-------+-----------------+-------------------------+
-| fix_sample       | True/ | False           | If true, operational    |
-|                  | False |                 | scenarios will be       |
-|                  |       |                 | generated according to  |
-|                  |       |                 | a fixed sampling key    |
-|                  |       |                 | located in the          |
-|                  |       |                 | ‘Scenario Data’ folder  |
-|                  |       |                 | to ensure the same      |
-|                  |       |                 | operational scenarios   |
-|                  |       |                 | are generated.          |
-+------------------+-------+-----------------+-------------------------+
-| EMISSION_CAP     | True/ | True            | If true, emissions in   |
-|                  | False |                 | every scenario are      |
-|                  |       |                 | capped according to the |
-|                  |       |                 | specified cap in        |
-|                  |       |                 | ‘General.xlsx’. If      |
-|                  |       |                 | false, the CO2-price    |
-|                  |       |                 | specified in            |
-|                  |       |                 | ‘General.xlsx’ applies. |
-+------------------+-------+-----------------+-------------------------+
-| IAMC_PRINT       | True/ | True            | If true, selected       |
-|                  | False |                 | results are printed on  |
-|                  |       |                 | the standard            |
-|                  |       |                 | IAMC-format in addition |
-|                  |       |                 | to the normal EMPIRE    |
-|                  |       |                 | print.                  |
-+------------------+-------+-----------------+-------------------------+
-| WRITE_LP         | True/ | False           | If true, the            |
-|                  | False |                 | solver-file will be     |
-|                  |       |                 | saved. Useful for       |
-|                  |       |                 | debugging.              |
-+------------------+-------+-----------------+-------------------------+
-| PICKLE_INSTANCE  | True/ | False           | If true, instance will  |
-|                  | False |                 | be saved/pickled.       |
-|                  |       |                 | Useful for printing     |
-|                  |       |                 | alternative results     |
-+------------------+-------+-----------------+-------------------------+
++--------------------------+------------+---------+----------------------------------------------------------------------------------------------------------------------------------+
+| Input name               | Type       | Default | Description                                                                                                                      |
++==========================+============+=========+==================================================================================================================================+
+| use_temporary_directory  | True/False | False   | If true, all instance-files related to solving EMPIRE is stored in the directory defined by temporary_directory (see below).     |
+|                          |            |         | This is useful when running a large instance of EMPIRE to avoid memory problems.                                                 |
++--------------------------+------------+---------+----------------------------------------------------------------------------------------------------------------------------------+
+| temporary_directory      | String     | './'    | The path to which temporary files will be stored if use_temporary_directory = True; .lp-file is stored if write_in_lp_format =   |
+|                          |            |         | True; and .plk-file is stored if serialize_instance = True.                                                                      |
++--------------------------+------------+---------+----------------------------------------------------------------------------------------------------------------------------------+
+| forecast_horizon_year    | Integer    | 2060    | The last strategic (investment) period used in the optimization run.                                                             |
++--------------------------+------------+---------+----------------------------------------------------------------------------------------------------------------------------------+
+| number_of_scenarios      | Integer    | 3       | The number of scenarios in every investment period.                                                                              |
++--------------------------+------------+---------+----------------------------------------------------------------------------------------------------------------------------------+
+| length_of_regular_season | Integer    | 168     | The number of hours to use in a regular season for optimization of system operation in every investment period.                  |
++--------------------------+------------+---------+----------------------------------------------------------------------------------------------------------------------------------+
+| discount_rate            | Float      | 0.05    | The discount rate.                                                                                                               |
++--------------------------+------------+---------+----------------------------------------------------------------------------------------------------------------------------------+
+| wacc                     | Float      | 0.05    | The weighted average cost of capital (WACC).                                                                                     |
++--------------------------+------------+---------+----------------------------------------------------------------------------------------------------------------------------------+
+| optimization_solver      | String     | "Xpress"| Specifies the solver. Options: “Xpress”, “Gurobi”, “CPLEX”.                                                                      |
++--------------------------+------------+---------+----------------------------------------------------------------------------------------------------------------------------------+
+| use_scenario_generation  | True/False | True    | If true, new operational scenarios will be generated. NB! If false, .tab-files or sampling key must be manually added to the     |
+|                          |            |         | ‘ScenarioData’-folder in the version.                                                                                            |
++--------------------------+------------+---------+----------------------------------------------------------------------------------------------------------------------------------+
+| use_fixed_sample         | True/False | False   | If true, new operational scenarios will be generated. NB! If false, .tab-files or sampling key must be manually added to the     |
+|                          |            |         | ‘ScenarioData’-folder in the version.                                                                                            |
++--------------------------+------------+---------+----------------------------------------------------------------------------------------------------------------------------------+
+| use_emission_cap         | True/False | True    | If true, emissions in every scenario are capped according to the specified cap in ‘General.xlsx’. If false, the CO2-price        |
+|                          |            |         | specified in ‘General.xlsx’ applies.                                                                                             |
++--------------------------+------------+---------+----------------------------------------------------------------------------------------------------------------------------------+
+| print_in_iamc_format     | True/False | True    | If true, selected results are printed on the standard IAMC-format in addition to the normal EMPIRE print.                        |
++--------------------------+------------+---------+----------------------------------------------------------------------------------------------------------------------------------+
+| write_in_lp_format       | True/False | False   | If true, the solver-file will be saved. Useful for debugging.                                                                    |
++--------------------------+------------+---------+----------------------------------------------------------------------------------------------------------------------------------+
+| serialize_instance       | True/False | False   | If true, instance will be saved/pickled. Useful for printing alternative results.                                                |
++--------------------------+------------+---------+----------------------------------------------------------------------------------------------------------------------------------+
+| north_sea                | True/False | False   | Whether the north sea is modelled or not.                                                                                        |
++--------------------------+------------+---------+----------------------------------------------------------------------------------------------------------------------------------+
+
+
+Results
+~~~~~~~
+
+For each Empire run, a input and output folder are created in the `./Results` folder. This makes it easier to compare different model runs, as both inputs and outputs are explicitly defined. The results can also be analyzed with a `streamlit <https://streamlit.io/>`__ app that visualize both the inputs and outputs for the different runs. To start the streamlit app run the following, 
+
+.. code-block:: console
+
+   $ C:\\Users\\name\\path_to_folder> streamlit run app/main.py
+
 
 Licensing
 ---------
@@ -355,7 +310,7 @@ In the following, the five different groups of sets/indices and a short descript
 
 -  **Nodes**
 
-   This sheet contains one column. The name of the column is ‘Node’ and it contains all countries that are used in the model
+   This sheet contains one column. The name of the column is ‘Node’ and it contains all countries, regions, or offshore areas that are used in the model
 
 -  **Storage**
 
@@ -398,6 +353,13 @@ In the following, the five different groups of sets/indices and a short descript
 -  **Generators of Node:** Available generators per country
 
 -  **Generators of Technologies:** Categorize generator type by technology (resource)
+
+..
+
+   Lastly, there is a sheets for defining the coordinates of the nodes, used for illustrative purposes:
+
+-  **Coords:** Coordinates in latitude and longitude for the nodes. 
+
 
 Generator
 ~~~~~~~~~
