@@ -470,14 +470,16 @@ def generate_random_scenario(filepath, tab_file_path, scenarios, seasons,
                     
                     if filter_use:
                         sample_hour = np.random.choice(valid_pick['SampleIndex'])
+                    else:
+                        sample_hour = np.random.randint(
+                            0, solar_season.shape[0] - regularSeasonHours - 1)
+                    
 
                     # Choose sample_hour from key or save sampling key
 
                     if fix_sample:
                         sample_hour = sampling_key.loc[(i,scenario,s),'Hour']
                     else:
-                        sample_hour = np.random.randint(
-                            0, solar_season.shape[0] - regularSeasonHours - 1)
                         df = pd.DataFrame(data={'Period': i,
                                                 'Scenario': scenario,
                                                 'Season': s,
