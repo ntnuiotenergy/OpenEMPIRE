@@ -4,10 +4,10 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "empire"
-version = "0.1.1"
+version = "0.2.0"
 description = "Stochastic linear program for investments in the European power system."
 authors = ["Stian Backe <stian.backe@ntnu.no>"]
-maintainers = ["Stian Backe <stian.backe@ntnu.no>"]
+maintainers = ["Stian Backe <stian.backe@ntnu.no>", "Martin Hjelmeland <martin.hjelmeland@ntnu.no>"]
 readme = "README.md"
 
 [tool.black]
