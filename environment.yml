@@ -12,6 +12,8 @@ dependencies:
   - glpk>=4.65
   - python==3.11
   - streamlit
+  - plotly
+  - sphinx
   - pip
   - pip:
       - -e .
