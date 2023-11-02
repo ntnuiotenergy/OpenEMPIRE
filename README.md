@@ -104,7 +104,7 @@ For more details, please refer to the software documentation in the repository.
     <td>use_fixed_sample</td>
     <td>True/False</td>
     <td>False</td>
-    <td>If true, new operational scenarios will be generated. NB! If false, .tab-files or sampling key must be manually added to the ‘ScenarioData’-folder in the version. </td>
+    <td>If true, operational scenarios will be generated according to a fixed sampling key located in the ‘ScenarioData’-folder to ensure the same operational scenarios are generated. </td>
   </tr>
   <tr>
     <td>use_emission_cap</td>

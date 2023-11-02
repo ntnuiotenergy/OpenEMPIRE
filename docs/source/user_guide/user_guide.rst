@@ -1,135 +1,11 @@
-OpenEMPIRE
-====================
-
-.. image:: _static/images/image1.png 
-    :alt: NTNU – Store norske leksikon                                 
-    :width: 1.75972in                                                  
-    :height: 0.33429in                                                 
-                                                                          
-
-**The Department of Industrial Economics and Technology Management (IØT)**
-
-**The Norwegian University of Science and Technology (NTNU)**         
-   
-    Compiled by:                                                       
-    Stian Backe                                                      
-    NTNU                                                                
-    Email: stian.backe@ntnu.no                                          
-                                                                        
-.. image:: _static/images/image2.png 
-    :width: 5.72302in                                                  
-    :height: 4.73082in                                                 
-   
-
-Table of Contents
-=================
-
-`1 Introduction <#introduction>`__ `1 <#introduction>`__
-
-`2 The EMPIRE Model <#the-empire-model>`__ `2 <#the-empire-model>`__
-
-`2.1 Required Software <#required-software>`__
-`2 <#required-software>`__
-
-`2.2 Git-Repository <#git-repository>`__ `2 <#git-repository>`__
-
-`2.3 Running <#running>`__ `3 <#running>`__
-
-`2.4 Licensing <#licensing>`__ `4 <#licensing>`__
-
-`2.5 Mathematical Description <#mathematical-description>`__
-`5 <#mathematical-description>`__
-
-`3 Input Data <#input-data>`__ `7 <#input-data>`__
-
-`3.1 Structure of the input files <#structure-of-the-input-files>`__
-`7 <#structure-of-the-input-files>`__
-
-`3.2 Description of the Input Files <#description-of-the-input-files>`__
-`7 <#description-of-the-input-files>`__
-
-.. `3.2.1 Sets <#sets>`__ `7 <#sets>`__
-
-.. `3.2.2 Generator <#generator>`__ `8 <#generator>`__
-
-.. `3.2.3 Nodes <#nodes>`__ `10 <#nodes>`__
-
-.. `3.2.4 General <#general>`__ `11 <#general>`__
-
-.. `3.2.5 Storages <#storages>`__ `11 <#storages>`__
-
-.. `3.2.6 Transmission <#transmission>`__ `13 <#transmission>`__
-
-`3.3 Calculation <#calculation>`__ `14 <#calculation>`__
-
-`4 Scenario generation <#scenario-generation>`__
-`17 <#scenario-generation>`__
-
-`5 Output Data <#output-data>`__ `19 <#output-data>`__
-
-`5.1 Output Files <#output-files>`__ `19 <#output-files>`__
-
-.. `5.1.1 results_objective.csv <#results_objective.csv>`__
-.. `19 <#results_objective.csv>`__
-
-.. `5.1.2
-.. results_output_curtailed_prod.csv <#results_output_curtailed_prod.csv>`__
-.. `19 <#results_output_curtailed_prod.csv>`__
-
-.. `5.1.3 results_output_EuropePlot.csv <#results_output_europeplot.csv>`__
-.. `19 <#results_output_europeplot.csv>`__
-
-.. `5.1.4
-.. results_output_EuropeSummary.csv <#results_output_europesummary.csv>`__
-.. `20 <#results_output_europesummary.csv>`__
-
-.. `5.1.5 results_output_gen.csv <#results_output_gen.csv>`__
-.. `20 <#results_output_gen.csv>`__
-
-.. `5.1.6
-.. results_output_Operational.csv <#results_output_operational.csv>`__
-.. `21 <#results_output_operational.csv>`__
-
-.. `5.1.7 results_output_stor.csv <#results_output_stor.csv>`__
-.. `21 <#results_output_stor.csv>`__
-
-.. `5.1.8
-.. results_output_transmision.csv <#results_output_transmision.csv>`__
-.. `22 <#results_output_transmision.csv>`__
-
-.. `5.1.9
-.. results_output_transmision_operational.csv <#results_output_transmision_operational.csv>`__
-.. `22 <#results_output_transmision_operational.csv>`__
-
-`5.2 Typical EMPIRE charts <#typical-empire-charts>`__
-`23 <#typical-empire-charts>`__
-
-.. `5.2.1
-.. results_output_curtailed_prod.csv <#results_output_curtailed_prod.csv-1>`__
-.. `23 <#results_output_curtailed_prod.csv-1>`__
-
-.. `5.2.2
-.. results_output_EuropePlot.csv <#results_output_europeplot.csv-1>`__
-.. `24 <#results_output_europeplot.csv-1>`__
-
-.. `5.2.3
-.. results_output_EuropeSummary.csv <#results_output_europesummary.csv-1>`__
-.. `24 <#results_output_europesummary.csv-1>`__
-
-.. `5.2.4
-.. results_output_transmision.csv <#results_output_transmision.csv-1>`__
-.. `25 <#results_output_transmision.csv-1>`__
-
 Introduction
 ============
 
-The EMPIRE model is a stochastic linear programming model to analyze developments of the European power market. It was created as part of Dr. C. Skar’s `doctoral thesis <https://ntnuopen.ntnu.no/ntnu-xmlui/handle/11250/2399924>`__ supervised by `Prof. A. Tomasgard <https://www.ntnu.edu/employees/asgeir.tomasgard>`__ and Prof. G. Doorman, and it has been used to analyze decarbonization of the European power system focusing on the supply side of the power market. The purpose of the model is to support long-term capacity expansion of the power system under short-term operational uncertainty with a special focus of representing variable renewable energy sources (VRES), namely wind, solar and hydro power. Energy demand, as well as investment options for energy supply technologies, their related costs and operational characteristics, are exogenous input data in the model. The output supports decisions regarding technology choices, investment volume and investment timing with requirements of ensuring a reliable energy system at minimum cost. The model output also supports short-term operational decisions of energy system components under uncertainty. The model is subject to operational uncertainty, so the stochastic scenarios represent different realizations of the following: (1) Availability of VRES (wind and solar), (2) availability of hydro reservoirs and (3) hourly electricity loads.
-
 This documentation contains three main parts. Firstly, where to download and run the EMPIRE model is explained. The licensing and how to contribute working on EMPIRE are also described. Furthermore, a short overview on the mathematical formulation and the preprocessed calculations is presented. Secondly, the documentation gives a detailed explanation about the input data. This contains information about the input structure, as well as different kinds of data needed to run the model. The input data can be provided as Excel files, or as .tab-files, which is also further explained in this chapter. Lastly, you will find a description of the output data and what kind results EMPIRE produces. It also shows possibilities to visualize and interpret results.
 
-The EMPIRE Model
-================
 
+Running the EMPIRE Model
+========================
 This section provides information about editing and running the EMPIRE model. It shows how to download it and what software is needed. You will also find a license overview and an overview on the mathematical description.
 
 Required Software
@@ -148,9 +24,11 @@ Git-Repository
 --------------
 EMPIRE consists of a programming script used to run the model: 
 
-<b>	scripts/run.py:</b> The main script used to run EMPIRE. This is the only script a user of EMPIRE needs to use and potentially modify.  
+**scripts/run.py:** The main script used to run EMPIRE. This is the only script a user of EMPIRE needs to use and potentially modify.  
 
-**Note:** The main run-script (scipts/run.py), can run a small test instance of EMPIRE that usually finishes in 1-2 min. A normal test instance requires around 140 GB RAM and thus needs to be run on a high performance cluster (HPC). 
+.. important::
+   
+    The main run-script (scipts/run.py), can run a small test instance of EMPIRE that usually finishes in 1-2 min. A normal test instance requires around 140 GB RAM and thus needs to be run on a high performance cluster (HPC). 
 
 The run script uses the empire package that consists of these core modules:
 
@@ -166,9 +44,9 @@ The run script uses the empire package that consists of these core modules:
 
 In addition there are modules containing input and output clients, that can be used to read and alter input data, and read ouput/results data. 
 
-In the repository, the ‘Data handler’-folder contains the Excel workbooks that are used to store and modify input data. The workbooks are contained within folders representing instance-versions of EMPIRE, e.g. ‘europe_v50’. The ‘test’-folder contains input data for a small test-instance of EMPIRE. For more details regarding input data, see Section :numref:`input-data`.
+In the repository, the ‘Data handler’-folder contains the Excel workbooks that are used to store and modify input data. The workbooks are contained within folders representing instance-versions of EMPIRE, e.g. ‘europe_v50’. The ‘test’-folder contains input data for a small test-instance of EMPIRE. For more details regarding input data, see :numref:`input-data`.
 
-Within an instance-version in the ‘Data handler’-folder, there is a folder called ‘ScenarioData’ containing large data sets used to generate stochastic scenarios in EMPIRE. If EMPIRE is run with random scenario generation, representative time series are sampled once per scenario and season for each random input parameter.For more details on scenario generation, see `Section 4 <#scenario-generation>`__.
+Within an instance-version in the ‘Data handler’-folder, there is a folder called ‘ScenarioData’ containing large data sets used to generate stochastic scenarios in EMPIRE. If EMPIRE is run with random scenario generation, representative time series are sampled once per scenario and season for each random input parameter. For more details on scenario generation, see :numref:`scenariogeneration`.
 
 The EMPIRE Model reads .tab-files, which provide all needed sets and input data. For editing and storing the data, excel-files are used. There are seven excel-files in total of which six contain indexed input data and one is to provide the indices/sets. The excel-files are sorted by the following categories: General data, generation data, country/node data, set/index data, transmission data, and storage data.  These files contain multiple tables regarding for example investment costs and initial capacity. 
 
@@ -210,8 +88,8 @@ Note that generating scenarios and building the instance in Pyomo for a base cas
 | use_scenario_generation  | True/False | True    | If true, new operational scenarios will be generated. NB! If false, .tab-files or sampling key must be manually added to the     |
 |                          |            |         | ‘ScenarioData’-folder in the version.                                                                                            |
 +--------------------------+------------+---------+----------------------------------------------------------------------------------------------------------------------------------+
-| use_fixed_sample         | True/False | False   | If true, new operational scenarios will be generated. NB! If false, .tab-files or sampling key must be manually added to the     |
-|                          |            |         | ‘ScenarioData’-folder in the version.                                                                                            |
+| use_fixed_sample         | True/False | False   | If true, operational scenarios will be generated according to a fixed sampling key located in the ‘ScenarioData’-folder to       | 
+|                          |            |         | ensure the same operational scenarios are generated.                                                                             |
 +--------------------------+------------+---------+----------------------------------------------------------------------------------------------------------------------------------+
 | use_emission_cap         | True/False | True    | If true, emissions in every scenario are capped according to the specified cap in ‘General.xlsx’. If false, the CO2-price        |
 |                          |            |         | specified in ‘General.xlsx’ applies.                                                                                             |
@@ -226,9 +104,8 @@ Note that generating scenarios and building the instance in Pyomo for a base cas
 +--------------------------+------------+---------+----------------------------------------------------------------------------------------------------------------------------------+
 
 
-Results
-~~~~~~~
-
+View input and output data
+--------------------------
 For each Empire run, a input and output folder are created in the `./Results` folder. This makes it easier to compare different model runs, as both inputs and outputs are explicitly defined. The results can also be analyzed with a `streamlit <https://streamlit.io/>`__ app that visualize both the inputs and outputs for the different runs. To start the streamlit app run the following, 
 
 .. code-block:: console
@@ -244,13 +121,13 @@ The EMPIRE model and all additional files in the git repository are licensed und
 For further information please read the LICENSE file, which contains the license text, or go to https://opensource.org/licenses/MIT
 
 Mathematical Description
-------------------------
+========================
 
 EMPIRE is a multi-horizon stochastic linear program, and it has been designed to support capacity expansion of the power system. The model represents a network of nodes and arcs where decisions are made in two temporal scales: investment time steps and operational time steps. Operational decisions are subject to uncertainty that is discretized in several stochastic scenarios.
 
 The abstract stochastic programming model can be formulated in the following way:
 
-.. image:: _static/images/math_description.png
+.. image:: ../_static/images/math_description.png
    :width: 6.29861in
    :height: 2.02986in
 
@@ -271,6 +148,7 @@ The EMPIRE formulation supports investment decisions in power generation, storag
 EMPIRE is generally used to investigate pathways for decarbonizing the power sector in Europe. However, this is instance specific, meaning the abstract model could be used for other places than Europe or other sectors than power that can be modelled as a network flow, e.g. capacity expansion of a gas system.
 
 .. _input-data:
+
 Input Data
 ==========
 
@@ -881,14 +759,16 @@ Where :math:`RefInitCap_{n,g}` is the reference initial capacity and :math:`Scal
 
 Where :math:`\xi_{n,h,1,\omega}^{\text{load}}` is the reference load, :math:`\xi_{n,1,\omega}^{\text{load,avg}}` is the average reference load for all operational time steps in scenario :math:`\omega` and period :math:`i`, and :math:`\xi_{n,i}^{\text{dem,avg}}` is the average demand per operational time step based on the future estimate for annual electricity demand (see Section 3.2.3).
 
+.. _scenariogeneration:
+
 Scenario generation
 ===================
 
-This section explains the scenario generation routine implemented for the OpenEMPIRE. The routine is written in the ‘scenario_random.py’-script, and it samples chronological time steps from the raw data in the ‘ScenarioData’ folder in the version-folder in the ‘Data handling’ folder for the version to be solved. The routine is activated by choosing **scenariogeneration = True** in the ‘run.py’-script.
+This section explains the scenario generation routine implemented for the OpenEMPIRE. The routine is written in the ‘scenario_random.py’-script, and it samples chronological time steps from the raw data in the ‘ScenarioData’ folder in the version-folder in the ‘Data handling’ folder for the version to be solved. The routine is activated by setting **use_scenario_generation = True** in the file ‘config/run.yaml’.
 
 The scenario generation routine works as follows:
 
-.. image:: _static/images/algo.png
+.. image:: ../_static/images/algo.png
    :width: 5.26012in
    :height: 6.22979in
 
@@ -978,6 +858,7 @@ results_output_EuropeSummary.csv
 Results for Europe as a whole. There are three tables:
 
 -  *Europe-wide general values per year scenario:*
+
    -  Index: Period
    -  Index: Scenario
    -  Value: Annual CO2emissions in Tons
@@ -991,6 +872,7 @@ Results for Europe as a whole. There are three tables:
    -  Value: Annual losses from transmission in GWh
 
 -  *Europe-wide generation values per year and type:*
+
    -  Index: Generator type
    -  Index: Period
    -  Value: Capacity built over the investment period in MW
@@ -999,6 +881,7 @@ Results for Europe as a whole. There are three tables:
    -  Value: Expected annual production in GWh
 
 -  *Europe-wide storage values per year and type:*
+
    -  Index: Storage type
    -  Index: Period
    -  Value: Charging/discharging capacity built over the investment period in MW
@@ -1110,7 +993,7 @@ From most of the output files, meaningful charts can be created. Typical charts 
 results_output_curtailed_prod.csv
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. image:: _static/images/image6.png
+.. image:: ../_static/images/image6.png
    :width: 7.12708in
    :height: 8.35417in
 
@@ -1119,7 +1002,7 @@ results_output_curtailed_prod.csv
 results_output_EuropePlot.csv
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. image:: _static/images/image7.png
+.. image:: ../_static/images/image7.png
    :width: 6.30069in
    :height: 4.62708in
 
@@ -1128,7 +1011,7 @@ results_output_EuropePlot.csv
 results_output_EuropeSummary.csv
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. image:: _static/images/image8.png
+.. image:: ../_static/images/image8.png
    :width: 6.04722in
    :height: 3.94722in
 
@@ -1139,6 +1022,6 @@ results_output_transmision.csv
 
 EMPIRE can provide the necessary data to geographically plot the intra-European energy transmission paths and capacities. In the figure below, each transmission link has its own thickness equivalent to the expected annual capacity expansion for all investment periods.
 
-.. image:: _static/images/results_transmission.png
+.. image:: ../_static/images/results_transmission.png
    :width: 6.29861in
    :height: 6.06042in

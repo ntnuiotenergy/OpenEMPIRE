@@ -6,6 +6,7 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
+# General information about the project.
 project = "OpenEMPIRE"
 copyright = "2023, Stian Backe"
 author = "Stian Backe"
@@ -31,3 +32,4 @@ html_static_path = ["_static"]
 html_favicon = "_static/images/ntnu_logo.png"
 
 autodoc_typehints = "description"
+
