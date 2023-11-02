@@ -8,7 +8,9 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 
+from empire.input_client.client import EmpireInputClient
 from empire.output_client.client import EmpireOutputClient
+from empire.results.maps import plot_built_transmission_capacity
 
 
 def profile_function(func):
@@ -63,6 +65,7 @@ def get_europe_summary_emission_and_energy(_output_client):
 def output(active_results: Path) -> None:
     st.title("Results")
     output_client = EmpireOutputClient(output_path=active_results / "Output")
+    input_client = EmpireInputClient(dataset_path=active_results / "Input/Xlsx")
 
     st.header("Summary results")
     st.write(f"Objective value: {output_client.get_objective()/1e9:.2f} Billion")
@@ -410,15 +413,15 @@ def output(active_results: Path) -> None:
         melted_df = pd.melt(filtered_df, id_vars=["Hour"], value_vars=filtered_columns)
 
         # Calculate the sum of values for each variable
-        sums = melted_df.groupby('variable')['value'].sum()
+        sums = melted_df.groupby("variable")["value"].sum()
 
         # Sort variables based on their sums for a more readable area plot
         sorted_variables = sums.sort_values(ascending=False).index.tolist()
 
         # Sort the DataFrame based on the sorted order of variables
-        melted_df['variable'] = pd.Categorical(melted_df['variable'], categories=sorted_variables, ordered=True)
-        melted_df = melted_df.sort_values('variable')
-        
+        melted_df["variable"] = pd.Categorical(melted_df["variable"], categories=sorted_variables, ordered=True)
+        melted_df = melted_df.sort_values("variable")
+
         # Creating the line plot
         fig = px.area(melted_df, x="Hour", y="value", color="variable", title="Hourly Values")
         fig.add_trace(go.Scatter(x=filtered_df["Hour"], y=-filtered_df["Load_MW"], name="Load_MW"))
@@ -430,6 +433,68 @@ def output(active_results: Path) -> None:
     nodes = output_client.get_storage_values().Node.unique().tolist()
     col1.plotly_chart(plot_node_operation_values(col1, nodes=nodes))
 
+    st.header("Transmission")
+
+    df_built = output_client.get_transmission_values()
+    df_built.loc[:, "BetweenNode"] = df_built["BetweenNode"].str.replace(" ", "")
+    df_built.loc[:, "AndNode"] = df_built["AndNode"].str.replace(" ", "")
+    period = st.select_slider("Select period:  ", df_built["Period"].unique().tolist())
+    # period = df_built["Period"][0]
+    df_built = df_built.query(f"Period=='{period}'")
+
+    df_coords = input_client.sets.get_coordinates()
+    df_coords.loc[:, "Location"] = df_coords["Location"].str.replace(" ", "")
+
+    df_lines = input_client.sets.get_line_type_of_directional_lines()
+    df_lines.loc[:, "FromNode"] = df_lines["FromNode"].str.replace(" ", "")
+    df_lines.loc[:, "ToNode"] = df_lines["ToNode"].str.replace(" ", "")
+
+    def plot_transmission_flow(nodes, col):
+        node = col.selectbox("Select node:    ", nodes)
+        df = output_client.get_transmission_operational(node)
+        scenarios = df["Scenario"].unique().tolist()
+        scenario = col.selectbox("Select scenario:  ", scenarios)
+        seasons = df["Season"].unique().tolist()
+        season = col.selectbox("Select season:  ", seasons)
+        periods = df["Period"].unique().tolist()
+        period = col.selectbox("Select period:  ", periods)
+
+        filtered_df = df.query(f"Scenario == '{scenario}' and Season == '{season}' and Period == '{period}'").copy(
+            deep=True
+        )
+
+        filtered_df["From-To"] = filtered_df["FromNode"] + "-" + filtered_df["ToNode"]
+
+        melted_df = pd.melt(filtered_df, id_vars=["Hour", "From-To"], value_vars=["TransmissionRecieved_MW"])
+
+        filtered_lines = melted_df.groupby("From-To").sum()["value"] > 0.1
+        melted_df = melted_df.loc[melted_df["From-To"].map(filtered_lines)]
+
+        sums = melted_df.groupby("From-To")["value"].sum()
+
+        # Sort variables based on their sums for a more readable area plot
+        sorted_variables = sums.sort_values(ascending=False).index.tolist()
+
+        # Sort the DataFrame based on the sorted order of variables
+        melted_df["From-To"] = pd.Categorical(melted_df["From-To"], categories=sorted_variables, ordered=True)
+        melted_df = melted_df.sort_values("From-To")
+
+        return px.area(melted_df, x="Hour", y="value", color="From-To", title="Hourly Values")
+
+    metric = st.selectbox("Select transmission metric: ", df_built.columns[3:].tolist())
+    fig = plot_built_transmission_capacity(
+        df_coords=df_coords,
+        df_lines=df_lines,
+        df_built=df_built,
+        metric=metric
+    )
+
+    st.plotly_chart(fig)
+
+    col = st.columns(1)[0]
+    fig = plot_transmission_flow(nodes, col)
+    col.plotly_chart(fig)
+
 
 if __name__ == "__main__":
     active_results = Path(
@@ -440,22 +505,3 @@ if __name__ == "__main__":
     import pandas as pd
 
 
-    # node = col.selectbox("Select node: ", nodes)
-    df = output_client.get_transmission_operational("NO2")
-    scenarios = df["Scenario"].unique().tolist()
-    scenario = col.selectbox("Select scenario: ", scenarios)
-    seasons = df["Season"].unique().tolist()
-    season = col.selectbox("Select season: ", seasons)
-    periods = df["Period"].unique().tolist()
-    period = col.selectbox("Select period: ", periods)
-
-    scenario = "scenario1"
-    season = "winter"
-    period = "2020-2025"
-    filtered_df = df.query(f"Scenario == '{scenario}' and Season == '{season}' and Period == '{period}'").copy(deep=True)
-
-    filtered_df["From-To"] = filtered_df["FromNode"] + "-" + filtered_df["ToNode"]
-
-    melted_df = pd.melt(filtered_df, id_vars=["Hour", "From-To"], value_vars=["TransmissionRecieved_MW"])
-
-    fig = px.area(melted_df, x="Hour", y="value", color="From-To", title="Hourly Values")

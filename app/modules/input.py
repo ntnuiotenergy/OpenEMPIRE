@@ -3,15 +3,16 @@ from pathlib import Path
 import plotly.express as px
 import streamlit as st
 
-from empire.config import EmpireConfiguration, read_config_file
+from empire.core.config import EmpireConfiguration, read_config_file
 from empire.input_client.client import EmpireInputClient
-from empire.results.maps import plot_nodes_and_lines, plot_transmission
+from empire.results.maps import plot_nodes_and_lines, plot_transmission, plot_max_transmission_capacity
 
 
 def input(active_results: Path):
     st.title("Input")
     # Read config
     config_file = active_results / "Input/Xlsx/config.txt"
+    config_file = Path("/Users/martihj/gitsource/OpenEMPIRE/Results/norway_analysis/ncc6000.0_na0.95_w0.0_wog0.0/Input/Xlsx/config.txt") # NB
     config = read_config_file(config_file)
     empire_config = EmpireConfiguration.from_dict(config=config)
     periods_to_year_mapping = {
@@ -225,7 +226,7 @@ def input(active_results: Path):
 
     df_coords = input_client.sets.get_coordinates()
     df_coords.loc[:, "Location"] = df_coords["Location"].str.replace(" ", "")
-    input_client.sets.get_directional_lines()
+    
     df_lines = input_client.sets.get_line_type_of_directional_lines()
     df_lines.loc[:, "FromNode"] = df_lines["FromNode"].str.replace(" ", "")
     df_lines.loc[:, "ToNode"] = df_lines["ToNode"].str.replace(" ", "")
@@ -352,7 +353,7 @@ def input(active_results: Path):
     df_init_capacity = input_client.transmission.get_initial_capacity()
     df_init_capacity.loc[:, "InterconnectorLinks"] = df_init_capacity["InterconnectorLinks"].str.replace(" ", "")
     df_init_capacity.loc[:, "ToNode"] = df_init_capacity["ToNode"].str.replace(" ", "")
-    period = 1
+    period = st.selectbox("Select period: ", df_init_capacity["Period"].unique().tolist())
     df_init_capacity = df_init_capacity.query(f"Period=={period}")
 
     df_length = input_client.transmission.get_length()
@@ -372,6 +373,7 @@ def input(active_results: Path):
         df_max_capacity=df_max_capacity,
         df_length=df_length,
         df_efficiency=df_efficiency,
+
     )
 
     st.plotly_chart(fig)
@@ -399,3 +401,23 @@ def input(active_results: Path):
     col1, col2 = st.columns(2)
     col1.plotly_chart(fig1)
     col2.plotly_chart(fig2)
+
+    st.subheader("Max Install Capacity Raw")
+    df_init_capacity = input_client.transmission.get_initial_capacity()
+    df_init_capacity.loc[:, "InterconnectorLinks"] = df_init_capacity["InterconnectorLinks"].str.replace(" ", "")
+    df_init_capacity.loc[:, "ToNode"] = df_init_capacity["ToNode"].str.replace(" ", "")
+    period = st.selectbox("Select period:  ", df_init_capacity["Period"].unique().tolist())
+    df_init_capacity = df_init_capacity.query(f"Period=={period}")
+
+    df_max_install_capacity = input_client.transmission.get_max_install_capacity_raw()
+    df_max_capacity = input_client.transmission.get_max_built_capacity()
+
+    fig = plot_max_transmission_capacity(
+        df_coords=df_coords,
+        df_lines=df_lines,
+        df_max_capacity=df_max_install_capacity,
+    )
+
+    st.plotly_chart(fig)
+
+    
