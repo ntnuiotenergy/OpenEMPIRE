@@ -1,0 +1,13 @@
+credentials:
+  usernames:
+    user1:
+      name: "User One"
+      password: "hashed_password"
+      email: "user1@example.com"
+cookie:
+  name: "authenticator"
+  key: "random_cookie_secret_key"
+  expiry_days: 30
+preauthorized:
+  emails:
+    - "preauthorized_user@example.com"

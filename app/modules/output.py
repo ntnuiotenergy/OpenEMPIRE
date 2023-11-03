@@ -67,6 +67,11 @@ def output(active_results: Path) -> None:
     output_client = EmpireOutputClient(output_path=active_results / "Output")
     input_client = EmpireInputClient(dataset_path=active_results / "Input/Xlsx")
 
+    df = output_client.get_curtailed_production()
+    st.sidebar.markdown("______________")
+    st.sidebar.markdown("__Page filter:__")
+    period = st.sidebar.select_slider("Select period: ", df["Period"].unique())
+
     st.header("Summary results")
     st.write(f"Objective value: {output_client.get_objective()/1e9:.2f} Billion")
 
@@ -197,7 +202,12 @@ def output(active_results: Path) -> None:
 
     def plot_transmission_values(col):
         df = output_client.get_transmission_values()
-        selected_nodes = col.multiselect("Select nodes: ", np.unique(df[["BetweenNode", "AndNode"]].values.flatten()))
+
+        default_nodes = ["NO1", "NO2", "NO3", "NO4", "NO5"]
+        nodes = np.unique(df[["BetweenNode", "AndNode"]].values.flatten())
+        selected_nodes = col.multiselect(
+            "Select nodes: ", nodes, default=[item for item in default_nodes if item in nodes]
+        )
         df = df.query(f"BetweenNode in {selected_nodes} or AndNode in {selected_nodes}").copy(deep=True)
 
         column_values = df.columns[3:]
@@ -223,7 +233,13 @@ def output(active_results: Path) -> None:
 
     def plot_transmission_values_line(col):
         df = output_client.get_transmission_values()
-        selected_nodes = col.multiselect("Select nodes:   ", np.unique(df[["BetweenNode", "AndNode"]].values.flatten()))
+
+        default_nodes = ["NO1", "NO2", "NO3", "NO4", "NO5"]
+        nodes = np.unique(df[["BetweenNode", "AndNode"]].values.flatten())
+        selected_nodes = col.multiselect(
+            "Select nodes:   ", nodes, default=[item for item in default_nodes if item in nodes]
+        )
+
         df = df.query(f"BetweenNode in {selected_nodes} or AndNode in {selected_nodes}").copy(deep=True)
 
         column_values = df.columns[3:]
@@ -246,7 +262,13 @@ def output(active_results: Path) -> None:
 
     def plot_generator_values(col):
         df = output_client.get_generators_values()
-        selected_nodes = col.multiselect("Select nodes: ", df["Node"].unique())
+
+        default_nodes = ["NO1", "NO2", "NO3", "NO4", "NO5"]
+        nodes = df["Node"].unique()
+        selected_nodes = col.multiselect(
+            "Select nodes: ", nodes, default=[item for item in default_nodes if item in nodes]
+        )
+
         df = df.query(f"Node in {selected_nodes}")
 
         column_values = df.columns[3:]
@@ -296,7 +318,12 @@ def output(active_results: Path) -> None:
 
     def plot_storage_values(col):
         df = output_client.get_storage_values()
-        selected_nodes = col.multiselect("Select nodes:  ", df["Node"].unique())
+
+        default_nodes = ["NO1", "NO2", "NO3", "NO4", "NO5"]
+        nodes = df["Node"].unique()
+        selected_nodes = col.multiselect(
+            "Select nodes:  ", nodes, default=[item for item in default_nodes if item in nodes]
+        )
         df = df.query(f"Node in {selected_nodes}")
 
         column_values = df.columns[3:]
@@ -351,16 +378,7 @@ def output(active_results: Path) -> None:
     col1.plotly_chart(plot_storage_values(col1))
     col2.plotly_chart(plot_storage_values_line(col2))
 
-    def plot_node_operation_values(col, nodes):
-        node = col.selectbox("Select node: ", nodes)
-        df = output_client.get_node_operational_values(node)
-        scenarios = df["Scenario"].unique().tolist()
-        scenario = col.selectbox("Select scenario: ", scenarios)
-        seasons = df["Season"].unique().tolist()
-        season = col.selectbox("Select season: ", seasons)
-        periods = df["Period"].unique().tolist()
-        period = col.selectbox("Select period: ", periods)
-
+    def plot_node_operation_values(df, node, scenario, season, period):
         filtered_df = df.query(f"Scenario == '{scenario}' and Season == '{season}' and Period == '{period}'")
 
         columns = [
@@ -423,42 +441,27 @@ def output(active_results: Path) -> None:
         melted_df = melted_df.sort_values("variable")
 
         # Creating the line plot
-        fig = px.area(melted_df, x="Hour", y="value", color="variable", title="Hourly Values")
+        fig = px.area(
+            melted_df,
+            x="Hour",
+            y="value",
+            color="variable",
+            title=f"Operational values for {node}, {scenario}, {period}",
+        )
         fig.add_trace(go.Scatter(x=filtered_df["Hour"], y=-filtered_df["Load_MW"], name="Load_MW"))
         fig.update_xaxes(title_text="Hour")
         fig.update_yaxes(title_text="Value (MW)")
         return fig
 
-    col1 = st.columns(1)[0]
     nodes = output_client.get_storage_values().Node.unique().tolist()
-    col1.plotly_chart(plot_node_operation_values(col1, nodes=nodes))
 
-    st.header("Transmission")
+    node = st.selectbox("Select node: ", nodes, index=nodes.index("NO2") if "NO2" in nodes else 0)
+    df = output_client.get_node_operational_values(node)
 
-    df_built = output_client.get_transmission_values()
-    df_built.loc[:, "BetweenNode"] = df_built["BetweenNode"].str.replace(" ", "")
-    df_built.loc[:, "AndNode"] = df_built["AndNode"].str.replace(" ", "")
-    period = st.select_slider("Select period:  ", df_built["Period"].unique().tolist())
-    # period = df_built["Period"][0]
-    df_built = df_built.query(f"Period=='{period}'")
+    scenario = st.selectbox("Select scenario: ", df["Scenario"].unique())
+    season = st.selectbox("Select season: ", df["Season"].unique())
 
-    df_coords = input_client.sets.get_coordinates()
-    df_coords.loc[:, "Location"] = df_coords["Location"].str.replace(" ", "")
-
-    df_lines = input_client.sets.get_line_type_of_directional_lines()
-    df_lines.loc[:, "FromNode"] = df_lines["FromNode"].str.replace(" ", "")
-    df_lines.loc[:, "ToNode"] = df_lines["ToNode"].str.replace(" ", "")
-
-    def plot_transmission_flow(nodes, col):
-        node = col.selectbox("Select node:    ", nodes)
-        df = output_client.get_transmission_operational(node)
-        scenarios = df["Scenario"].unique().tolist()
-        scenario = col.selectbox("Select scenario:  ", scenarios)
-        seasons = df["Season"].unique().tolist()
-        season = col.selectbox("Select season:  ", seasons)
-        periods = df["Period"].unique().tolist()
-        period = col.selectbox("Select period:  ", periods)
-
+    def plot_transmission_flow(df, node, scenario, season, period):
         filtered_df = df.query(f"Scenario == '{scenario}' and Season == '{season}' and Period == '{period}'").copy(
             deep=True
         )
@@ -479,21 +482,104 @@ def output(active_results: Path) -> None:
         melted_df["From-To"] = pd.Categorical(melted_df["From-To"], categories=sorted_variables, ordered=True)
         melted_df = melted_df.sort_values("From-To")
 
-        return px.area(melted_df, x="Hour", y="value", color="From-To", title="Hourly Values")
+        return px.area(
+            melted_df,
+            x="Hour",
+            y="value",
+            color="From-To",
+            title=f"Exchange for {node}, {scenario}, {season}, {period}",
+        )
+
+    df_operational_trans = output_client.get_transmission_operational(node)
+    fig = plot_transmission_flow(df_operational_trans, node=node, scenario=scenario, season=season, period=period)
+    
+    col1, col2 = st.columns(2)
+    col1.plotly_chart(plot_node_operation_values(df, node=node, scenario=scenario, season=season, period=period))
+    col2.plotly_chart(fig)
+
+    st.header("Transmission")
+
+    df_built = output_client.get_transmission_values()
+    df_built.loc[:, "BetweenNode"] = df_built["BetweenNode"].str.replace(" ", "")
+    df_built.loc[:, "AndNode"] = df_built["AndNode"].str.replace(" ", "")
+    df_built = df_built.query(f"Period=='{period}'")
+
+    df_coords = input_client.sets.get_coordinates()
+    df_coords.loc[:, "Location"] = df_coords["Location"].str.replace(" ", "")
+
+    df_lines = input_client.sets.get_line_type_of_directional_lines()
+    df_lines.loc[:, "FromNode"] = df_lines["FromNode"].str.replace(" ", "")
+    df_lines.loc[:, "ToNode"] = df_lines["ToNode"].str.replace(" ", "")
 
     metric = st.selectbox("Select transmission metric: ", df_built.columns[3:].tolist())
-    fig = plot_built_transmission_capacity(
-        df_coords=df_coords,
-        df_lines=df_lines,
-        df_built=df_built,
-        metric=metric
-    )
 
+    fig = plot_built_transmission_capacity(df_coords=df_coords, df_lines=df_lines, df_built=df_built, metric=metric)
+    fig.update_layout(title=f"{metric} for {period}")
     st.plotly_chart(fig)
 
-    col = st.columns(1)[0]
-    fig = plot_transmission_flow(nodes, col)
-    col.plotly_chart(fig)
+    st.header("Key Metrics")
+    # Get and process the dataframe
+    df = output_client.get_generators_values()
+
+    df.loc[df["genExpectedAnnualProduction_GWh"] < 1, "genExpectedCapacityFactor"] = 0.0
+    df_temp = df[["Node", "GeneratorType", "Period", "genExpectedAnnualProduction_GWh"]]
+    df["TotalGeneration_GWh"] = df_temp.groupby(["Node", "Period"])["genExpectedAnnualProduction_GWh"].transform("sum")
+    df["GenerationShare_Percent"] = (df["genExpectedAnnualProduction_GWh"] / df["TotalGeneration_GWh"]) * 100
+
+    df_temp = df[["Node", "GeneratorType", "Period", "genInstalledCap_MW"]]
+    df["TotalCapacity_MW"] = df_temp.groupby(["Node", "Period"])["genInstalledCap_MW"].transform("sum")
+    df["CapacityShare_Percent"] = (df["genInstalledCap_MW"] / df["TotalGeneration_GWh"]) * 100
+
+    # Select measure
+    measures = [
+        "genInvCap_MW",
+        "genInstalledCap_MW",
+        "genExpectedCapacityFactor",
+        "DiscountedInvestmentCost_Euro",
+        "genExpectedAnnualProduction_GWh",
+        "GenerationShare_Percent",
+        "CapacityShare_Percent",
+    ]
+    measure = st.selectbox(
+        "Select measure: ",
+        measures,
+        index=measures.index("GenerationShare_Percent") if "GenerationShare_Percent" in measures else 0,
+    )
+
+    df_sum = df.query("Period == @period").pivot(index="Node", columns="GeneratorType", values=measure)
+
+    # Select nodes and generators with defaults
+    default_nodes = [
+        "NO1",
+        "NO2",
+        "NO3",
+        "NO4",
+        "NO5",
+        "Sweden",
+        "Finland",
+        "GreatBrit.",
+        "France",
+        "Italy",
+        "Germany",
+        "Poland",
+    ]
+    nodes = df_sum.index.to_list()
+    selected_nodes = st.multiselect(
+        "Select nodes: ", options=df_sum.index, default=[item for item in default_nodes if item in nodes]
+    )
+    selected_generators = st.multiselect("Select generators: ", options=df_sum.columns, default=df_sum.columns.tolist())
+
+    # Process the dataframe and display it
+    df_sum = (
+        df_sum.loc[selected_nodes, selected_generators]
+        .fillna(0.0)
+        .loc[:, df_sum.sum(axis=0) > 1.0]
+        .assign(Active_sum=lambda x: x.sum(axis=1))
+        .T
+    )
+
+    st.markdown(f"{measure} for {period}:")
+    st.dataframe(df_sum.style.format("{:.2f}").background_gradient(cmap="Blues"), height=40 * len(df_sum.index))
 
 
 if __name__ == "__main__":
@@ -503,5 +589,3 @@ if __name__ == "__main__":
     active_results = Path("/Users/martihj/gitsource/OpenEMPIRE/Results/norway_analysis/ncc3000.0_na0.95_w0.0_wog0.0_v1")
     output_client = EmpireOutputClient(output_path=active_results / "Output")
     import pandas as pd
-
-

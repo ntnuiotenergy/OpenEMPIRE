@@ -143,3 +143,4 @@ report.html
 .DS_Store
 dag.png
 config/cluster.json
+config/app.yaml

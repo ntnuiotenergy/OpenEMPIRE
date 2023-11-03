@@ -1,5 +1,3 @@
-import cProfile
-import pstats
 from pathlib import Path
 
 import streamlit as st
@@ -9,9 +7,8 @@ from app.modules.output import output
 from app.modules.utils import get_active_results
 
 
-def main():
-    st.set_page_config(layout="wide")
-
+def app():
+    
     st.title("OpenEMPIRE")
 
     st.markdown(
@@ -48,10 +45,36 @@ def main():
     if st.session_state["current_page"] == "Input":
         input(active_results)
         # st.markdown("Currently disabled")
-        
+
     elif st.session_state["current_page"] == "Output":
         output(active_results)
 
 
 if __name__ == "__main__":
-    main()
+    st.set_page_config(layout="wide")
+
+    import streamlit_authenticator as stauth
+    import yaml
+    from yaml.loader import SafeLoader
+
+    with open("config/app.yaml") as file:
+        config = yaml.load(file, Loader=SafeLoader)
+
+    authenticator = stauth.Authenticate(
+        config["credentials"],
+        config["cookie"]["name"],
+        config["cookie"]["key"],
+        config["cookie"]["expiry_days"],
+        # config["authenticator"],
+    )
+
+    name, authenticatied, username = authenticator.login("Login", "main")
+    
+    if authenticatied:
+        # st.write(f"Welcome *{name}*")
+        app()
+        authenticator.logout("Logout", "main")
+    elif authenticatied is False:
+        st.error("Username/password is incorrect")
+    elif authenticatied is None:
+        st.warning("Please enter your username and password")
