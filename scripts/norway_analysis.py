@@ -50,7 +50,7 @@ max_offshore_wind_grounded_norway = args.max_offshore_wind_grounded_norway
 version = "europe_v51"
 
 ## Read config and setup folders ##
-config = read_config_file(Path("config/myrun.yaml"))
+config = read_config_file(Path("config/run.yaml"))
 empire_config = EmpireConfiguration.from_dict(config=config)
 
 run_path = Path.cwd() / "Results/norway_analysis/ncc{ncc}_na{na}_w{w}_wog{wog}_p{p}".format(
