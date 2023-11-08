@@ -47,5 +47,5 @@ def get_active_results(folders: list[Path]) -> Path:
     valid_result_folders_dict = get_valid_data_folders(folders)
 
     ### Get path to results folder
-    results_folder_relative = st.sidebar.selectbox("Choose results: ", list(valid_result_folders_dict.keys()))
+    results_folder_relative = st.selectbox("Choose results: ", sorted(list(valid_result_folders_dict.keys())))
     return valid_result_folders_dict[results_folder_relative]

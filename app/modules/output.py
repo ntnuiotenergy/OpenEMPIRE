@@ -381,44 +381,8 @@ def output(active_results: Path) -> None:
     def plot_node_operation_values(df, node, scenario, season, period):
         filtered_df = df.query(f"Scenario == '{scenario}' and Season == '{season}' and Period == '{period}'")
 
-        columns = [
-            "Load_MW",
-            "Liginiteexisting_MW",
-            "Lignite_MW",
-            "LigniteCCSadv_MW",
-            "Coalexisting_MW",
-            "Coal_MW",
-            "CoalCCSadv_MW",
-            "Gasexisting_MW",
-            "GasOCGT_MW",
-            "GasCCGT_MW",
-            "GasCCSadv_MW",
-            "Oilexisting_MW",
-            "Bioexisting_MW",
-            "Bio10cofiring_MW",
-            "Nuclear_MW",
-            "Wave_MW",
-            "Geo_MW",
-            "Hydroregulated_MW",
-            "Hydrorun-of-the-river_MW",
-            "Bio_MW",
-            "Windonshore_MW",
-            "Windoffshoregrounded_MW",
-            "Windoffshorefloating_MW",
-            "Solar_MW",
-            "Bio10cofiringCCS_MW",
-            "LigniteCCSsup_MW",
-            "CoalCCS_MW",
-            "GasCCS_MW",
-            "Waste_MW",
-            "storCharge_MW",
-            "storDischarge_MW",
-            "LossesChargeDischargeBleed_MW",
-            "FlowOut_MW",
-            "FlowIn_MW",
-            "LossesFlowIn_MW",
-            "LoadShed_MW",
-        ]
+        columns = [i for i in df.columns if "_MW" in i and i not in ["AllGen_MW", "Net_load_MW"]]
+
         current_columns = list(set(columns).intersection(set(filtered_df.columns)))
 
         column_sums = filtered_df[current_columns].sum().abs()
@@ -449,8 +413,24 @@ def output(active_results: Path) -> None:
             title=f"Operational values for {node}, {scenario}, {period}",
         )
         fig.add_trace(go.Scatter(x=filtered_df["Hour"], y=-filtered_df["Load_MW"], name="Load_MW"))
-        fig.update_xaxes(title_text="Hour")
-        fig.update_yaxes(title_text="Value (MW)")
+        
+        fig.update_layout(
+            xaxis=dict(title="Hour", domain=[0.3,1]),
+            yaxis=dict(title="Value (MW)"),
+            yaxis2=dict(
+                title="Energy Price [EUR/MWh]",
+                side="left",
+                overlaying="y",
+                showgrid=False,  # Hides the secondary y-axis gridlines if desired
+                # tickmode="auto",  # Ensures ticks are automatically generated
+                anchor="free",
+                position=0.15
+            ),
+        )
+        fig.add_trace(
+            go.Scatter(x=filtered_df["Hour"], y=filtered_df["Price_EURperMWh"], name="Energy Price", yaxis="y2")
+        )
+
         return fig
 
     nodes = output_client.get_storage_values().Node.unique().tolist()
@@ -492,7 +472,7 @@ def output(active_results: Path) -> None:
 
     df_operational_trans = output_client.get_transmission_operational(node)
     fig = plot_transmission_flow(df_operational_trans, node=node, scenario=scenario, season=season, period=period)
-    
+
     col1, col2 = st.columns(2)
     col1.plotly_chart(plot_node_operation_values(df, node=node, scenario=scenario, season=season, period=period))
     col2.plotly_chart(fig)
@@ -562,6 +542,9 @@ def output(active_results: Path) -> None:
         "Italy",
         "Germany",
         "Poland",
+        "SorligeNordsjoI",
+        "SorligeNordsoII",
+        "UtsiraNord",
     ]
     nodes = df_sum.index.to_list()
     selected_nodes = st.multiselect(
@@ -584,8 +567,14 @@ def output(active_results: Path) -> None:
 
 if __name__ == "__main__":
     active_results = Path(
-        "/Users/martihj/mnt/Solstorm/OpenEMPIRE/Results/norway_analysis_2/ncc6000.0_na0.75_w0.0_wog0.0"
+        "/Users/martihj/mnt/Solstorm/OpenEMPIRE/Results/norway_analysis/ncc6000.0_na0.75_w0.0_wog0.0_pTrue"
     )
-    active_results = Path("/Users/martihj/gitsource/OpenEMPIRE/Results/norway_analysis/ncc3000.0_na0.95_w0.0_wog0.0_v1")
+    active_results = Path(
+        "/Users/martihj/gitsource/OpenEMPIRE/Results/norway_analysis/ncc6000.0_na0.75_w0.0_wog0.0_pTrue"
+    )
     output_client = EmpireOutputClient(output_path=active_results / "Output")
     import pandas as pd
+
+    df = output_client.get_node_operational_values()
+
+    df[["Node", "Period", "Scenario", "Season", "Hour", "Price_EURperMWh"]]
