@@ -36,6 +36,8 @@ def app():
     else:
         active_results = get_active_results([result_folder])
 
+    st.sidebar.markdown(f"Current results:  {active_results}")
+
     if "current_page" not in st.session_state:
         st.session_state["current_page"] = "Output"
 
