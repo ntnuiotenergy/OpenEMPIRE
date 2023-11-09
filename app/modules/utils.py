@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import pandas as pd
 import streamlit as st
 
 
@@ -49,3 +50,17 @@ def get_active_results(folders: list[Path]) -> Path:
     ### Get path to results folder
     results_folder_relative = st.selectbox("Choose results: ", sorted(list(valid_result_folders_dict.keys())))
     return valid_result_folders_dict[results_folder_relative]
+
+
+def get_max_hour_season(df: pd.DataFrame) -> dict:
+    """
+    Find the last hour of the different seasons
+
+    :param df: Dataframe containing "Season" and "Hour" columns
+    :return: Dictionary with season as key and max hour as value
+    """
+    max_hour_season = {}
+    for season in df["Season"].unique():
+        max_hour_season[season] = df.loc[df["Season"] == season, "Hour"].max()
+
+    return max_hour_season

@@ -8,6 +8,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 
+from app.modules.utils import get_max_hour_season
 from empire.input_client.client import EmpireInputClient
 from empire.output_client.client import EmpireOutputClient
 from empire.results.maps import plot_built_transmission_capacity
@@ -72,7 +73,10 @@ def output(active_results: Path) -> None:
     st.sidebar.markdown("__Page filter:__")
     period = st.sidebar.select_slider("Select period: ", df["Period"].unique())
 
+    #########################
     st.header("Summary results")
+    #########################
+
     st.write(f"Objective value: {output_client.get_objective()/1e9:.2f} Billion")
 
     def plot_europe_plot_generator_annual_production():
@@ -198,7 +202,9 @@ def output(active_results: Path) -> None:
 
     st.plotly_chart(plot_europe_summary_emission_and_energy())
 
+    #########################
     st.header("Node results")
+    #########################
 
     def plot_transmission_values(col):
         df = output_client.get_transmission_values()
@@ -378,8 +384,8 @@ def output(active_results: Path) -> None:
     col1.plotly_chart(plot_storage_values(col1))
     col2.plotly_chart(plot_storage_values_line(col2))
 
-    def plot_node_operation_values(df, node, scenario, season, period):
-        filtered_df = df.query(f"Scenario == '{scenario}' and Season == '{season}' and Period == '{period}'")
+    def plot_node_operation_values(df, max_hour_season, node, scenario, period):
+        filtered_df = df.query(f"Scenario == '{scenario}' and Period == '{period}'")
 
         columns = [i for i in df.columns if "_MW" in i and i not in ["AllGen_MW", "Net_load_MW"]]
 
@@ -413,9 +419,9 @@ def output(active_results: Path) -> None:
             title=f"Operational values for {node}, {scenario}, {period}",
         )
         fig.add_trace(go.Scatter(x=filtered_df["Hour"], y=-filtered_df["Load_MW"], name="Load_MW"))
-        
+
         fig.update_layout(
-            xaxis=dict(title="Hour", domain=[0.3,1]),
+            xaxis=dict(title="Hour", domain=[0.3, 1]),
             yaxis=dict(title="Value (MW)"),
             yaxis2=dict(
                 title="Energy Price [EUR/MWh]",
@@ -424,12 +430,22 @@ def output(active_results: Path) -> None:
                 showgrid=False,  # Hides the secondary y-axis gridlines if desired
                 # tickmode="auto",  # Ensures ticks are automatically generated
                 anchor="free",
-                position=0.15
+                position=0.15,
             ),
         )
         fig.add_trace(
             go.Scatter(x=filtered_df["Hour"], y=filtered_df["Price_EURperMWh"], name="Energy Price", yaxis="y2")
         )
+
+        for season in max_hour_season:
+            fig.add_vline(
+                x=max_hour_season[season],
+                line_width=2,
+                line_color="grey",
+                annotation_text=season,
+                annotation_position="top left",
+                annotation_font_size=8,
+            )
 
         return fig
 
@@ -438,19 +454,21 @@ def output(active_results: Path) -> None:
     node = st.selectbox("Select node: ", nodes, index=nodes.index("NO2") if "NO2" in nodes else 0)
     df = output_client.get_node_operational_values(node)
 
-    scenario = st.selectbox("Select scenario: ", df["Scenario"].unique())
-    season = st.selectbox("Select season: ", df["Season"].unique())
+    max_hour_season = get_max_hour_season(df)
 
-    def plot_transmission_flow(df, node, scenario, season, period):
-        filtered_df = df.query(f"Scenario == '{scenario}' and Season == '{season}' and Period == '{period}'").copy(
-            deep=True
-        )
+    scenario = st.selectbox("Select scenario: ", df["Scenario"].unique())
+
+    def plot_transmission_flow(df, max_hour_season, node, scenario, period):
+        filtered_df = df.query(f"Scenario == '{scenario}' and Period == '{period}'").copy(deep=True)
 
         filtered_df["From-To"] = filtered_df["FromNode"] + "-" + filtered_df["ToNode"]
 
-        melted_df = pd.melt(filtered_df, id_vars=["Hour", "From-To"], value_vars=["TransmissionRecieved_MW"])
+        melted_df = pd.melt(filtered_df, id_vars=["Hour", "FromNode", "ToNode"], value_vars=["TransmissionRecieved_MW"])
+        melted_df.loc[melted_df["FromNode"] == node, "value"] *= -1.0  # Negative if flow out of node
 
-        filtered_lines = melted_df.groupby("From-To").sum()["value"] > 0.1
+        melted_df["From-To"] = melted_df["FromNode"] + "-" + melted_df["ToNode"]
+
+        filtered_lines = melted_df.groupby(["From-To"]).sum()["value"].abs() > 0.1
         melted_df = melted_df.loc[melted_df["From-To"].map(filtered_lines)]
 
         sums = melted_df.groupby("From-To")["value"].sum()
@@ -462,22 +480,68 @@ def output(active_results: Path) -> None:
         melted_df["From-To"] = pd.Categorical(melted_df["From-To"], categories=sorted_variables, ordered=True)
         melted_df = melted_df.sort_values("From-To")
 
-        return px.area(
+        fig = px.area(
             melted_df,
             x="Hour",
             y="value",
             color="From-To",
-            title=f"Exchange for {node}, {scenario}, {season}, {period}",
+            title=f"Exchange for {node}, {scenario}, {period}",
         )
 
+        for season in max_hour_season:
+            fig.add_vline(
+                x=max_hour_season[season],
+                line_width=2,
+                line_color="grey",
+                annotation_text=season,
+                annotation_position="top left",
+                annotation_font_size=8,
+            )
+
+        return fig
+
     df_operational_trans = output_client.get_transmission_operational(node)
-    fig = plot_transmission_flow(df_operational_trans, node=node, scenario=scenario, season=season, period=period)
+    fig = plot_transmission_flow(df_operational_trans, max_hour_season, node=node, scenario=scenario, period=period)
 
     col1, col2 = st.columns(2)
-    col1.plotly_chart(plot_node_operation_values(df, node=node, scenario=scenario, season=season, period=period))
+    col1.plotly_chart(plot_node_operation_values(df, max_hour_season, node=node, scenario=scenario, period=period))
     col2.plotly_chart(fig)
 
+    def plot_duration_curve(df, max_hour_season, node, period):
+        filtered_df = df.query(f"Node == '{node}' and Period == '{period}'").copy(deep=True)
+
+        trace = []
+        x = np.arange(start=0, stop=1.0, step=1 / len(filtered_df))
+        for col in filtered_df.columns[5:]:
+            if col == "Price_EURperMWh":
+                trace.append(go.Scatter(x=x, y=filtered_df[col].sort_values(ascending=False), name=col, yaxis="y2"))
+            elif filtered_df[col].sum() > 5.0:
+                trace.append(go.Scatter(x=x, y=filtered_df[col].sort_values(ascending=False), name=col))
+
+        fig = go.Figure(data=trace)
+        fig.update_layout(
+            title=f"Duration curves over all scenarios and seasons for {node}, {period}",
+            yaxis=dict(title="Capacity [MW]"),
+            xaxis=dict(title="[-]", domain=[0.3, 1]),
+            yaxis2=dict(
+                title="Energy Price [EUR/MWh]",
+                side="left",
+                overlaying="y",
+                showgrid=False,  # Hides the secondary y-axis gridlines if desired
+                # tickmode="auto",  # Ensures ticks are automatically generated
+                anchor="free",
+                position=0.15,
+            ),
+        )
+
+        return fig
+
+    fig = plot_duration_curve(df, max_hour_season, node, period)
+    st.plotly_chart(fig)
+
+    #########################
     st.header("Transmission")
+    #########################
 
     df_built = output_client.get_transmission_values()
     df_built.loc[:, "BetweenNode"] = df_built["BetweenNode"].str.replace(" ", "")
@@ -497,7 +561,10 @@ def output(active_results: Path) -> None:
     fig.update_layout(title=f"{metric} for {period}")
     st.plotly_chart(fig)
 
+    ########################
     st.header("Key Metrics")
+    ########################
+
     # Get and process the dataframe
     df = output_client.get_generators_values()
 
@@ -577,4 +644,108 @@ if __name__ == "__main__":
 
     df = output_client.get_node_operational_values()
 
+    node = "NO2"
+    period = "2045-2050"
+    filtered_df = df.query(f"Node == '{node}' and Period == '{period}'").copy(deep=True)
+
+    n_hour_season = {}
+    for season in filtered_df["Season"].unique():
+        n_hour_season[season] = filtered_df.loc[filtered_df["Season"] == season, "Hour"].max()
+
+
+def plot_duration_curve(df, node, period):
+    filtered_df = df.query(f"Node == '{node}' and Period == '{period}'").copy(deep=True)
+
+    trace = []
+    x = np.arange(start=0, stop=1.0, step=1 / len(filtered_df))
+    for col in filtered_df.columns[5:]:
+        if filtered_df[col].sum() < 1.0:
+            filtered_df.drop(columns=[col], inplace=True)
+        elif col == "Price_EURperMWh":
+            trace.append(go.Scatter(x=x, y=filtered_df[col].sort_values(ascending=False), name=col, yaxis="y2"))
+        else:
+            trace.append(go.Scatter(x=x, y=filtered_df[col].sort_values(ascending=False), name=col))
+
+    fig = go.Figure(data=trace)
+    fig.update_layout(
+        title=f"Duration curves over all scenarios and seasons for {node}, {period}",
+        yaxis=dict(title="Capacity [MW]"),
+        xaxis=dict(title="[-]", domain=[0.3, 1]),
+        yaxis2=dict(
+            title="Energy Price [EUR/MWh]",
+            side="left",
+            overlaying="y",
+            showgrid=False,  # Hides the secondary y-axis gridlines if desired
+            # tickmode="auto",  # Ensures ticks are automatically generated
+            anchor="free",
+            position=0.15,
+        ),
+    )
+
+    filtered_df
+
     df[["Node", "Period", "Scenario", "Season", "Hour", "Price_EURperMWh"]]
+
+    scenario = "scenario1"
+    period = "2040-2045"
+    filtered_df = df.query(f"Scenario == '{scenario}' and Period == '{period}'")
+
+    columns = [i for i in df.columns if "_MW" in i and i not in ["AllGen_MW", "Net_load_MW"]]
+
+    current_columns = list(set(columns).intersection(set(filtered_df.columns)))
+
+    column_sums = filtered_df[current_columns].sum().abs()
+
+    # Find columns where the sum is less than 0.1 MW
+    columns_to_drop = column_sums[column_sums < 0.1].index
+    filtered_columns = list(set(current_columns).difference(set(columns_to_drop.to_list() + ["Load_MW"])))
+
+    # Melting the DataFrame to have a long-form DataFrame which is suitable for line plots in plotly
+    melted_df = pd.melt(filtered_df, id_vars=["Hour", "Season"], value_vars=filtered_columns)
+
+    def get_figure_season(season):
+        melted_season_df = melted_df.query(f"Season == '{season}'").copy(deep=True)
+        # Calculate the sum of values for each variable
+        sums = melted_season_df.groupby("variable")["value"].sum()
+
+        # Sort variables based on their sums for a more readable area plot
+        sorted_variables = sums.sort_values(ascending=False).index.tolist()
+
+        # Sort the DataFrame based on the sorted order of variables
+        melted_season_df["variable"] = pd.Categorical(
+            melted_season_df["variable"], categories=sorted_variables, ordered=True
+        )
+        melted_season_df = melted_season_df.sort_values("variable")
+
+        # Creating the line plot
+        fig = px.area(
+            melted_season_df,
+            x="Hour",
+            y="value",
+            color="variable",
+            title=f"Operational values for {node}, {scenario}, {period}, {season}",
+        )
+        fig.add_trace(go.Scatter(x=filtered_df["Hour"], y=-filtered_df["Load_MW"], name="Load_MW"))
+
+        fig.update_layout(
+            xaxis=dict(title="Hour", domain=[0.3, 1]),
+            yaxis=dict(title="Value (MW)"),
+            yaxis2=dict(
+                title="Energy Price [EUR/MWh]",
+                side="left",
+                overlaying="y",
+                showgrid=False,  # Hides the secondary y-axis gridlines if desired
+                # tickmode="auto",  # Ensures ticks are automatically generated
+                anchor="free",
+                position=0.15,
+            ),
+        )
+        fig.add_trace(
+            go.Scatter(x=filtered_df["Hour"], y=filtered_df["Price_EURperMWh"], name="Energy Price", yaxis="y2")
+        )
+
+        return fig
+
+    for season in melted_df["Season"].unique():
+        fig = get_figure_season(season)
+        fig.show()
