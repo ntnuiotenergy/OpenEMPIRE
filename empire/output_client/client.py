@@ -35,7 +35,6 @@ class EmpireOutputClient:
         self.output_path = output_path
         self.files = ResultFile()
 
-    @lru_cache(maxsize=None)
     def _read_file_and_split(self, filename: str) -> list:
         """
         Helper method to read a file and split its content.
@@ -47,6 +46,7 @@ class EmpireOutputClient:
             data = file.read()
         return data.split('""\n')
 
+    @lru_cache(maxsize=None)
     def get_europe_summary_emission_and_energy(self) -> pd.DataFrame:
         """
         Retrieve emission and energy data from the Europe summary.
@@ -55,6 +55,7 @@ class EmpireOutputClient:
         """
         return pd.read_csv(StringIO(self._read_file_and_split(self.files.europe_summary)[0]))
 
+    @lru_cache(maxsize=None)
     def get_europe_summary_generator_types(self) -> pd.DataFrame:
         """
         Retrieve generator types data from the Europe summary.
@@ -63,6 +64,7 @@ class EmpireOutputClient:
         """
         return pd.read_csv(StringIO(self._read_file_and_split(self.files.europe_summary)[1]))
 
+    @lru_cache(maxsize=None)
     def get_europe_summary_storage_types(self) -> pd.DataFrame:
         """
         Retrieve storage types data from the Europe summary.
@@ -71,6 +73,7 @@ class EmpireOutputClient:
         """
         return pd.read_csv(StringIO(self._read_file_and_split(self.files.europe_summary)[2]))
 
+    @lru_cache(maxsize=None)
     def _get_europe_plot_data(self, index: int) -> pd.DataFrame:
         """
         Retrieve specific data from the Europe plot based on the provided index.
@@ -123,7 +126,8 @@ class EmpireOutputClient:
         :return: A DataFrame containing the annual discharge of storages.
         """
         return self._get_europe_plot_data(index=4)
-
+    
+    @lru_cache(maxsize=None)
     def get_objective(self) -> float:
         """
         Retrieve the objective value of the model.
@@ -138,6 +142,7 @@ class EmpireOutputClient:
         except (IndexError, ValueError):
             raise ValueError("Unable to parse objective value from file.")
 
+    @lru_cache(maxsize=None)
     def get_curtailed_production(self) -> pd.DataFrame:
         """
         Retrieve the expected annuyal curtailment for each node and period.
@@ -146,6 +151,7 @@ class EmpireOutputClient:
         """
         return pd.read_csv(self.output_path / self.files.curtailed_prod)
 
+    @lru_cache(maxsize=None)
     def get_generators_values(self) -> pd.DataFrame:
         """
         Retrieve values for generators in the nodes.
@@ -154,6 +160,7 @@ class EmpireOutputClient:
         """
         return pd.read_csv(self.output_path / self.files.gen)
 
+    @lru_cache(maxsize=None)
     def get_storage_values(self) -> pd.DataFrame:
         """
         Retrieve values for storages in the nodes.
@@ -162,6 +169,7 @@ class EmpireOutputClient:
         """
         return pd.read_csv(self.output_path / self.files.stor)
 
+    @lru_cache(maxsize=None)
     def get_transmission_values(self) -> pd.DataFrame:
         """
         Retrieve values of transmission lines between nodes.
@@ -189,10 +197,11 @@ class EmpireOutputClient:
                 return pd.read_csv(buffer)
             else:
                 df = pd.read_csv(file)
-                return df.loc[df["Node"] == "Austria"]
+                return df.loc[df["Node"] == node]
 
         return pd.read_csv(file)
 
+    @lru_cache(maxsize=None)
     def get_transmission_operational(self, node: str | None = None) -> pd.DataFrame:
         """
         Retrieve operational transmission data, optionally filtered by a specific node.
@@ -202,6 +211,7 @@ class EmpireOutputClient:
         """
         return self._slice_file_with_grep(file=self.output_path / self.files.transmision_operational, node=node)
 
+    @lru_cache(maxsize=None)
     def get_node_operational_values(self, node: str | None = None) -> pd.DataFrame:
         """
         Retrieve operational values for a specific node.
