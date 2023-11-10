@@ -5,7 +5,7 @@
 NUCLEAR_CAPITAL_COSTS=("3000" "4000" "5000" "6000" "7000" "8000")
 NUCLEAR_AVAILABILITIES=("0.75" "0.95")
 MAX_WINDS=("0" "200000")
-PROTECTIVE=(true false)
+PROTECTIVE=("false" "true")
 
 mkdir -p ./hpc_output/
 
@@ -17,7 +17,7 @@ for ncc in "${NUCLEAR_CAPITAL_COSTS[@]}"; do
                 qsub \
                     -V \
                     -cwd \
-                    -N empire_model_${ncc}_${na}_${w}_{$p} \
+                    -N empire_model_${ncc}_${na}_${w}_${p} \
                     -o ./hpc_output/ \
                     -e ./hpc_output/\
                     -l h_rt=12:00:00 \
