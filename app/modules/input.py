@@ -372,16 +372,19 @@ def input(active_results: Path):
 
     df_max_capacity = input_client.transmission.get_max_built_capacity()
 
-    fig = plot_transmission(
-        df_coords=df_coords,
-        df_lines=df_lines,
-        df_init_capacity=df_init_capacity,
-        df_max_capacity=df_max_capacity,
-        df_length=df_length,
-        df_efficiency=df_efficiency,
-    )
-    fig.update_layout(title=f"Transmission grid, {period}")
-    st.plotly_chart(fig)
+    try:
+        fig = plot_transmission(
+            df_coords=df_coords,
+            df_lines=df_lines,
+            df_init_capacity=df_init_capacity,
+            df_max_capacity=df_max_capacity,
+            df_length=df_length,
+            df_efficiency=df_efficiency,
+        )
+        fig.update_layout(title=f"Transmission grid, {period}")
+        st.plotly_chart(fig)
+    except KeyError as e:
+        st.error(f"Error: {e}")
 
     df = input_client.transmission.get_type_capital_cost()
     df.loc[:, "Period"] = df.loc[:, "Period"].replace(periods_to_year_mapping)
