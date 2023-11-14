@@ -2,13 +2,12 @@ import cProfile
 import pstats
 from pathlib import Path
 
-import numpy as np
-import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
 import streamlit as st
 
-from app.modules.utils import get_max_hour_season
+from app.modules.results.key_metrics import KeyMetricsResults
+from app.modules.results.node import NodeResults
+from app.modules.results.operational import OperationalResults
 from empire.input_client.client import EmpireInputClient
 from empire.output_client.client import EmpireOutputClient
 from empire.results.maps import plot_built_transmission_capacity
@@ -25,41 +24,6 @@ def profile_function(func):
         return result
 
     return wrapper
-
-
-# @st.cache_data
-def get_europe_plot_generator_annual_production(_output_client):
-    return _output_client.get_europe_plot_generator_annual_production()
-
-
-# @st.cache_data
-def get_europe_plot_generator_installed_capacity(_output_client):
-    return _output_client.get_europe_plot_generator_installed_capacity()
-
-
-# @st.cache_data
-def get_curtailed_production(_output_client):
-    return _output_client.get_curtailed_production()
-
-
-# @st.cache_data
-def get_europe_plot_storage_installed_energy(_output_client):
-    return _output_client.get_europe_plot_storage_installed_energy()
-
-
-# @st.cache_data
-def get_europe_plot_storage_annual_discharge(_output_client):
-    return _output_client.get_europe_plot_storage_annual_discharge()
-
-
-# @st.cache_data
-def get_europe_plot_storage_installed_capacity(_output_client):
-    return _output_client.get_europe_plot_storage_installed_capacity()
-
-
-# @st.cache_data
-def get_europe_summary_emission_and_energy(_output_client):
-    return _output_client.get_europe_summary_emission_and_energy()
 
 
 # @profile_function
@@ -80,7 +44,7 @@ def output(active_results: Path) -> None:
     st.write(f"Objective value: {output_client.get_objective()/1e9:.2f} Billion")
 
     def plot_europe_plot_generator_annual_production():
-        df = get_europe_plot_generator_annual_production(output_client)
+        df = output_client.get_europe_plot_generator_annual_production()
         df = (df.stack() / 1e3).to_frame(name="Value").reset_index()
         return px.bar(
             df,
@@ -92,7 +56,7 @@ def output(active_results: Path) -> None:
         )
 
     def plot_europe_plot_generator_installed_capacity():
-        df = get_europe_plot_generator_installed_capacity(output_client)
+        df = output_client.get_europe_plot_generator_installed_capacity()
         df = (df.stack() / 1e3).to_frame(name="Value").reset_index()
         return px.bar(
             df,
@@ -108,7 +72,7 @@ def output(active_results: Path) -> None:
     col2.plotly_chart(plot_europe_plot_generator_installed_capacity())
 
     def plot_curtailed_production():
-        df = get_curtailed_production(output_client)
+        df = output_client.get_curtailed_production()
         df.loc[:, "ExpectedAnnualCurtailment_GWh"] = df.loc[:, "ExpectedAnnualCurtailment_GWh"] / 1e3
         fig = px.bar(
             df,
@@ -130,7 +94,7 @@ def output(active_results: Path) -> None:
         return fig
 
     def plot_europe_plot_storage_installed_energy():
-        df = get_europe_plot_storage_installed_energy(output_client)
+        df = output_client.get_europe_plot_storage_installed_energy()
         df = (df.stack() / 1e3).to_frame(name="Value").reset_index()
         return px.bar(
             df,
@@ -146,7 +110,7 @@ def output(active_results: Path) -> None:
     col2.plotly_chart(plot_europe_plot_storage_installed_energy())
 
     def plot_europe_plot_storage_annual_discharge():
-        df = get_europe_plot_storage_annual_discharge(output_client)
+        df = output_client.get_europe_plot_storage_annual_discharge()
         df = (df.stack() / 1e3).to_frame(name="Value").reset_index()
         return px.bar(
             df,
@@ -161,7 +125,7 @@ def output(active_results: Path) -> None:
         )
 
     def plot_europe_plot_storage_installed_capacity():
-        df = get_europe_plot_storage_installed_capacity(output_client)
+        df = output_client.get_europe_plot_storage_installed_capacity()
         df = (df.stack() / 1e3).to_frame(name="Value").reset_index()
         return px.bar(
             df,
@@ -177,7 +141,7 @@ def output(active_results: Path) -> None:
     col2.plotly_chart(plot_europe_plot_storage_installed_capacity())
 
     def plot_europe_summary_emission_and_energy():
-        df = get_europe_summary_emission_and_energy(output_client)
+        df = output_client.get_europe_summary_emission_and_energy()
         column_values = df.columns.to_list()[2:]
         selected_column = st.selectbox("Choose values: ", column_values)
 
@@ -205,339 +169,55 @@ def output(active_results: Path) -> None:
     #########################
     st.header("Node results")
     #########################
-
-    def plot_transmission_values(col):
-        df = output_client.get_transmission_values()
-
-        default_nodes = ["NO1", "NO2", "NO3", "NO4", "NO5"]
-        nodes = np.unique(df[["BetweenNode", "AndNode"]].values.flatten())
-        selected_nodes = col.multiselect(
-            "Select nodes: ", nodes, default=[item for item in default_nodes if item in nodes]
-        )
-        df = df.query(f"BetweenNode in {selected_nodes} or AndNode in {selected_nodes}").copy(deep=True)
-
-        column_values = df.columns[3:]
-        selected_column = col.selectbox("Select column values: ", column_values)
-
-        df["From-To"] = df["BetweenNode"] + "-" + df["AndNode"]
-        fig = px.bar(
-            df,
-            x="From-To",
-            y=selected_column,
-            facet_col="Period",
-            title="Transmission Values",
-        )
-
-        # Update outer x-axis titles
-        periods = df["Period"].unique()
-        for i, period in enumerate(periods, start=1):
-            fig.update_xaxes(title=period[:5], col=i)
-
-        # Remove "Period='value'" labels
-        fig.for_each_annotation(lambda a: a.update(text=""))
-        return fig
-
-    def plot_transmission_values_line(col):
-        df = output_client.get_transmission_values()
-
-        default_nodes = ["NO1", "NO2", "NO3", "NO4", "NO5"]
-        nodes = np.unique(df[["BetweenNode", "AndNode"]].values.flatten())
-        selected_nodes = col.multiselect(
-            "Select nodes:   ", nodes, default=[item for item in default_nodes if item in nodes]
-        )
-
-        df = df.query(f"BetweenNode in {selected_nodes} or AndNode in {selected_nodes}").copy(deep=True)
-
-        column_values = df.columns[3:]
-        selected_column = col.selectbox("Select column values:   ", column_values)
-
-        df["From-To"] = df["BetweenNode"] + "-" + df["AndNode"]
-        fig = px.line(
-            df,
-            x="Period",
-            y=selected_column,
-            color="From-To",
-            title="Transmission Values",
-        )
-
-        return fig
+    node_results = NodeResults(output_client=output_client)
 
     col1, col2 = st.columns(2)
-    col1.plotly_chart(plot_transmission_values(col1))
-    col2.plotly_chart(plot_transmission_values_line(col2))
-
-    def plot_generator_values(col):
-        df = output_client.get_generators_values()
-
-        default_nodes = ["NO1", "NO2", "NO3", "NO4", "NO5"]
-        nodes = df["Node"].unique()
-        selected_nodes = col.multiselect(
-            "Select nodes: ", nodes, default=[item for item in default_nodes if item in nodes]
-        )
-
-        df = df.query(f"Node in {selected_nodes}")
-
-        column_values = df.columns[3:]
-        selected_column = col.selectbox("Select column values: ", column_values)
-
-        fig = px.bar(
-            df,
-            x="Node",
-            y=selected_column,
-            color="GeneratorType",
-            facet_col="Period",
-            title="Generator Values",
-            # labels={"storPWInstalledCap_MW": "Technology", "Value": "Installed Capacity [GW]"},
-        )
-
-        # Update outer x-axis titles
-        periods = df["Period"].unique()
-        for i, period in enumerate(periods, start=1):
-            fig.update_xaxes(title=period[:5], col=i)
-
-        # Remove "Period='value'" labels
-        fig.for_each_annotation(lambda a: a.update(text=""))
-        return fig
-
-    def plot_generator_values_line(col):
-        df = output_client.get_generators_values()
-        selected_generator_technology = col.selectbox("Select Generator Technology:  ", df["GeneratorType"].unique())
-        df = df.query(f"GeneratorType in '{selected_generator_technology}'")
-
-        column_values = df.columns[3:]
-        selected_column = col.selectbox("Select column values:  ", column_values)
-
-        fig = px.line(
-            df,
-            x="Period",
-            y=selected_column,
-            color="Node",
-            title="Generator Values",
-            # labels={"storPWInstalledCap_MW": "Technology", "Value": "Installed Capacity [GW]"},
-        )
-
-        return fig
+    col1.plotly_chart(node_results.plot_accumulated_system_investments_in_transmission())
+    col2.plotly_chart(node_results.plot_accumulated_system_investments_in_generation())
 
     col1, col2 = st.columns(2)
-    col1.plotly_chart(plot_generator_values(col1))
-    col2.plotly_chart(plot_generator_values_line(col2))
-
-    def plot_storage_values(col):
-        df = output_client.get_storage_values()
-
-        default_nodes = ["NO1", "NO2", "NO3", "NO4", "NO5"]
-        nodes = df["Node"].unique()
-        selected_nodes = col.multiselect(
-            "Select nodes:  ", nodes, default=[item for item in default_nodes if item in nodes]
-        )
-        df = df.query(f"Node in {selected_nodes}")
-
-        column_values = df.columns[3:]
-        selected_column = col.selectbox("Select column values: ", column_values)
-
-        fig = px.bar(
-            df,
-            x="Node",
-            y=selected_column,
-            color="StorageType",
-            facet_col="Period",
-            title="Storage Values",
-            # labels={"storPWInstalledCap_MW": "Technology", "Value": "Installed Capacity [GW]"},
-        )
-
-        # Update outer x-axis titles
-        periods = df["Period"].unique()
-        for i, period in enumerate(periods, start=1):
-            fig.update_xaxes(title=period[:5], col=i)
-
-        # Remove "Period='value'" labels
-        fig.for_each_annotation(lambda a: a.update(text=""))
-        return fig
-
-    def plot_storage_values_line(col):
-        df = output_client.get_storage_values()
-        selected_storage_technology = col.radio("Select Storage Technology:  ", df["StorageType"].unique())
-        df = df.query(f"StorageType in '{selected_storage_technology}'")
-
-        column_values = df.columns[3:]
-        selected_column = col.selectbox("Select column values:  ", column_values)
-
-        fig = px.line(
-            df,
-            x="Period",
-            y=selected_column,
-            color="Node",
-            title="Storage Values",
-            # labels={"storPWInstalledCap_MW": "Technology", "Value": "Installed Capacity [GW]"},
-        )
-
-        # Update outer x-axis titles
-        periods = df["Period"].unique()
-        for i, period in enumerate(periods, start=1):
-            fig.update_xaxes(title=period[:5], col=i)
-
-        # Remove "Period='value'" labels
-        fig.for_each_annotation(lambda a: a.update(text=""))
-        return fig
+    col1.plotly_chart(node_results.plot_transmission_values(col1))
+    col2.plotly_chart(node_results.plot_transmission_values_line(col2))
 
     col1, col2 = st.columns(2)
-    col1.plotly_chart(plot_storage_values(col1))
-    col2.plotly_chart(plot_storage_values_line(col2))
+    col1.plotly_chart(node_results.plot_generator_values(col1))
+    col2.plotly_chart(node_results.plot_generator_values_line(col2))
 
-    def plot_node_operation_values(df, max_hour_season, node, scenario, period):
-        filtered_df = df.query(f"Scenario == '{scenario}' and Period == '{period}'")
+    col1, col2 = st.columns(2)
+    col1.plotly_chart(node_results.plot_storage_values(col1))
+    col2.plotly_chart(node_results.plot_storage_values_line(col2))
 
-        columns = [i for i in df.columns if "_MW" in i and i not in ["AllGen_MW", "Net_load_MW"]]
+    ################################
+    st.header("Operational results")
+    ################################
+    operational_results = OperationalResults(output_client=output_client, input_client=input_client)
 
-        current_columns = list(set(columns).intersection(set(filtered_df.columns)))
-
-        column_sums = filtered_df[current_columns].sum().abs()
-
-        # Find columns where the sum is less than 0.1 MW
-        columns_to_drop = column_sums[column_sums < 0.1].index
-        filtered_columns = list(set(current_columns).difference(set(columns_to_drop.to_list() + ["Load_MW"])))
-
-        # Melting the DataFrame to have a long-form DataFrame which is suitable for line plots in plotly
-        melted_df = pd.melt(filtered_df, id_vars=["Hour"], value_vars=filtered_columns)
-
-        # Calculate the sum of values for each variable
-        sums = melted_df.groupby("variable")["value"].sum()
-
-        # Sort variables based on their sums for a more readable area plot
-        sorted_variables = sums.sort_values(ascending=False).index.tolist()
-
-        # Sort the DataFrame based on the sorted order of variables
-        melted_df["variable"] = pd.Categorical(melted_df["variable"], categories=sorted_variables, ordered=True)
-        melted_df = melted_df.sort_values("variable")
-
-        # Creating the line plot
-        fig = px.area(
-            melted_df,
-            x="Hour",
-            y="value",
-            color="variable",
-            title=f"Operational values for {node}, {scenario}, {period}",
-        )
-        fig.add_trace(go.Scatter(x=filtered_df["Hour"], y=-filtered_df["Load_MW"], name="Load_MW"))
-
-        fig.update_layout(
-            xaxis=dict(title="Hour", domain=[0.3, 1]),
-            yaxis=dict(title="Value (MW)"),
-            yaxis2=dict(
-                title="Energy Price [EUR/MWh]",
-                side="left",
-                overlaying="y",
-                showgrid=False,  # Hides the secondary y-axis gridlines if desired
-                # tickmode="auto",  # Ensures ticks are automatically generated
-                anchor="free",
-                position=0.15,
-            ),
-        )
-        fig.add_trace(
-            go.Scatter(x=filtered_df["Hour"], y=filtered_df["Price_EURperMWh"], name="Energy Price", yaxis="y2")
-        )
-
-        for season in max_hour_season:
-            fig.add_vline(
-                x=max_hour_season[season],
-                line_width=2,
-                line_color="grey",
-                annotation_text=season,
-                annotation_position="top left",
-                annotation_font_size=8,
-            )
-
-        return fig
-
-    nodes = output_client.get_storage_values().Node.unique().tolist()
-
+    nodes = operational_results.get_nodes()
     node = st.selectbox("Select node: ", nodes, index=nodes.index("NO2") if "NO2" in nodes else 0)
-    df = output_client.get_node_operational_values(node)
 
-    max_hour_season = get_max_hour_season(df)
+    df_operational_node_all = output_client.get_node_operational_values()
+    df_operational_node = df_operational_node_all.query(f"Node == '{node}'")
 
-    scenario = st.selectbox("Select scenario: ", df["Scenario"].unique())
-
-    def plot_transmission_flow(df, max_hour_season, node, scenario, period):
-        filtered_df = df.query(f"Scenario == '{scenario}' and Period == '{period}'").copy(deep=True)
-
-        filtered_df["From-To"] = filtered_df["FromNode"] + "-" + filtered_df["ToNode"]
-
-        melted_df = pd.melt(filtered_df, id_vars=["Hour", "FromNode", "ToNode"], value_vars=["TransmissionRecieved_MW"])
-        melted_df.loc[melted_df["FromNode"] == node, "value"] *= -1.0  # Negative if flow out of node
-
-        melted_df["From-To"] = melted_df["FromNode"] + "-" + melted_df["ToNode"]
-
-        filtered_lines = melted_df.groupby(["From-To"]).sum()["value"].abs() > 0.1
-        melted_df = melted_df.loc[melted_df["From-To"].map(filtered_lines)]
-
-        sums = melted_df.groupby("From-To")["value"].sum()
-
-        # Sort variables based on their sums for a more readable area plot
-        sorted_variables = sums.sort_values(ascending=False).index.tolist()
-
-        # Sort the DataFrame based on the sorted order of variables
-        melted_df["From-To"] = pd.Categorical(melted_df["From-To"], categories=sorted_variables, ordered=True)
-        melted_df = melted_df.sort_values("From-To")
-
-        fig = px.area(
-            melted_df,
-            x="Hour",
-            y="value",
-            color="From-To",
-            title=f"Exchange for {node}, {scenario}, {period}",
-        )
-
-        for season in max_hour_season:
-            fig.add_vline(
-                x=max_hour_season[season],
-                line_width=2,
-                line_color="grey",
-                annotation_text=season,
-                annotation_position="top left",
-                annotation_font_size=8,
-            )
-
-        return fig
+    scenario = st.selectbox("Select scenario: ", df_operational_node["Scenario"].unique())
 
     df_operational_trans = output_client.get_transmission_operational(node)
-    fig = plot_transmission_flow(df_operational_trans, max_hour_season, node=node, scenario=scenario, period=period)
 
     col1, col2 = st.columns(2)
-    col1.plotly_chart(plot_node_operation_values(df, max_hour_season, node=node, scenario=scenario, period=period))
-    col2.plotly_chart(fig)
+    col1.plotly_chart(
+        operational_results.plot_node_operation_values(df_operational_node, node=node, scenario=scenario, period=period)
+    )
+    col2.plotly_chart(
+        operational_results.plot_transmission_flow(df_operational_trans, node=node, scenario=scenario, period=period)
+    )
 
-    def plot_duration_curve(df, max_hour_season, node, period):
-        filtered_df = df.query(f"Node == '{node}' and Period == '{period}'").copy(deep=True)
+    fig = operational_results.plot_duration_curve(df_operational_node, node, period)
+    df_capture_rate = operational_results.get_capture_rate(df_operational_node, node, period)
+    col1, col2 = st.columns(2)
+    col1.plotly_chart(fig)
+    col2.dataframe(df_capture_rate.style.format("{:.2f}").background_gradient(cmap="Blues"))
 
-        trace = []
-        x = np.arange(start=0, stop=1.0, step=1 / len(filtered_df))
-        for col in filtered_df.columns[5:]:
-            if col == "Price_EURperMWh":
-                trace.append(go.Scatter(x=x, y=filtered_df[col].sort_values(ascending=False), name=col, yaxis="y2"))
-            elif filtered_df[col].sum() > 5.0:
-                trace.append(go.Scatter(x=x, y=filtered_df[col].sort_values(ascending=False), name=col))
+    st.plotly_chart(operational_results.plot_node_flow(df_operational_node))
 
-        fig = go.Figure(data=trace)
-        fig.update_layout(
-            title=f"Duration curves over all scenarios and seasons for {node}, {period}",
-            yaxis=dict(title="Capacity [MW]"),
-            xaxis=dict(title="[-]", domain=[0.3, 1]),
-            yaxis2=dict(
-                title="Energy Price [EUR/MWh]",
-                side="left",
-                overlaying="y",
-                showgrid=False,  # Hides the secondary y-axis gridlines if desired
-                # tickmode="auto",  # Ensures ticks are automatically generated
-                anchor="free",
-                position=0.15,
-            ),
-        )
-
-        return fig
-
-    fig = plot_duration_curve(df, max_hour_season, node, period)
-    st.plotly_chart(fig)
 
     #########################
     st.header("Transmission")
@@ -564,188 +244,34 @@ def output(active_results: Path) -> None:
     ########################
     st.header("Key Metrics")
     ########################
+    key_metrics_results = KeyMetricsResults(output_client=output_client, input_client=input_client)
 
-    # Get and process the dataframe
-    df = output_client.get_generators_values()
-
-    df.loc[df["genExpectedAnnualProduction_GWh"] < 1, "genExpectedCapacityFactor"] = 0.0
-    df_temp = df[["Node", "GeneratorType", "Period", "genExpectedAnnualProduction_GWh"]]
-    df["TotalGeneration_GWh"] = df_temp.groupby(["Node", "Period"])["genExpectedAnnualProduction_GWh"].transform("sum")
-    df["GenerationShare_Percent"] = (df["genExpectedAnnualProduction_GWh"] / df["TotalGeneration_GWh"]) * 100
-
-    df_temp = df[["Node", "GeneratorType", "Period", "genInstalledCap_MW"]]
-    df["TotalCapacity_MW"] = df_temp.groupby(["Node", "Period"])["genInstalledCap_MW"].transform("sum")
-    df["CapacityShare_Percent"] = (df["genInstalledCap_MW"] / df["TotalGeneration_GWh"]) * 100
-
-    # Select measure
-    measures = [
-        "genInvCap_MW",
-        "genInstalledCap_MW",
-        "genExpectedCapacityFactor",
-        "DiscountedInvestmentCost_Euro",
-        "genExpectedAnnualProduction_GWh",
-        "GenerationShare_Percent",
-        "CapacityShare_Percent",
-    ]
-    measure = st.selectbox(
-        "Select measure: ",
-        measures,
-        index=measures.index("GenerationShare_Percent") if "GenerationShare_Percent" in measures else 0,
-    )
-
-    df_sum = df.query("Period == @period").pivot(index="Node", columns="GeneratorType", values=measure)
-
-    # Select nodes and generators with defaults
-    default_nodes = [
-        "NO1",
-        "NO2",
-        "NO3",
-        "NO4",
-        "NO5",
-        "Sweden",
-        "Finland",
-        "GreatBrit.",
-        "France",
-        "Italy",
-        "Germany",
-        "Poland",
-        "SorligeNordsjoI",
-        "SorligeNordsoII",
-        "UtsiraNord",
-    ]
-    nodes = df_sum.index.to_list()
-    selected_nodes = st.multiselect(
-        "Select nodes: ", options=df_sum.index, default=[item for item in default_nodes if item in nodes]
-    )
-    selected_generators = st.multiselect("Select generators: ", options=df_sum.columns, default=df_sum.columns.tolist())
-
-    # Process the dataframe and display it
-    df_sum = (
-        df_sum.loc[selected_nodes, selected_generators]
-        .fillna(0.0)
-        .loc[:, df_sum.sum(axis=0) > 1.0]
-        .assign(Active_sum=lambda x: x.sum(axis=1))
-        .T
-    )
-
+    df_sum, measure, selected_nodes = key_metrics_results.generators(period)
     st.markdown(f"{measure} for {period}:")
     st.dataframe(df_sum.style.format("{:.2f}").background_gradient(cmap="Blues"), height=40 * len(df_sum.index))
 
+    st.markdown("Mean electricity Prices")
+    load_weighted = st.toggle("Load weighted prices", value=True)
+    average_price_df = key_metrics_results.average_power_prices(df_operational_node_all, load_weighted=load_weighted)
+    st.dataframe(average_price_df[selected_nodes].style.format("{:.2f}").background_gradient(cmap="Blues"))
+
+    st.markdown("Import(+)/Export(-) [TWh/h]")
+    flow_df = key_metrics_results.total_flow(df_operational_node_all)/1e6
+    st.dataframe(flow_df[selected_nodes].style.format("{:.2f}").background_gradient(cmap="Blues"))
 
 if __name__ == "__main__":
     active_results = Path(
-        "/Users/martihj/mnt/Solstorm/OpenEMPIRE/Results/norway_analysis/ncc6000.0_na0.75_w0.0_wog0.0_pTrue"
+        "/Users/martihj/mnt/Solstorm/OpenEMPIRE/Results/norway_anaalysis/ncc6000.0_na0.75_w0.0_wog0.0_pTrue"
     )
     active_results = Path(
         "/Users/martihj/gitsource/OpenEMPIRE/Results/norway_analysis/ncc6000.0_na0.75_w0.0_wog0.0_pTrue"
     )
     output_client = EmpireOutputClient(output_path=active_results / "Output")
-    import pandas as pd
+    input_client = EmpireInputClient(dataset_path=active_results / "Input/Xlsx")
 
     df = output_client.get_node_operational_values()
 
-    node = "NO2"
-    period = "2045-2050"
-    filtered_df = df.query(f"Node == '{node}' and Period == '{period}'").copy(deep=True)
-
-    n_hour_season = {}
-    for season in filtered_df["Season"].unique():
-        n_hour_season[season] = filtered_df.loc[filtered_df["Season"] == season, "Hour"].max()
+    import pandas as pd
 
 
-def plot_duration_curve(df, node, period):
-    filtered_df = df.query(f"Node == '{node}' and Period == '{period}'").copy(deep=True)
-
-    trace = []
-    x = np.arange(start=0, stop=1.0, step=1 / len(filtered_df))
-    for col in filtered_df.columns[5:]:
-        if filtered_df[col].sum() < 1.0:
-            filtered_df.drop(columns=[col], inplace=True)
-        elif col == "Price_EURperMWh":
-            trace.append(go.Scatter(x=x, y=filtered_df[col].sort_values(ascending=False), name=col, yaxis="y2"))
-        else:
-            trace.append(go.Scatter(x=x, y=filtered_df[col].sort_values(ascending=False), name=col))
-
-    fig = go.Figure(data=trace)
-    fig.update_layout(
-        title=f"Duration curves over all scenarios and seasons for {node}, {period}",
-        yaxis=dict(title="Capacity [MW]"),
-        xaxis=dict(title="[-]", domain=[0.3, 1]),
-        yaxis2=dict(
-            title="Energy Price [EUR/MWh]",
-            side="left",
-            overlaying="y",
-            showgrid=False,  # Hides the secondary y-axis gridlines if desired
-            # tickmode="auto",  # Ensures ticks are automatically generated
-            anchor="free",
-            position=0.15,
-        ),
-    )
-
-    filtered_df
-
-    df[["Node", "Period", "Scenario", "Season", "Hour", "Price_EURperMWh"]]
-
-    scenario = "scenario1"
-    period = "2040-2045"
-    filtered_df = df.query(f"Scenario == '{scenario}' and Period == '{period}'")
-
-    columns = [i for i in df.columns if "_MW" in i and i not in ["AllGen_MW", "Net_load_MW"]]
-
-    current_columns = list(set(columns).intersection(set(filtered_df.columns)))
-
-    column_sums = filtered_df[current_columns].sum().abs()
-
-    # Find columns where the sum is less than 0.1 MW
-    columns_to_drop = column_sums[column_sums < 0.1].index
-    filtered_columns = list(set(current_columns).difference(set(columns_to_drop.to_list() + ["Load_MW"])))
-
-    # Melting the DataFrame to have a long-form DataFrame which is suitable for line plots in plotly
-    melted_df = pd.melt(filtered_df, id_vars=["Hour", "Season"], value_vars=filtered_columns)
-
-    def get_figure_season(season):
-        melted_season_df = melted_df.query(f"Season == '{season}'").copy(deep=True)
-        # Calculate the sum of values for each variable
-        sums = melted_season_df.groupby("variable")["value"].sum()
-
-        # Sort variables based on their sums for a more readable area plot
-        sorted_variables = sums.sort_values(ascending=False).index.tolist()
-
-        # Sort the DataFrame based on the sorted order of variables
-        melted_season_df["variable"] = pd.Categorical(
-            melted_season_df["variable"], categories=sorted_variables, ordered=True
-        )
-        melted_season_df = melted_season_df.sort_values("variable")
-
-        # Creating the line plot
-        fig = px.area(
-            melted_season_df,
-            x="Hour",
-            y="value",
-            color="variable",
-            title=f"Operational values for {node}, {scenario}, {period}, {season}",
-        )
-        fig.add_trace(go.Scatter(x=filtered_df["Hour"], y=-filtered_df["Load_MW"], name="Load_MW"))
-
-        fig.update_layout(
-            xaxis=dict(title="Hour", domain=[0.3, 1]),
-            yaxis=dict(title="Value (MW)"),
-            yaxis2=dict(
-                title="Energy Price [EUR/MWh]",
-                side="left",
-                overlaying="y",
-                showgrid=False,  # Hides the secondary y-axis gridlines if desired
-                # tickmode="auto",  # Ensures ticks are automatically generated
-                anchor="free",
-                position=0.15,
-            ),
-        )
-        fig.add_trace(
-            go.Scatter(x=filtered_df["Hour"], y=filtered_df["Price_EURperMWh"], name="Energy Price", yaxis="y2")
-        )
-
-        return fig
-
-    for season in melted_df["Season"].unique():
-        fig = get_figure_season(season)
-        fig.show()
+    

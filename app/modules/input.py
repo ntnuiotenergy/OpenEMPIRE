@@ -14,7 +14,7 @@ def input(active_results: Path):
     # Read config
     config_file = active_results / "Input/Xlsx/config.txt"
     config_file = Path(
-        "/Users/martihj/gitsource/OpenEMPIRE/Results/norway_analysis/ncc6000.0_na0.95_w0.0_wog0.0/Input/Xlsx/config.txt"
+        "/Users/martihj/gitsource/OpenEMPIRE/Results/norway_analysis_backup/ncc6000.0_na0.95_w0.0_wog0.0/Input/Xlsx/config.txt"
     )  # NB
     config = read_config_file(config_file)
     empire_config = EmpireConfiguration.from_dict(config=config)

@@ -1,6 +1,5 @@
 from pathlib import Path
 
-import pandas as pd
 import streamlit as st
 
 
@@ -31,7 +30,9 @@ def get_valid_data_folders(folders: list[Path]) -> dict[str, Path]:
             if f.is_dir() and has_valid_data(f):
                 relative_path = f.relative_to(folder)
                 if relative_path in valid_result_folders_dict:
-                    raise ValueError(f"Warning relative path name already exists in other result folder. {relative_path}")
+                    raise ValueError(
+                        f"Warning relative path name already exists in other result folder. {relative_path}"
+                    )
                 valid_result_folders_dict[relative_path] = f
 
     return valid_result_folders_dict
@@ -50,17 +51,3 @@ def get_active_results(folders: list[Path]) -> Path:
     ### Get path to results folder
     results_folder_relative = st.selectbox("Choose results: ", sorted(list(valid_result_folders_dict.keys())))
     return valid_result_folders_dict[results_folder_relative]
-
-
-def get_max_hour_season(df: pd.DataFrame) -> dict:
-    """
-    Find the last hour of the different seasons
-
-    :param df: Dataframe containing "Season" and "Hour" columns
-    :return: Dictionary with season as key and max hour as value
-    """
-    max_hour_season = {}
-    for season in df["Season"].unique():
-        max_hour_season[season] = df.loc[df["Season"] == season, "Hour"].max()
-
-    return max_hour_season
