@@ -26,7 +26,7 @@ class EmpireConfiguration:
         use_fixed_sample: bool,
         load_change_module: bool,
         filter_make: bool,
-        flter_use: bool,
+        filter_use: bool,
         n_cluster: int,
         moment_matching: bool,
         n_tree_compare: int,
@@ -57,7 +57,7 @@ class EmpireConfiguration:
         :param use_fixed_sample: If true, operational scenarios will be generated according to a fixed sampling key located in the ‘Scenario Data’ folder to ensure the same operational scenarios are generated.
         :param load_change_module:
         :param filter_make:
-        :param flter_use:
+        :param filter_use:
         :param n_cluster:
         :param moment_matching:
         :param n_tree_compare:
@@ -84,7 +84,7 @@ class EmpireConfiguration:
         self.use_fixed_sample = use_fixed_sample
         self.load_change_module = load_change_module
         self.filter_make = filter_make
-        self.flter_use = flter_use
+        self.filter_use = filter_use
         self.n_cluster = n_cluster
         self.moment_matching = moment_matching
         self.n_tree_compare = n_tree_compare

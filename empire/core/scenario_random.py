@@ -386,7 +386,7 @@ def generate_random_scenario(
 
     LOADCHANGEMODULE = empire_config.load_change_module
     filter_make = empire_config.filter_make
-    filter_use = empire_config.flter_use
+    filter_use = empire_config.filter_use
     n_cluster = empire_config.n_cluster
     moment_matching = empire_config.moment_matching
     n_tree_compare = empire_config.n_tree_compare
