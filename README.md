@@ -106,6 +106,42 @@ For more details, please refer to the software documentation in the repository.
     <td>False</td>
     <td>If true, operational scenarios will be generated according to a fixed sampling key located in the ‘ScenarioData’-folder to ensure the same operational scenarios are generated. </td>
   </tr>
+    <tr>
+    <td>load_change_module</td>
+    <td>True/False</td>
+    <td>False</td>
+    <td> </td>
+  </tr>
+    <tr>
+    <td>filter_make</td>
+    <td>True/False</td>
+    <td>False</td>
+    <td> </td>
+  </tr>
+    <tr>
+    <td>filter_use</td>
+    <td>True/False</td>
+    <td>False</td>
+    <td> </td>
+  </tr>
+    <tr>
+    <td>n_cluster</td>
+    <td>Integer</td>
+    <td>10</td>
+    <td> </td>
+  </tr>
+    <tr>
+    <td>moment_matching</td>
+    <td>True/False</td>
+    <td><False/td>
+    <td> </td>
+  </tr>
+  <tr>
+    <td>n_tree_compare</td>
+    <td>Integer</td>
+    <td>20</td>
+    <td> </td>
+  </tr>
   <tr>
     <td>use_emission_cap</td>
     <td>True/False</td>
