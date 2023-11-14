@@ -18,7 +18,7 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_
                solver, temp_dir, FirstHoursOfRegSeason, FirstHoursOfPeakSeason, lengthRegSeason,
                lengthPeakSeason, Period, Operationalhour, Scenario, Season, HoursOfSeason,
                discountrate, WACC, LeapYearsInvestment, IAMC_PRINT, WRITE_LP,
-               PICKLE_INSTANCE, EMISSION_CAP, USE_TEMP_DIR):
+               PICKLE_INSTANCE, EMISSION_CAP, USE_TEMP_DIR, LOADCHANGEMODULE):
 
     if USE_TEMP_DIR:
         TempfileManager.tempdir = temp_dir
@@ -235,6 +235,9 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_
 
     if EMISSION_CAP:
     	model.CO2cap = Param(model.Period, default=5000.0, mutable=True)
+    
+    if LOADCHANGEMODULE:
+        model.sloadMod = Param(model.Node, model.Operationalhour, model.Scenario, model.Period, default=0.0, mutable=True)
 
     #Load the parameters
 
@@ -298,6 +301,8 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_
         data.load(filename=str(tab_file_path / 'General_CO2Price.tab'), param=model.CO2price, format="table")
 
     logger.info("Constructing parameter values...")
+    if LOADCHANGEMODULE:
+        data.load(filename=scenario_data_path / 'LoadchangeModule/Stochastic_ElectricLoadMod.tab', param=model.sloadMod, format="table")
 
     def prepSceProbab_rule(model):
     	#Build an equiprobable probability distribution for scenarios
@@ -461,6 +466,8 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_
                 for h in model.Operationalhour:
                     for sce in model.Scenario:
                         model.sload[n, h, i, sce] = model.sloadRaw[n,h,sce,i]*hourlyscale
+                        if LOADCHANGEMODULE:
+                            model.sload[n,h,i,sce] = model.sload[n,h,i,sce] + model.sloadMod[n,h,sce,i]
                         if value(model.sload[n,h,i,sce]) < 0:
                             f.write('Adjusted electricity load: ' + str(value(model.sload[n,h,i,sce])) + ', 10 MW for hour ' + str(h) + ' and scenario ' + str(sce) + ' in ' + str(n) + "\n")
                             model.sload[n,h,i,sce] = 10

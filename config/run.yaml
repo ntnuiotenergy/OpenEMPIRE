@@ -11,6 +11,12 @@ wacc: 0.05                          # Weighted average cost of capital
 optimization_solver: "Gurobi"       # Mathematical solver used for optimization tasks
 use_scenario_generation: False      # Indicates if scenarios should be generated dynamically
 use_fixed_sample: True              # Specifies if fixed scenario samples should be used
+load_change_module: False           #
+filter_make : False                 #
+filter_use : False                  #
+n_cluster : 10                      #
+moment_matching : False             #
+n_tree_compare : 20                 #
 use_emission_cap: True              # Indicates if there's a cap on CO2 emissions
 print_in_iamc_format: True          # Output should be printed in a IAMC-compatible format
 write_in_lp_format: False           # Problem should be written in Linear Programming format

@@ -11,6 +11,12 @@ wacc: 0.05
 optimization_solver: "Gurobi"
 use_scenario_generation: True
 use_fixed_sample: False
+load_change_module: False
+filter_make : False
+filter_use : False
+n_cluster : 10
+moment_matching : False
+n_tree_compare : 20
 use_emission_cap: False
 print_in_iamc_format: True
 write_in_lp_format: False

@@ -24,6 +24,12 @@ class EmpireConfiguration:
         optimization_solver: str,
         use_scenario_generation: bool,
         use_fixed_sample: bool,
+        load_change_module: bool,
+        filter_make: bool,
+        flter_use: bool,
+        n_cluster: int,
+        moment_matching: bool,
+        n_tree_compare: int,
         use_emission_cap: bool,
         print_in_iamc_format: bool,
         write_in_lp_format: bool,
@@ -49,6 +55,12 @@ class EmpireConfiguration:
         :param optimization_solver: Mathematical solver used for optimization tasks. Options: “Xpress”, “Gurobi”, “CPLEX”.
         :param use_scenario_generation: If true, new operational scenarios will be generated. NB! If false, .tab-files or sampling key must be manually added to the ‘ScenarioData’-folder in the version.
         :param use_fixed_sample: If true, operational scenarios will be generated according to a fixed sampling key located in the ‘Scenario Data’ folder to ensure the same operational scenarios are generated.
+        :param load_change_module:
+        :param filter_make:
+        :param flter_use:
+        :param n_cluster:
+        :param moment_matching:
+        :param n_tree_compare:
         :param use_emission_cap: If true, emissions in every scenario are capped according to the specified cap in ‘General.xlsx’. If false, the CO2-price specified in ‘General.xlsx’ applies.
         :param print_in_iamc_format: OIf true, selected results are printed on the standard IAMC-format in addition to the normal EMPIRE print.
         :param write_in_lp_format: Problem should be written in Linear Programming format.
@@ -70,6 +82,12 @@ class EmpireConfiguration:
         self.optimization_solver = optimization_solver
         self.use_scenario_generation = use_scenario_generation
         self.use_fixed_sample = use_fixed_sample
+        self.load_change_module = load_change_module
+        self.filter_make = filter_make
+        self.flter_use = flter_use
+        self.n_cluster = n_cluster
+        self.moment_matching = moment_matching
+        self.n_tree_compare = n_tree_compare
         self.use_emission_cap = use_emission_cap
         self.print_in_iamc_format = print_in_iamc_format
         self.write_in_lp_format = write_in_lp_format

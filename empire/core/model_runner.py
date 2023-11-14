@@ -87,6 +87,7 @@ def run_empire_model(
     logger.info("++++++++")
     logger.info("+EMPIRE+")
     logger.info("++++++++")
+    logger.info('Load Change Module: %s', str(empire_config.load_change_module))
     logger.info("Solver: %s", empire_config.optimization_solver)
     logger.info("Scenario Generation: %s", str(use_scen_generation))
     logger.info("++++++++")
@@ -139,6 +140,7 @@ def run_empire_model(
             PICKLE_INSTANCE=empire_config.serialize_instance,
             EMISSION_CAP=empire_config.use_emission_cap,
             USE_TEMP_DIR=empire_config.use_temporary_directory,
+            LOADCHANGEMODULE=empire_config.load_change_module
         )
 
     config_path = run_config.dataset_path / "config.txt"
