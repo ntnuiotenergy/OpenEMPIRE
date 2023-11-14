@@ -24,6 +24,8 @@ class ResultFile:
 class EmpireOutputClient:
     """
     A output client for to the Empire dataset.
+
+    Note that API calls are cached, and changes to underlying dataset will not be detected by the client. 
     """
 
     def __init__(self, output_path: Path):
