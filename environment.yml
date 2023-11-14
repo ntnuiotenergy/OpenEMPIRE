@@ -14,6 +14,8 @@ dependencies:
   - streamlit
   - plotly
   - sphinx
+  - scipy
+  - scikit-learn
   - pip
   - pip:
       - -e .
