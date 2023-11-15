@@ -10,3 +10,13 @@ dependencies:
   - python>=3.7
   - pyyaml>=5.1
   - glpk>=4.65
+  - python==3.11
+  - streamlit
+  - plotly
+  - sphinx
+  - scipy
+  - scikit-learn
+  - pip
+  - pip:
+      - -e .
+      - streamlit-authenticator

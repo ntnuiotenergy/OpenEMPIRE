@@ -1,0 +1,18 @@
+ignore-paths:
+    - notebooks
+
+pylint:
+    run: true
+    disable:
+      - too-many-arguments
+      - too-many-locals
+pydocstyle:
+    run: true
+    disable:
+      - D203 # 1 blank line required before class docstring
+      - D212 # Multi-line docstring summary should start at the first line
+
+pyflakes:
+    run: true
+    disable:
+      - F401
