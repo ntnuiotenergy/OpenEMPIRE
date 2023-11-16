@@ -11,13 +11,18 @@ dependencies:
   - pyyaml>=5.1
   - glpk>=4.65
   - python==3.11
-  - streamlit
-  - plotly
-  - sphinx
   - scipy
   - scikit-learn
-  - furo
+  
+  # For the streamlit app
+  - streamlit
+  - plotly
+
+  # Docs
+  - furo 
+  - sphinx
+  
   - pip
   - pip:
-      - -e .
+      - -e . # Install empire as pip package in editable mode
       - streamlit-authenticator
