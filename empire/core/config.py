@@ -1,4 +1,4 @@
-from inspect import signature
+from inspect import Parameter, signature
 from pathlib import Path
 from typing import Dict
 
@@ -119,10 +119,10 @@ class EmpireConfiguration:
     @classmethod
     def from_dict(cls, config: Dict) -> "EmpireConfiguration":
         """
-        Constructs EmpireConfiguration object from a dictionary. 
-        
-        If constructor arguments are missing they are added with None value to handle earlier
-        versions of the configuration.
+        Constructs EmpireConfiguration object from a dictionary.
+
+        If constructor arguments are missing and they don't have default values,
+        they are added with None value to handle earlier versions of the configuration.
 
         :param config: Dictionary with configurations.
         :returns: An instance of EmpireConfiguration.
@@ -130,12 +130,21 @@ class EmpireConfiguration:
         # Get the signature of the __init__ method
         init_signature = signature(cls.__init__)
 
-        # Prepare a dictionary of arguments with default values set to None
-        init_args = {param: None for param in init_signature.parameters if param != "self"}
+        # Prepare a dictionary of arguments
+        # Set to None if there is no default value
+        init_args = {}
+        for param_name, param in init_signature.parameters.items():
+            if param_name != "self":
+                # Check if the parameter has a default value
+                if param.default is Parameter.empty:
+                    init_args[param_name] = None
+                else:
+                    init_args[param_name] = param.default
 
         # Update the dictionary with values from the config
         init_args.update({k: v for k, v in config.items() if k in init_args})
 
+        # Create an instance of the class with the arguments
         return cls(**init_args)
 
 
