@@ -16,6 +16,7 @@ dependencies:
   - sphinx
   - scipy
   - scikit-learn
+  - furo
   - pip
   - pip:
       - -e .
