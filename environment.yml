@@ -2,6 +2,7 @@ name: empire_env
 channels:
   - conda-forge
   - defaults
+  # - gurobi
 dependencies:
   - cloudpickle>=1.0.0
   - openpyxl>=3.0.0
@@ -10,13 +11,24 @@ dependencies:
   - python>=3.7
   - pyyaml>=5.1
   - glpk>=4.65
+  # - gurobi 
   - python==3.11
-  - streamlit
-  - plotly
-  - sphinx
   - scipy
   - scikit-learn
+  - matplotlib
+  
+  # For the streamlit app
+  - streamlit
+  - plotly
+
+  # Docs
+  - furo 
+  - sphinx
+
+  # Dev tools
+  - black
+  
   - pip
   - pip:
-      - -e .
+      - -e . # Install empire as pip package in editable mode
       - streamlit-authenticator
