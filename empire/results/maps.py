@@ -5,7 +5,6 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
-from mpl_toolkits.basemap import Basemap
 
 
 def build_graph_with_results(coordinates, results, period):
@@ -48,6 +47,8 @@ def plot_graph(G: nx.Graph) -> plt.Figure:
     Returns:
     - fig: matplotlib Figure object
     """
+    from mpl_toolkits.basemap import Basemap
+
     fig = plt.figure(figsize=(10, 10))
     m = Basemap(
         projection="merc",
@@ -214,7 +215,7 @@ def plot_transmission(
             initial_capacity = initial_capacity.values[0]
         else:
             continue
-        
+
         width = initial_capacity / 2000
 
         max_capacity = df_max_capacity.query(f"InterconnectorLinks=='{row['FromNode']}' & ToNode=='{row['ToNode']}'")[
@@ -222,15 +223,15 @@ def plot_transmission(
         ]
         if not max_capacity.empty:
             max_capacity = max_capacity.values[0]
-        
+
         length = df_length.query(f"FromNode=='{row['FromNode']}' & ToNode=='{row['ToNode']}'")["Length in km"]
         if not length.empty:
             length = length.values[0]
-        
+
         efficiency = df_efficiency.query(f"FromNode=='{row['FromNode']}' & ToNode=='{row['ToNode']}'")["lineEfficiency"]
         if not efficiency.empty:
             efficiency = efficiency.values[0]
-        
+
         num_points = 10
         # Generate points along the line
         lons = np.linspace(from_lon, to_lon, num_points)
@@ -279,6 +280,7 @@ def plot_transmission(
 
     return fig
 
+
 def plot_max_transmission_capacity(
     df_coords: pd.DataFrame,
     df_lines: pd.DataFrame,
@@ -314,16 +316,16 @@ def plot_max_transmission_capacity(
         to_lat = df_coords[df_coords["Location"] == row["ToNode"]]["Latitude"].values[0]
         to_lon = df_coords[df_coords["Location"] == row["ToNode"]]["Longitude"].values[0]
 
-        max_capacity = df_max_capacity.query(
-            f"InterconnectorLinks=='{row['FromNode']}' & ToNode=='{row['ToNode']}'"
-        )["MaxRawNotAdjustWithInitCap in MW"]
+        max_capacity = df_max_capacity.query(f"InterconnectorLinks=='{row['FromNode']}' & ToNode=='{row['ToNode']}'")[
+            "MaxRawNotAdjustWithInitCap in MW"
+        ]
         if not max_capacity.empty:
             max_capacity = max_capacity.values[0]
         else:
             continue
-        
+
         width = max_capacity / 2000
-        if width >5:
+        if width > 5:
             width = 5
 
         num_points = 10
@@ -374,11 +376,9 @@ def plot_max_transmission_capacity(
 
     return fig
 
+
 def plot_built_transmission_capacity(
-    df_coords: pd.DataFrame,
-    df_lines: pd.DataFrame,
-    df_built: pd.DataFrame,
-    metric = "transmissionInstalledCap_MW"
+    df_coords: pd.DataFrame, df_lines: pd.DataFrame, df_built: pd.DataFrame, metric="transmissionInstalledCap_MW"
 ) -> go.Figure:
     """
     Return a figure with a map of max capacity of the transmission system.
@@ -410,18 +410,16 @@ def plot_built_transmission_capacity(
         to_lat = df_coords[df_coords["Location"] == row["ToNode"]]["Latitude"].values[0]
         to_lon = df_coords[df_coords["Location"] == row["ToNode"]]["Longitude"].values[0]
 
-        max_capacity = df_built.query(
-            f"BetweenNode=='{row['FromNode']}' & AndNode=='{row['ToNode']}'"
-        )[metric]
+        max_capacity = df_built.query(f"BetweenNode=='{row['FromNode']}' & AndNode=='{row['ToNode']}'")[metric]
         if not max_capacity.empty:
             max_capacity = max_capacity.values[0]
             if max_capacity < 1.0:
                 continue
         else:
             continue
-        
+
         width = max_capacity / 2000
-        if width >5:
+        if width > 5:
             width = 5
 
         num_points = 10
@@ -451,7 +449,7 @@ def plot_built_transmission_capacity(
                 mode="lines",
                 line=dict(width=width, color=color_node_type[row["LineType"]]),
                 name=f"{row['FromNode']}-{row['ToNode']}",
-                legendgroup=f"{row['FromNode']}-{row['ToNode']}",                
+                legendgroup=f"{row['FromNode']}-{row['ToNode']}",
             )
         )
 
@@ -471,6 +469,7 @@ def plot_built_transmission_capacity(
     )
 
     return fig
+
 
 if __name__ == "__main__":
     results_path = Path.cwd() / "Results/test_reg24_peak24_sce2_randomSGR_202310031437"

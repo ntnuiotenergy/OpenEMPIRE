@@ -3,7 +3,6 @@ from pathlib import Path
 import plotly.express as px
 import streamlit as st
 
-from empire.core.config import EmpireConfiguration, read_config_file
 from empire.input_client.client import EmpireInputClient
 from empire.results.maps import plot_max_transmission_capacity, plot_nodes_and_lines, plot_transmission
 
@@ -12,14 +11,14 @@ def input(active_results: Path):
     st.title("Input")
 
     # Read config
-    config_file = active_results / "Input/Xlsx/config.txt"
-    config_file = Path(
-        "/Users/martihj/gitsource/OpenEMPIRE/Results/norway_analysis_backup/ncc6000.0_na0.95_w0.0_wog0.0/Input/Xlsx/config.txt"
-    )  # NB
-    config = read_config_file(config_file)
-    empire_config = EmpireConfiguration.from_dict(config=config)
+    inital_year = st.select_slider("Initial year:", [2020, 2025], value=2020)
+    leap_years_investment=st.select_slider("Leap years for investments:", [i for i in range(1,11)], value=5)
+    forecast_horizon_year = st.select_slider("Horizon year:", [2050, 2055, 2060,2065,2070], value=2060)
+    n_periods = int((forecast_horizon_year-inital_year)/leap_years_investment)
+    st.markdown(f"How many periods: {n_periods}")
+
     periods_to_year_mapping = {
-        i + 1: 2020 + i * empire_config.leap_years_investment for i in range(empire_config.n_periods)
+        i + 1: inital_year + i * leap_years_investment for i in range(n_periods)
     }
 
     #### Input data
