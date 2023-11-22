@@ -179,19 +179,19 @@ For more details, please refer to the software documentation in the repository.
 Building the instance in Pyomo for a base case of EMPIRE can take around 40 min and require around 140 GB RAM. Therefore, it is good practice to run a test run with the test dataset first to confirm whether your computer or cluster connects to the preferred solver or not.  
 
 ```python
-C:\Users\name\path_to_folder> scripts/python run.py -d test
+C:\Users\name\path_to_folder> python scripts/run.py -d test
 ```
 
 One can also do a test run where optimization is not performed by running
 ```python
-C:\Users\name\path_to_folder> scripts/python run.py --test-run -d test
+C:\Users\name\path_to_folder> python scripts/run.py --test-run -d test
 ```
 
 # Running
 When Pyomo and the preferred solver has been installed, the model is run by running the script ‘run.py’ in a Python interface. The code is run by using the following commands, for a given dataset defined in the Data handler folder:
 
 ```python
-C:\Users\name\path_to_folder> scripts/python run.py  -d europe_v51
+C:\Users\name\path_to_folder> python scripts/run.py -d europe_v51
 ```
 
 ## Example for running on a HPC
