@@ -74,7 +74,7 @@ class EmpireConfiguration:
         """
         # Model parameters
         self.use_temporary_directory = use_temporary_directory
-        self.temporary_directory = Path(temporary_directory)
+        self.temporary_directory = Path(temporary_directory).absolute()
         self.forecast_horizon_year = forecast_horizon_year
         self.number_of_scenarios = number_of_scenarios
         self.length_of_regular_season = length_of_regular_season
@@ -114,7 +114,8 @@ class EmpireConfiguration:
         """
         Validates the configuration. Raises an error if the configuration is invalid.
         """
-        pass
+        if not self.temporary_directory.exists():
+            self.temporary_directory.mkdir(parents=True)
 
     @classmethod
     def from_dict(cls, config: Dict) -> "EmpireConfiguration":

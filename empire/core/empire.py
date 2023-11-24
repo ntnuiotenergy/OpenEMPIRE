@@ -791,10 +791,10 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_
     if WRITE_LP:
         logger.info("Writing LP-file...")
         start = time.time()
-        lpstring = 'LP_' + name + '.lp'
+        lpstring = f"LP_{name}.lp"
         if USE_TEMP_DIR:
-            lpstring = temp_dir + '/LP_'+ name + '.lp'
-        instance.write(lpstring, io_options={'symbolic_solver_labels': True})
+            lpstring = temp_dir / lpstring
+        instance.write(str(lpstring), io_options={'symbolic_solver_labels': True})
         end = time.time()
         logger.info("Writing LP-file took [sec]: %d", end - start)
 
@@ -824,9 +824,9 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_
 
     if PICKLE_INSTANCE:
         start = time.time()
-        picklestring = 'instance' + name + '.pkl'
+        picklestring = f"instance{name}.pkl"
         if USE_TEMP_DIR:
-            picklestring = temp_dir + '/instance' + name + '.pkl'
+            picklestring = temp_dir / picklestring
         with open(picklestring, mode='wb') as file:
             cloudpickle.dump(instance, file)
         end = time.time()
