@@ -11,6 +11,7 @@ import pandas as pd
 @dataclass
 class ResultFile:
     curtailed_prod: str = "results_output_curtailed_prod.csv"
+    curtailed_operational: str = "results_output_curtailed_operational.csv"
     transmision_operational: str = "results_output_transmision_operational.csv"
     stor: str = "results_output_stor.csv"
     operational: str = "results_output_Operational.csv"
@@ -147,11 +148,20 @@ class EmpireOutputClient:
     @lru_cache(maxsize=None)
     def get_curtailed_production(self) -> pd.DataFrame:
         """
-        Retrieve the expected annuyal curtailment for each node and period.
+        Retrieve the expected annual curtailment for each node and period.
 
         :return: A DataFrame containing the curtailed production data.
         """
         return pd.read_csv(self.output_path / self.files.curtailed_prod)
+
+    @lru_cache(maxsize=None)
+    def get_curtailed_operational(self) -> pd.DataFrame:
+        """
+        Retrieve the curtailment for each node, period, hour and RES technology.
+
+        :return: A DataFrame containing the curtailed operational data.
+        """
+        return pd.read_csv(self.output_path / self.files.curtailed_operational)
 
     @lru_cache(maxsize=None)
     def get_generators_values(self) -> pd.DataFrame:
