@@ -77,7 +77,7 @@ logger.info(f"Dataset version: {version}")
 client = EmpireInputClient(dataset_path=run_config.dataset_path)
 
 data_managers = [
-    AvailabilityManager(client=client, generator="Nuclear", availability=nuclear_availability),
+    AvailabilityManager(client=client, generator_technology="Nuclear", availability=nuclear_availability),
     CapitalCostManager(client=client, generator_technology="Nuclear", capital_cost=capital_cost),
     MaxInstalledCapacityManager(
         client=client,

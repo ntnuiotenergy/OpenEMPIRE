@@ -2,9 +2,9 @@ from argparse import ArgumentParser
 from pathlib import Path
 
 from empire.core.config import EmpireConfiguration, read_config_file
+from empire.core.model_runner import run_empire_model, setup_run_paths
 from empire.input_client.client import EmpireInputClient
 from empire.logger import get_empire_logger
-from empire.core.model_runner import run_empire_model, setup_run_paths
 
 parser = ArgumentParser(description="A CLI script to run the Empire model.")
 
@@ -14,9 +14,9 @@ parser.add_argument(
     "--dataset",
     help="Specify the required dataset",
     default="europe_v51",
-    choices=["europe_v50", "europe_v51", "test"],
 )
 parser.add_argument("-f", "--force", help="Force new run if old exist.", action="store_true")
+parser.add_argument("-c", "--config-file", help="Path to config file.", default="config/run.yaml")
 
 args = parser.parse_args()
 
@@ -24,7 +24,7 @@ args = parser.parse_args()
 if args.dataset == "test":
     config = read_config_file(Path("config/testrun.yaml"))
 else:
-    config = read_config_file(Path("config/run.yaml"))
+    config = read_config_file(Path(args.config_file))
 
 empire_config = EmpireConfiguration.from_dict(config=config)
 
