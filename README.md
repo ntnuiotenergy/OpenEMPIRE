@@ -190,7 +190,7 @@ C:\Users\name\path_to_folder> scripts\python run.py -d test
 **No-Optimization Test**: To execute a test run without performing optimization, use:
 
 ```python
-C:\Users\name\path_to_folder> scripts/python run.py --test-run -d test
+C:\Users\name\path_to_folder> python scripts/run.py --test-run -d test
 ```
 
 This can be useful for verifying basic setup and data handling without engaging the full optimization process.
@@ -202,7 +202,7 @@ This can be useful for verifying basic setup and data handling without engaging 
 **Execution:** Run the model using the `run.py` script. Specify the dataset located in the Data Handler folder. For example, to run the model with the `europe_v51` dataset, use:
 
 ```python
-C:\Users\name\path_to_folder> scripts/python run.py  -d europe_v51
+C:\Users\name\path_to_folder> python scripts/run.py -d europe_v51
 ```
 
 # Running on a High-Performance Cluster (HPC)
