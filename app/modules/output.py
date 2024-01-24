@@ -27,10 +27,6 @@ def profile_function(func):
     return wrapper
 
 
-# active_results = Path("/Users/martihj/gitsource/OpenEMPIRE/Results/1_node_baseload/ncc_5000_co2_150_scale_1.0_shift-10")
-# active_results = Path("/Users/martihj/gitsource/OpenEMPIRE/Results/norway_analysis/ncc4000.0_na0.95_w200000.0_wog200000.0_pTrue")
-
-
 # @profile_function
 def output(active_results: Path) -> None:
     st.title("Results")
@@ -280,7 +276,9 @@ def output(active_results: Path) -> None:
     ########################
     st.header("Key Metrics")
     ########################
-    key_metrics_results = KeyMetricsResults(output_client=output_client, input_client=input_client, empire_config=empire_config)
+    key_metrics_results = KeyMetricsResults(
+        output_client=output_client, input_client=input_client, empire_config=empire_config
+    )
 
     df_sum, measure, selected_nodes = key_metrics_results.generators(period)
     st.markdown(f"{measure} for {period}:")
@@ -294,16 +292,13 @@ def output(active_results: Path) -> None:
     st.markdown("Import(+)/Export(-) [TWh/h]")
     flow_df = key_metrics_results.total_flow(df_operational_node_all) / 1e6
     st.dataframe(flow_df[selected_nodes].style.format("{:.2f}").background_gradient(cmap="Blues"))
-    
+
     st.markdown("Marginal prices for generators")
     df_mc = key_metrics_results.compute_discounted_marginal_cost()
     st.dataframe(df_mc.style.format("{:.2f}").background_gradient(cmap="Blues"))
 
 
 if __name__ == "__main__":
-    active_results = Path(
-        "/Users/martihj/mnt/Solstorm/OpenEMPIRE/Results/norway_anaalysis/ncc6000.0_na0.75_w0.0_wog0.0_pTrue"
-    )
     active_results = Path(
         "/Users/martihj/gitsource/OpenEMPIRE/Results/norway_analysis/ncc6000.0_na0.75_w0.0_wog0.0_pTrue"
     )
@@ -315,7 +310,3 @@ if __name__ == "__main__":
     node = "Node1"
     scenario = "scenario1"
     period = "2020-2025"
-
-# %%
-
-# operational_results.plot_storage_operation_values(df_operational_node, node=node, scenario=scenario, period=period)
