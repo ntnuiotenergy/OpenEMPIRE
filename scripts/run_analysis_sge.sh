@@ -24,7 +24,7 @@ for ncc in "${NUCLEAR_CAPITAL_COSTS[@]}"; do
                     -l mem_free=150G \
                     -l hostname="compute-4-51|compute-4-52|compute-4-53|compute-4-55|compute-4-56" \
                     -pe smp 8 \
-                    ./scripts/norway_analysis_sge_worker.sh $ncc $na $w $p
+                    ./scripts/run_analysis_sge_worker.sh $ncc $na $w $p
             done
         done
     done

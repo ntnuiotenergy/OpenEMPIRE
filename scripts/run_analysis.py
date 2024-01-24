@@ -53,7 +53,7 @@ version = "europe_v51"
 config = read_config_file(Path("config/run.yaml"))
 empire_config = EmpireConfiguration.from_dict(config=config)
 
-run_path = Path.cwd() / "Results/norway_analysis/ncc{ncc}_na{na}_w{w}_wog{wog}_p{p}".format(
+run_path = Path.cwd() / "Results/run_analysis/ncc{ncc}_na{na}_w{w}_wog{wog}_p{p}".format(
     ncc=capital_cost,
     na=nuclear_availability,
     w=max_onshore_wind_norway,
@@ -67,7 +67,7 @@ if (run_path / "Output/results_objective.csv").exists():
 run_config = setup_run_paths(version=version, empire_config=empire_config, run_path=run_path)
 logger = get_empire_logger(run_config=run_config)
 
-logger.info("Running norway analysis with:")
+logger.info("Running analysis with:")
 logger.info(f"Nuclear capital cost: {capital_cost}")
 logger.info(f"Nuclear availability: {nuclear_availability}")
 logger.info(f"Max installed onshore wind per elspot area in Norway: {max_onshore_wind_norway}")

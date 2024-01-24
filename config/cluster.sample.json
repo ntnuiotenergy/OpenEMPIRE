@@ -3,12 +3,12 @@
     "REMOTE_USER": "user",
     "REMOTE_SERVER": "ip.ip.ip.ip",
     "REMOTE_DIR": "/path/to/OpenEMPIRE",
-    "SCHEDULER_SCRIPT": "./scripts/norway_analysis_sge.sh"
+    "SCHEDULER_SCRIPT": "./scripts/run_analysis_sge.sh"
   },
   "IDUN": {
     "REMOTE_USER": "user",
     "REMOTE_SERVER": "ip.ip.ip.ip",
     "REMOTE_DIR": "/path/to/OpenEMPIRE",
-    "SCHEDULER_SCRIPT": "./scripts/norway_analysis_slurm.sh"
+    "SCHEDULER_SCRIPT": "./scripts/run_analysis_slurm.sh"
   }
 }
