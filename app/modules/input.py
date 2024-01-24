@@ -10,7 +10,7 @@ from empire.results.maps import plot_max_transmission_capacity, plot_nodes_and_l
 
 def input(active_results: Path):
     st.title("Input")
-
+    # active_results = Path.cwd()/"Results/basic_run/dataset_test"
     #### Input data
     input_client = EmpireInputClient(active_results / "Input/Xlsx")
 
@@ -22,7 +22,9 @@ def input(active_results: Path):
     leap_years_investment = empire_config.leap_years_investment
     forecast_horizon_year = empire_config.forecast_horizon_year
     n_periods = empire_config.n_periods
-    periods_to_year_mapping = {i + 1: inital_year + i * leap_years_investment for i in range(n_periods)}
+    periods_to_year_mapping = {
+        i + 1: inital_year + i * leap_years_investment for i in range(20)
+    }  # Quick fix in case there are fewer periods in the run than in the dataset
 
     st.markdown(f"How many periods: {n_periods}")
 
@@ -406,7 +408,7 @@ def input(active_results: Path):
             df_length=df_length,
             df_efficiency=df_efficiency,
         )
-        fig.update_layout(title=f"Transmission grid, {period}")
+        fig.update_layout(title=f"Transmission grid, period: {period}")
         st.plotly_chart(fig)
     except KeyError as e:
         st.error(f"Error: {e}")
@@ -449,7 +451,7 @@ def input(active_results: Path):
         df_lines=df_lines,
         df_max_capacity=df_max_install_capacity,
     )
-    fig.update_layout(title=f"Max Transmission Capacity, {period}")
+    fig.update_layout(title=f"Max Transmission Capacity, period: {period}")
 
     st.plotly_chart(fig)
 
