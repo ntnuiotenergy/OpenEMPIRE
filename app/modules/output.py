@@ -203,7 +203,11 @@ def output(active_results: Path) -> None:
     nodes = operational_results.get_nodes()
     node = st.selectbox("Select node: ", nodes, index=nodes.index("NO2") if "NO2" in nodes else 0)
 
-    df_operational_node_all = output_client.get_node_operational_values()
+    @st.cache_data
+    def get_operational_all(_output_client):
+        return _output_client.get_node_operational_values()
+
+    df_operational_node_all = get_operational_all(output_client)
     discount_prices = st.sidebar.toggle("Discount prices to present value", value=True)
     if not discount_prices:
         years_to_period_mapping = {
@@ -220,7 +224,11 @@ def output(active_results: Path) -> None:
 
     scenario = st.selectbox("Select scenario: ", df_operational_node["Scenario"].unique())
 
-    df_operational_trans = output_client.get_transmission_operational(node)
+    @st.cache_data
+    def get_transmission_operational_all(_output_client, node):
+        return _output_client.get_transmission_operational(node)
+
+    df_operational_trans = get_transmission_operational_all(output_client, node)
 
     col1, col2 = st.columns(2)
     col1.plotly_chart(
