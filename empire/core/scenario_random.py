@@ -476,7 +476,7 @@ def generate_random_scenario(
                     ##REGULAR SEASONS##
                     ###################
 
-                    # Get sample year (2015-2019) for each season/scenario
+                    # Get sample year for each season/scenario
 
                     if filter_use:
                         if cluster == n_cluster - 1:
@@ -488,7 +488,7 @@ def generate_random_scenario(
                         sample_year = np.random.choice(valid_pick["Year"])
                         valid_pick = valid_pick[valid_pick["Year"] == sample_year]
                     else:
-                        sample_year = np.random.choice(list(range(2015, 2020)))
+                        sample_year = np.random.choice(solar_data["time"].dt.year.unique())
 
                     # Set sample year according to key
 
@@ -514,8 +514,11 @@ def generate_random_scenario(
                     if filter_use:
                         sample_hour = np.random.choice(valid_pick["SampleIndex"])
                     else:
-                        sample_hour = np.random.randint(0, solar_season.shape[0] - len_of_regular_season - 1)
-
+                        window = solar_season.shape[0] - len_of_regular_season - 1
+                        if window <= 0:
+                            sample_hour = 0
+                        else:
+                            sample_hour = np.random.randint(0, window)
                     # Choose sample_hour from key or save sampling key
 
                     if fix_sample:
@@ -688,9 +691,9 @@ def generate_random_scenario(
                 ##PEAK SEASONS##
                 ################
 
-                # Get peak sample year (2015-2019)
+                # Get peak sample year
 
-                sample_year = np.random.choice(list(range(2015, 2020)))
+                sample_year = np.random.choice(solar_data["time"].dt.year.unique())
 
                 if fix_sample:
                     sample_year = sampling_key.loc[(i, scenario, "peak"), "Year"]

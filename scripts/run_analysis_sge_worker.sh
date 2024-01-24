@@ -27,7 +27,7 @@ echo $CONDA_DEFAULT_ENV
 
 if [ "$p" == "true" ]; then
     echo "Protective case"
-    python scripts/norway_analysis.py \
+    python scripts/run_analysis.py \
         --nuclear-capital-cost $ncc \
         --nuclear-availability $na \
         --max-onshore-wind-norway $w \
@@ -35,7 +35,7 @@ if [ "$p" == "true" ]; then
         -p
 else
     echo "Not protective case"
-    python scripts/norway_analysis.py \
+    python scripts/run_analysis.py \
         --nuclear-capital-cost $ncc \
         --nuclear-availability $na \
         --max-onshore-wind-norway $w \

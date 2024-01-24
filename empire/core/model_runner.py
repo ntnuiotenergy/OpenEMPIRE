@@ -6,10 +6,10 @@ from pathlib import Path
 
 from empire import run_empire
 from empire.core.config import EmpireConfiguration, EmpireRunConfiguration, read_config_file
-from empire.input_data_manager import IDataManager
 from empire.core.reader import generate_tab_files
 from empire.core.scenario_random import check_scenarios_exist_and_copy, generate_random_scenario
-from empire.utils import copy_dataset, create_if_not_exist, get_run_name
+from empire.input_data_manager import IDataManager
+from empire.utils import copy_dataset, copy_scenario_data, create_if_not_exist, get_run_name
 
 logger = logging.getLogger(__name__)
 
@@ -81,13 +81,13 @@ def run_empire_model(
         )
     ]
     HoursOfSeason = HoursOfRegSeason + HoursOfPeakSeason
-    with open(Path.cwd() / "config/countries.json", "r", encoding="utf-8") as file:
+    with open(run_config.empire_path / "config/countries.json", "r", encoding="utf-8") as file:
         dict_countries = json.load(file)
 
     logger.info("++++++++")
     logger.info("+EMPIRE+")
     logger.info("++++++++")
-    logger.info('Load Change Module: %s', str(empire_config.load_change_module))
+    logger.info("Load Change Module: %s", str(empire_config.load_change_module))
     logger.info("Solver: %s", empire_config.optimization_solver)
     logger.info("Scenario Generation: %s", str(use_scen_generation))
     logger.info("++++++++")
@@ -104,7 +104,7 @@ def run_empire_model(
                 scenario_data_path=scenario_data_path,
                 tab_file_path=tab_file_path,
             )
-            
+
     else:
         if not empire_config.use_fixed_sample:
             logger.warning(
@@ -140,19 +140,21 @@ def run_empire_model(
             PICKLE_INSTANCE=empire_config.serialize_instance,
             EMISSION_CAP=empire_config.use_emission_cap,
             USE_TEMP_DIR=empire_config.use_temporary_directory,
-            LOADCHANGEMODULE=empire_config.load_change_module
+            LOADCHANGEMODULE=empire_config.load_change_module,
+            OPERATIONAL_DUALS=empire_config.compute_operational_duals,
         )
 
     config_path = run_config.dataset_path / "config.txt"
     logger.info("Writing config to: %s", config_path)
     with open(config_path, "w", encoding="utf-8") as file:
-        pprint.pprint(empire_config.__dict__, stream=file, indent=4, width=80)
+        json.dump(empire_config.to_dict(), file, ensure_ascii=False, indent=4)
 
 
 def setup_run_paths(
     version: str,
     empire_config: EmpireConfiguration,
     run_path: Path,
+    empire_path: Path = Path.cwd(),
 ) -> EmpireRunConfiguration:
     """
     Setup run paths for Empire.
@@ -160,23 +162,28 @@ def setup_run_paths(
     :param version: dataset version.
     :param empire_config: Empire configuration.
     :param run_path: Path containing input and output to the empire run.
-    :param scenario_data: Path to scenario data, optional.
-    :param sampling_key_path: Path to sampled keys for scenario generation, optional.
+    :param empire_path: Path to empire project, optional.
     :return: Empire run configuration.
     """
 
     # Original dataset
-    base_dataset = Path.cwd() / f"Data handler/{version}"
+    base_dataset = empire_path / f"Data handler/{version}"
 
     # Input folders
     run_name = get_run_name(empire_config=empire_config, version=version)
     input_path = create_if_not_exist(run_path / "Input")
     xlsx_path = create_if_not_exist(input_path / "Xlsx")
     tab_path = create_if_not_exist(input_path / "Tab")
-    scenario_data_path = base_dataset / "ScenarioData"
+    scenario_data_path = create_if_not_exist(xlsx_path / "ScenarioData")
 
     # Copy base dataset to input folder
     copy_dataset(base_dataset, xlsx_path)
+    copy_scenario_data(
+        base_dataset=base_dataset,
+        scenario_data_path=scenario_data_path,
+        use_scenario_generation=empire_config.use_scenario_generation,
+        use_fixed_sample=empire_config.use_fixed_sample,
+    )
 
     # Output folders
     results_path = create_if_not_exist(run_path / "Output")
@@ -187,6 +194,7 @@ def setup_run_paths(
         tab_path=tab_path,
         scenario_data_path=scenario_data_path,
         results_path=results_path,
+        empire_path=empire_path,
     )
 
 

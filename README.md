@@ -176,25 +176,44 @@ For more details, please refer to the software documentation in the repository.
 
 
 # Test Run
-Building the instance in Pyomo for a base case of EMPIRE can take around 40 min and require around 140 GB RAM. Therefore, it is good practice to run a test run with the test dataset first to confirm whether your computer or cluster connects to the preferred solver or not.  
 
-```python
-C:\Users\name\path_to_folder> python scripts/run.py -d test
+**System Requirements:** Running the base case of EMPIRE in Pyomo typically takes about 40 minutes and requires approximately 140 GB of RAM. 
+
+**Initial Test:** To ensure your setup is correctly configured, start with a test run using a smaller dataset. This test checks if your computer or cluster can successfully connect to the preferred solver.
+
+Run the test using the following command:
+
+```shell
+C:\Users\name\path_to_folder> scripts\python run.py -d test
 ```
 
-One can also do a test run where optimization is not performed by running
+**No-Optimization Test**: To execute a test run without performing optimization, use:
+
 ```python
 C:\Users\name\path_to_folder> python scripts/run.py --test-run -d test
 ```
 
+This can be useful for verifying basic setup and data handling without engaging the full optimization process.
+
 # Running
-When Pyomo and the preferred solver has been installed, the model is run by running the script ‘run.py’ in a Python interface. The code is run by using the following commands, for a given dataset defined in the Data handler folder:
+
+**Setup Requirements:** Ensure that Pyomo and the preferred solver are installed.
+
+**Execution:** Run the model using the `run.py` script. Specify the dataset located in the Data Handler folder. For example, to run the model with the `europe_v51` dataset, use:
 
 ```python
 C:\Users\name\path_to_folder> python scripts/run.py -d europe_v51
 ```
 
-## Example for running on a HPC
+# Running on a High-Performance Cluster (HPC)
+**Example Script**: For running multiple cases on an HPC, refer to the script `scripts/copy_and_run_empire_on_hpc.sh`. This script uses configurations from config/cluster.json and is designed for NTNU's HPC clusters: Solstorm and Idun.
 
-To showcase how to run multiple cases on a HPC see `scripts/copy_and_run_empire_on_hpc.sh`. The script read configuration located at `config/cluster.json` and is meant to be executed on one of two HPC clusters at NTNU ([Solstorm](https://solstorm.iot.ntnu.no/wordpress/) and [Idun](https://www.hpc.ntnu.no/idun/)).
+**Usage**: From the project directory, execute the following to run on the Solstorm cluster:
 
+```shell
+sh scripts/copy_and_run_empire_on_hpc.sh Solstorm
+```
+
+This command copies the EMPIRE code to the Solstorm cluster and performs several runs managed by the SGE task manager. Ensure the "empire_env" conda environment is set up on the cluster with dependencies as listed in `environment.yml`.
+
+The `scripts/run_analysis.py` script demonstrates how to modify input data at execution time using data managers.

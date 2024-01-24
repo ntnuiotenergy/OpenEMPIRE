@@ -1,4 +1,5 @@
 sheets = {
+    "General": ["seasonScale", "CO2Cap", "CO2Price"],
     "Sets": [
         "Nodes",
         "OffshoreNodes",

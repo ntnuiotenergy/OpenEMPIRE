@@ -1,6 +1,12 @@
 OpenEMPIRE: A capacity expansion planning model for energy systems
 ##################################################################
 
+.. image:: https://readthedocs.org/projects/openempire/badge/?version=latest
+    :target: https://openempire.readthedocs.io/en/latest/?badge=latest
+    :alt: Documentation Status
+
+----
+
 .. image:: _static/images/image2.png 
     :width: 5.72302in                                                  
     :height: 4.73082in                                                 

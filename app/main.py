@@ -22,8 +22,7 @@ def app():
     )
 
     result_folder = Path.cwd() / "Results"
-    # result_folder = Path("/Users/martihj/mnt/Solstorm/OpenEMPIRE/Results/norway_analysis_2/")
-
+    
     other_results = st.sidebar.text_input("Absolute path to other folder with results:")
 
     if other_results:
