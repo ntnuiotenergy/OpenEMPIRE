@@ -28,6 +28,7 @@ dependencies:
 
   # Dev tools
   - black
+  - pytest
   
   - pip
   - pip:
