@@ -18,7 +18,8 @@ n_cluster : 10                      #
 moment_matching : False             #
 n_tree_compare : 20                 #
 use_emission_cap: True              # Indicates if there's a cap on CO2 emissions
-print_in_iamc_format: True          # Output should be printed in a IAMC-compatible format
+compute_operational_duals: True     # Resolve empire with fixed investment variables and write new duals
+print_in_iamc_format: False         # Output should be printed in a IAMC-compatible format
 write_in_lp_format: False           # Problem should be written in Linear Programming format
 serialize_instance: False           # Serialize the data structure or model for later use
 north_sea: True                     # Whether the north sea is modelled or not
