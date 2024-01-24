@@ -32,6 +32,7 @@ class EmpireConfiguration:
         moment_matching: bool,
         n_tree_compare: int,
         use_emission_cap: bool,
+        compute_operational_duals: bool,
         print_in_iamc_format: bool,
         write_in_lp_format: bool,
         serialize_instance: bool,
@@ -63,6 +64,7 @@ class EmpireConfiguration:
         :param moment_matching:
         :param n_tree_compare:
         :param use_emission_cap: If true, emissions in every scenario are capped according to the specified cap in ‘General.xlsx’. If false, the CO2-price specified in ‘General.xlsx’ applies.
+        :param compute_operational_duals: If true, investment decisions are fixed and resolved to compute operational duals
         :param print_in_iamc_format: OIf true, selected results are printed on the standard IAMC-format in addition to the normal EMPIRE print.
         :param write_in_lp_format: Problem should be written in Linear Programming format.
         :param serialize_instance: Serialize the data structure or model for later use.
@@ -90,6 +92,7 @@ class EmpireConfiguration:
         self.moment_matching = moment_matching
         self.n_tree_compare = n_tree_compare
         self.use_emission_cap = use_emission_cap
+        self.compute_operational_duals = compute_operational_duals
         self.print_in_iamc_format = print_in_iamc_format
         self.write_in_lp_format = write_in_lp_format
         self.serialize_instance = serialize_instance
@@ -114,8 +117,7 @@ class EmpireConfiguration:
         """
         Validates the configuration. Raises an error if the configuration is invalid.
         """
-        if not self.temporary_directory.exists():
-            self.temporary_directory.mkdir(parents=True)
+        pass
 
     @classmethod
     def from_dict(cls, config: Dict) -> "EmpireConfiguration":
@@ -147,6 +149,19 @@ class EmpireConfiguration:
 
         # Create an instance of the class with the arguments
         return cls(**init_args)
+    
+    def to_dict(self) -> dict:
+        """
+        Used for serialization.
+
+        :return: dictionary
+        """
+        my_dict = self.__dict__
+        for k in my_dict:
+            if isinstance(my_dict[k], Path):
+                my_dict[k] = str(my_dict[k])
+                
+        return my_dict
 
 
 class EmpireRunConfiguration:
@@ -157,6 +172,7 @@ class EmpireRunConfiguration:
         tab_path: Path | str,
         scenario_data_path: Path | str,
         results_path: Path | str,
+        empire_path: Path | str = Path.cwd(),
     ):
         """
         Class containing configurations for running Empire simulations.
@@ -166,6 +182,7 @@ class EmpireRunConfiguration:
         :param tab_path: Folder containing the .tab files.
         :param scenario_data_path: Folder containing the scenario data.
         :param results_path: Folder where the results should reside.
+        :param empire_path: Path to empire project, default is current working directory.
         """
 
         self.run_name = run_name
@@ -173,6 +190,7 @@ class EmpireRunConfiguration:
         self.tab_file_path = Path(tab_path)
         self.scenario_data_path = Path(scenario_data_path)
         self.results_path = Path(results_path)
+        self.empire_path = Path(empire_path)
 
         # Validate the configuration
         self.validate()
@@ -181,7 +199,8 @@ class EmpireRunConfiguration:
         """
         Validates the configuration. Raises an error if the configuration is invalid.
         """
-        pass
+        if not self.empire_path.exists():
+            raise ValueError(f"{self.empire_path} does not exists.")
 
     @classmethod
     def from_dict(cls, config: dict) -> "EmpireRunConfiguration":
