@@ -294,3 +294,29 @@ class NodeResults:
             )
 
         return fig
+    
+    
+    def get_build_technology_by_node(self,df_gen, node):
+        df_gen = df_gen[["Node", "GeneratorType", "Period", "genInvCap_MW"]]
+        df_gen = df_gen.pivot(index=["Node", "Period"], values="genInvCap_MW", columns="GeneratorType").fillna(0.0)
+        df_gen[df_gen < 0.1] = 0.0
+
+        df_t = df_gen[df_gen.index.get_level_values("Node")==node]
+        return df_t.T[df_t.sum()>1]
+
+    def visualize_built_capacity_in_nodes(self):
+        import streamlit as st
+        
+        df_gen = self.output_client.get_generators_values()
+        default_nodes = ["NO1", "NO2", "NO3", "NO4", "NO5"]
+        nodes = df_gen["Node"].unique()
+        
+        selected_nodes = st.multiselect(
+            "Select nodes:   ", nodes, default=[item for item in default_nodes if item in nodes]
+        )
+        
+        for node in selected_nodes:
+            df_built = self.get_build_technology_by_node(df_gen=df_gen, node=node)
+            st.write(f"Built capacity [GW] in {node}")
+            df_built.columns = df_built.columns.get_level_values(1)
+            st.dataframe((df_built.round(0)/1e3).style.format("{:.2f}").background_gradient(cmap="Blues"))
