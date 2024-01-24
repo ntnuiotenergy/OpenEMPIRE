@@ -299,14 +299,4 @@ def output(active_results: Path) -> None:
 
 
 if __name__ == "__main__":
-    active_results = Path(
-        "/Users/martihj/gitsource/OpenEMPIRE/Results/norway_analysis/ncc6000.0_na0.75_w0.0_wog0.0_pTrue"
-    )
-    output_client = EmpireOutputClient(output_path=active_results / "Output")
-    input_client = EmpireInputClient(dataset_path=active_results / "Input/Xlsx")
-
-    df = output_client.get_node_operational_values()
-
-    node = "Node1"
-    scenario = "scenario1"
-    period = "2020-2025"
+    pass
