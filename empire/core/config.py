@@ -20,6 +20,7 @@ class EmpireConfiguration:
         forecast_horizon_year: int,
         number_of_scenarios: int,
         length_of_regular_season: int,
+        len_peak_season: int,
         discount_rate: float,
         wacc: float,
         optimization_solver: str,
@@ -37,9 +38,9 @@ class EmpireConfiguration:
         write_in_lp_format: bool,
         serialize_instance: bool,
         north_sea: bool,
+        DLC_module: bool,
         regular_seasons: list[str] = ["winter", "spring", "summer", "fall"],
         n_peak_seasons: int = 2,
-        len_peak_season: int = 24,
         leap_years_investment: int = 5,
         time_format: str = "%d/%m/%Y %H:%M",
         **kwargs,
@@ -73,6 +74,7 @@ class EmpireConfiguration:
         :param n_peak_seasons:  Peak seasons.
         :param leap_years_investment: Years between investment decisions
         :param time_format: Time format
+        :param DLC_module: True --> Activate Direct Load Control (DLC) module; False --> Deactivate DLC module.
         """
         # Model parameters
         self.use_temporary_directory = use_temporary_directory
@@ -97,11 +99,12 @@ class EmpireConfiguration:
         self.write_in_lp_format = write_in_lp_format
         self.serialize_instance = serialize_instance
         self.north_sea = north_sea
+        self.DLC_module = DLC_module
+        self.len_peak_season = len_peak_season
 
         # Optional parameters
         self.regular_seasons = regular_seasons
         self.n_peak_seasons = n_peak_seasons
-        self.len_peak_season = len_peak_season
         self.leap_years_investment = leap_years_investment
         self.time_format = time_format
 

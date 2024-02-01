@@ -6,6 +6,7 @@ temporary_directory: './'
 forecast_horizon_year: 2030
 number_of_scenarios: 2      
 length_of_regular_season: 24
+len_peak_season: 24
 discount_rate: 0.05
 wacc: 0.05
 optimization_solver: "Gurobi"
@@ -23,3 +24,4 @@ print_in_iamc_format: True
 write_in_lp_format: False
 serialize_instance: False
 north_sea: False
+DLC_module: False

@@ -138,6 +138,82 @@ def sample_load(data, regularSeasonHours, scenario, season, seasons, period, sam
     return load
 
 
+def sample_DLC(data1, data2, regularSeasonHours, scenario, season, seasons, period, sample_hour, DLCType, shift_time):
+    [sample_data, hours] = gather_regular_sample(data1, season, seasons, regularSeasonHours, sample_hour)
+    MaxReductionSample = pd.DataFrame()
+    BaseLineSample = pd.DataFrame()
+    MinSample =  pd.DataFrame()
+    MaxSample =  pd.DataFrame()
+    for c in sample_data.columns:
+        if c != 'time':
+            df = pd.DataFrame(
+                data={
+                    "Node": c,
+                    "DLCType": DLCType, 
+                    "Period": period, 
+                    "Operationalhour": hours,
+                    "Scenario": "scenario" + str(scenario),
+                    "maxReduction": sample_data[c].values,
+                }
+            )
+            MaxReductionSample = pd.concat([MaxReductionSample, df], ignore_index=True)
+
+            # Calculation other DLC parameters (min, max, and baseline) based on maxReduction
+            [arr_base, arr_min, arr_max] = max_min_of_boxes(df, shift_time)
+            df = pd.DataFrame(
+                data={
+                    "Node": c, 
+                    "DLCType": DLCType, 
+                    "Period": period, 
+                    "Operationalhour": hours,
+                    "Scenario": "scenario" + str(scenario),
+                    "BaseLine": arr_base,
+                }
+            )
+            BaseLineSample = pd.concat([BaseLineSample, df], ignore_index=True)
+            df = pd.DataFrame(
+                data={
+                    "Node": c, 
+                    "DLCType": DLCType, 
+                    "Period": period, 
+                    "Operationalhour": hours,
+                    "Scenario": "scenario" + str(scenario),
+                    "Min": arr_min,
+                }
+            )
+            MinSample = pd.concat([MinSample, df], ignore_index=True)
+            df = pd.DataFrame(
+                data={
+                    "Node": c, 
+                    "DLCType": DLCType, 
+                    "Period": period, 
+                    "Operationalhour": hours,
+                    "Scenario": "scenario" + str(scenario),
+                    "Max": arr_max,
+                }
+            )
+            MaxSample = pd.concat([MaxSample, df], ignore_index=True)
+
+
+    [sample_data, hours] = gather_regular_sample(data2, season, seasons, regularSeasonHours, sample_hour)
+    MaxDispatchSample = pd.DataFrame()
+    for c in sample_data.columns:
+        if c != 'time':
+            df = pd.DataFrame(
+                data={
+                    "Node": c, 
+                    "DLCType": DLCType, 
+                    "Period": period, 
+                    "Operationalhour": hours,
+                    "Scenario": "scenario" + str(scenario),
+                    "maxDispatch": sample_data[c].values,
+                }
+            )
+            MaxDispatchSample = pd.concat([MaxDispatchSample, df], ignore_index=True)
+
+    return  [MaxReductionSample, MaxDispatchSample, BaseLineSample, MinSample, MaxSample]
+
+
 def gather_peak_sample(data, seasons, regularSeasonHours, peakSeasonHours, country_sample, overall_sample):
     data = data.reset_index(drop=True)
     country_peak = data.iloc[
@@ -229,6 +305,148 @@ def sample_load_peak(
         )
         peak_data = pd.concat([peak_data, df], ignore_index=True)
     return peak_data
+
+
+def sample_DLC_peak(data1, data2, seasons, scenario, period, regularSeasonHours, peakSeasonHours, overall_sample, country_sample, DLCType, shift_time):
+    MaxReductionSample = pd.DataFrame()
+    BaseLineSample = pd.DataFrame()
+    MinSample =  pd.DataFrame()
+    MaxSample =  pd.DataFrame()
+    [country_peak, overall_peak, country_hours, overall_hours] = gather_peak_sample(
+        data1, seasons, regularSeasonHours, peakSeasonHours, country_sample, overall_sample)
+    for c in country_peak.columns:
+        df = pd.DataFrame(
+            data={
+                "Node": c, 
+                "DLCType": DLCType, 
+                "Period": period, 
+                "Season": "peak1",
+                "Operationalhour": country_hours,
+                "Scenario": "scenario" + str(scenario),
+                "maxReduction": country_peak[c].values,
+            }
+        )
+        MaxReductionSample = pd.concat([MaxReductionSample, df], ignore_index=True)
+        # Calculating other DLC parameters (min, max, and baseline) based on maxReduction
+        [arr_base, arr_min, arr_max] = max_min_of_boxes(df, shift_time)
+        df = pd.DataFrame(
+            data={
+                "Node": c, 
+                "DLCType": DLCType, 
+                "Period": period, 
+                "Season": "peak1",
+                "Operationalhour": country_hours,
+                "Scenario": "scenario" + str(scenario),
+                "BaseLine": arr_base,
+            }
+        )
+        BaseLineSample = pd.concat([BaseLineSample, df], ignore_index=True)
+        df = pd.DataFrame(
+            data={
+                "Node": c, 
+                "DLCType": DLCType, 
+                "Period": period, 
+                "Season": "peak1",
+                "Operationalhour": country_hours,
+                "Scenario": "scenario" + str(scenario),
+                "Min": arr_min,
+                }
+            )
+        MinSample = pd.concat([MinSample, df], ignore_index=True)
+        df = pd.DataFrame(
+            data={
+                "Node": c, 
+                "DLCType": DLCType, 
+                "Period": period, 
+                "Season": "peak1",
+                "Operationalhour": country_hours,
+                "Scenario": "scenario" + str(scenario),
+                "Max": arr_max,
+            }
+        )
+        MaxSample = pd.concat([MaxSample, df], ignore_index=True)
+
+        df = pd.DataFrame(
+            data={
+                "Node": c, 
+                "DLCType": DLCType, 
+                "Period": period, 
+                "Season": "peak2",
+                "Operationalhour": overall_hours,
+                "Scenario": "scenario" + str(scenario),
+                "maxReduction": overall_peak[c].values,
+            }
+        )
+        MaxReductionSample = pd.concat([MaxReductionSample, df], ignore_index=True)
+        # Calculating other DLC parameters (min, max, and baseline) based on maxReduction
+        [arr_base, arr_min, arr_max] = max_min_of_boxes(df, shift_time)
+        df = pd.DataFrame(
+            data={
+                "Node": c, 
+                "DLCType": DLCType, 
+                "Period": period, 
+                "Season": "peak2",
+                "Operationalhour": overall_hours,
+                "Scenario": "scenario" + str(scenario),
+                "BaseLine": arr_base,
+            }
+        )
+        BaseLineSample = pd.concat([BaseLineSample, df], ignore_index=True)
+        df = pd.DataFrame(
+            data={
+                "Node": c, 
+                "DLCType": DLCType, 
+                "Period": period, 
+                "Season": "peak2",
+                "Operationalhour": overall_hours,
+                "Scenario": "scenario" + str(scenario),
+                "Min": arr_min,
+            }
+        )
+        MinSample = pd.concat([MinSample, df], ignore_index=True)
+        df = pd.DataFrame(
+            data={
+                "Node": c, 
+                "DLCType": DLCType, 
+                "Period": period, 
+                "Season": "peak2",
+                "Operationalhour": overall_hours,
+                "Scenario": "scenario" + str(scenario),
+                "Max": arr_max,
+            }
+        )
+        MaxSample = pd.concat([MaxSample, df], ignore_index=True)
+ 
+    MaxDispatchSample = pd.DataFrame()
+    [country_peak, overall_peak, country_hours, overall_hours] = gather_peak_sample(
+        data2, seasons, regularSeasonHours, peakSeasonHours, country_sample, overall_sample)
+    for c in country_peak.columns:
+        df = pd.DataFrame(
+            data={
+                "Node": c, 
+                "DLCType": DLCType, 
+                "Period": period, 
+                "Season": "peak1",
+                "Operationalhour": country_hours,
+                "Scenario": "scenario" + str(scenario),
+                "maxDispatch": country_peak[c].values,
+            }
+        )
+        MaxDispatchSample = pd.concat([MaxDispatchSample, df], ignore_index=True)
+        df = pd.DataFrame(
+            data={
+                "Node": c, 
+                "DLCType": DLCType, 
+                "Period": period, 
+                "Season": "peak2",
+                "Operationalhour": overall_hours,
+                "Scenario": "scenario" + str(scenario),
+                "maxDispatch": overall_peak[c].values,
+            }
+        )
+        MaxDispatchSample = pd.concat([MaxDispatchSample, df], ignore_index=True)
+
+    return [MaxReductionSample, MaxDispatchSample, BaseLineSample, MinSample, MaxSample]
 
 
 def sample_generator_peak(
@@ -361,6 +579,32 @@ def make_filter_result(data1, data2, regularSeasonHours, seasons, n_cluster, fil
     filter_result = pd.concat(frames)
     filter_result.to_csv(filepath / "filter_result.csv", index=False)
 
+def max_min_of_boxes(collection: pd.DataFrame, interval: int):
+    # The interval should be summed with 1 to reach the proper shift window in the model.
+    interval = interval + 1
+    arr = collection.loc[:, 'maxReduction'].to_numpy()
+    # print(len(arr))
+    arr_base = np.add.accumulate(arr)
+    # Maximum:
+    # summing every X (equal to interval elements)
+    arr_sum = np.add.reduceat(arr, np.arange(0, len(arr), interval))
+    # accumulating values
+    arr_sum_acc = np.add.accumulate(arr_sum)
+    # repeating every element X times
+    arr_max = np.repeat(arr_sum_acc, interval)
+    # Minimum:
+    arr_min = arr_max
+    # deleting the last values of season
+    arr_min = np.delete(arr_min, list(range(len(arr_min) - (interval - 1), len(arr_min))))
+    # adding the zeros at beginning of season
+    arr_min = np.insert(arr_min, 0, np.zeros(interval - 1))
+    # This if condition is for cases that length of season is not divisible by interval.
+    if len(arr) % interval != 0:
+        arr_max = np.delete(arr_max, list(range(len(arr), len(arr_max))))
+        arr_min = np.delete(arr_min, list(range(len(arr), len(arr_min))))
+        arr_min[-1] = arr_max[-1]    
+    return [arr_base, arr_min, arr_max]
+
 
 def generate_random_scenario(
     empire_config: EmpireConfiguration,
@@ -391,6 +635,8 @@ def generate_random_scenario(
     moment_matching = empire_config.moment_matching
     n_tree_compare = empire_config.n_tree_compare
 
+    DLCMODULE = empire_config.DLC_module
+
     if fix_sample:
         logger.info("Generating scenarios according to key...")
     else:
@@ -404,6 +650,15 @@ def generate_random_scenario(
     if LOADCHANGEMODULE:
         elecLoadMod = pd.DataFrame()
 
+    if DLCMODULE:
+        DLCMaxReduction = pd.DataFrame()
+        DLCMaxDispatch = pd.DataFrame()
+        DLCBaseLine = pd.DataFrame()
+        DLCMin = pd.DataFrame()
+        DLCMax = pd.DataFrame()
+        dict_shift_time = pd.read_excel(scenario_data_path / "../DLCModule/DLCStorage.xlsx","ShiftTime")
+        dict_shift_time = dict_shift_time.set_index('DLCType').to_dict(orient='dict')['ShiftTime']
+
     # Load all the raw scenario data
     solar_data = pd.read_csv(scenario_data_path / "solar.csv")
     windonshore_data = pd.read_csv(scenario_data_path / "windonshore.csv")
@@ -414,6 +669,19 @@ def generate_random_scenario(
 
     if LOADCHANGEMODULE:
         elecLoadMod_data = pd.read_csv(scenario_data_path / "LoadchangeModule/elec_load_mod.csv")
+
+    if DLCMODULE:
+        DLCTypes = pd.read_excel(scenario_data_path /  "../DLCModule/DLCSets.xlsx", 
+                                 sheet_name="Storage", index_col=None).Storage.astype(str).values.tolist()
+        MaxReduction_data = {}
+        MaxDispatch_data = {}
+        for DLCType in DLCTypes:
+            MaxReduction_data[DLCType] = pd.read_csv(
+                scenario_data_path / f"../DLCModule/DLCScenarioData/maxReduction_{DLCType}.csv"
+            )
+            MaxDispatch_data[DLCType] = pd.read_csv(
+                scenario_data_path /  f"../DLCModule/DLCScenarioData/maxDispatch_{DLCType}.csv"
+            )
 
     # Make datetime columns
     solar_data = make_datetime(solar_data, time_format)
@@ -426,6 +694,11 @@ def generate_random_scenario(
     if LOADCHANGEMODULE:
         elecLoadMod_data = make_datetime(elecLoadMod_data, "%Y-%m-%d %H:%M")
 
+    if DLCMODULE:
+        for DLCType in DLCTypes:
+            MaxReduction_data[DLCType] = make_datetime(MaxReduction_data[DLCType], time_format)
+            MaxDispatch_data[DLCType] = make_datetime(MaxDispatch_data[DLCType], time_format)
+            
     if filter_make:
         print("Making stratified filter...")
         make_filter_result(
@@ -509,6 +782,14 @@ def generate_random_scenario(
                         elecLoadMod_period = elecLoadMod_period.drop(columns=["Period"])
                         elecLoadMod_season = year_season_filter(elecLoadMod_period, sample_year, s)
 
+                    if DLCMODULE:
+                        MaxReduction_data_season = {}
+                        MaxDispatch_data_season = {}
+                        for DLCType in DLCTypes:
+                            sample_year_DLC = sample_year + i * 5
+                            MaxReduction_data_season[DLCType] = year_season_filter(MaxReduction_data[DLCType], sample_year_DLC, s)
+                            MaxDispatch_data_season[DLCType] = year_season_filter(MaxDispatch_data[DLCType], sample_year_DLC, s)
+                    
                     # Filter the sample range by K-means if filter_sample=True
 
                     if filter_use:
@@ -687,6 +968,26 @@ def generate_random_scenario(
                             ignore_index=True,
                         )
 
+                    if DLCMODULE:
+                        for DLCType in DLCTypes:
+                            [MaxReductionSample, MaxDispatchSample, BaseLineSample, MinSample, MaxSample] = sample_DLC(
+                                data1 = MaxReduction_data_season[DLCType],
+                                data2 = MaxDispatch_data_season[DLCType],
+                                regularSeasonHours=len_of_regular_season,
+                                scenario=scenario,
+                                season=s,
+                                seasons=seasons,
+                                period=i,
+                                sample_hour=sample_hour,
+                                DLCType=DLCType,
+                                shift_time=dict_shift_time[DLCType],
+                            )
+                            DLCMaxReduction = pd.concat([DLCMaxReduction, MaxReductionSample], ignore_index=True)
+                            DLCMaxDispatch = pd.concat([DLCMaxDispatch, MaxDispatchSample], ignore_index=True)
+                            DLCBaseLine = pd.concat([DLCBaseLine, BaseLineSample], ignore_index=True)
+                            DLCMin = pd.concat([DLCMin, MinSample], ignore_index=True)
+                            DLCMax = pd.concat([DLCMax, MaxSample], ignore_index=True)
+
                 ################
                 ##PEAK SEASONS##
                 ################
@@ -715,6 +1016,14 @@ def generate_random_scenario(
 
                 if LOADCHANGEMODULE:
                     elecLoadMod_data_year = elecLoadMod_period.loc[elecLoadMod_period.year.isin([sample_year])]
+
+                if DLCMODULE:
+                    MaxReduction_data_year = {}
+                    MaxDispatch_data_year = {}
+                    for DLCType in DLCTypes:
+                        sample_year_DLC = sample_year + i * 5
+                        MaxReduction_data_year[DLCType] = MaxReduction_data[DLCType].loc[MaxReduction_data[DLCType].year.isin([sample_year_DLC]), :]
+                        MaxDispatch_data_year[DLCType] = MaxDispatch_data[DLCType].loc[MaxDispatch_data[DLCType].year.isin([sample_year_DLC]), :]
 
                 # Peak1: The highest load when all loads are summed together
                 electricload_data_year_notime = remove_time_index(electricload_data_year)
@@ -884,6 +1193,27 @@ def generate_random_scenario(
                         ignore_index=True,
                     )
 
+                if DLCMODULE:
+                    for DLCType in DLCTypes:
+                        [MaxReductionSample, MaxDispatchSample, BaseLineSample, MinSample, MaxSample] = sample_DLC_peak(
+                            data1 = MaxReduction_data_year[DLCType],
+                            data2 = MaxDispatch_data_year[DLCType],
+                            seasons=seasons, 
+                            scenario=scenario, 
+                            period=i,
+                            regularSeasonHours=len_of_regular_season,
+                            peakSeasonHours=len_peak_season,
+                            overall_sample=overall_sample,
+                            country_sample=country_sample,
+                            DLCType=DLCType,
+                            shift_time=dict_shift_time[DLCType],
+                        )
+                        DLCMaxReduction = pd.concat([DLCMaxReduction, MaxReductionSample], ignore_index=True)
+                        DLCMaxDispatch = pd.concat([DLCMaxDispatch, MaxDispatchSample], ignore_index=True)
+                        DLCBaseLine = pd.concat([DLCBaseLine, BaseLineSample], ignore_index=True)
+                        DLCMin = pd.concat([DLCMin, MinSample], ignore_index=True)
+                        DLCMax = pd.concat([DLCMax, MaxSample], ignore_index=True)
+
         if moment_matching:
             # Save the tree
             genAvail_dict[tree] = genAvail
@@ -931,6 +1261,13 @@ def generate_random_scenario(
     if LOADCHANGEMODULE:
         elecLoadMod = elecLoadMod.replace({"Node": dict_countries})
 
+    if DLCMODULE:
+        DLCMaxReduction = DLCMaxReduction.replace({"Node": dict_countries})
+        DLCMaxDispatch = DLCMaxDispatch.replace({"Node": dict_countries})
+        DLCBaseLine = DLCBaseLine.replace({"Node": dict_countries})
+        DLCMin = DLCMin.replace({"Node": dict_countries})
+        DLCMax = DLCMax.replace({"Node": dict_countries})
+
     # Make header for .tab-file
     genAvail = genAvail[
         ["Node", "IntermitentGenerators", "Operationalhour", "Scenario", "Period", "GeneratorStochasticAvailabilityRaw"]
@@ -949,6 +1286,13 @@ def generate_random_scenario(
     if LOADCHANGEMODULE:
         elecLoadMod = elecLoadMod[["Node", "Operationalhour", "Scenario", "Period", "ElectricLoadRaw_in_MW"]]
 
+    if DLCMODULE:
+        DLCMaxReduction = DLCMaxReduction[["Node", "DLCType", "Operationalhour", "Period", "Scenario", "maxReduction"]]
+        DLCMaxDispatch = DLCMaxDispatch[["Node", "DLCType", "Operationalhour", "Period", "Scenario","maxDispatch"]]
+        DLCBaseLine = DLCBaseLine[["Node", "DLCType", "Operationalhour", "Period", "Scenario", "BaseLine"]]
+        DLCMin = DLCMin[["Node", "DLCType", "Operationalhour", "Period", "Scenario","Min"]]
+        DLCMax = DLCMax[["Node", "DLCType", "Operationalhour", "Period", "Scenario", "Max"]]
+
     # Make file_path (if it does not exist) and print .tab-files
     if not os.path.exists(tab_file_path):
         os.makedirs(tab_file_path)
@@ -964,6 +1308,7 @@ def generate_random_scenario(
     genAvail.to_csv(
         tab_file_path / "Stochastic_StochasticAvailability.tab", header=True, index=None, sep="\t", mode="w"
     )
+
     logger.info("Saving 'Stochastic_ElectricLoadRaw.tab'.")
     elecLoad.to_csv(tab_file_path / "Stochastic_ElectricLoadRaw.tab", header=True, index=None, sep="\t", mode="w")
 
@@ -973,14 +1318,55 @@ def generate_random_scenario(
     )
 
     if LOADCHANGEMODULE:
-        if not os.path.exists(tab_file_path + "/LoadchangeModule"):
-            os.makedirs(tab_file_path + "/LoadchangeModule")
+        if not os.path.exists(tab_file_path / "LoadchangeModule"):
+            os.makedirs(tab_file_path / "LoadchangeModule")
         elecLoadMod.to_csv(
-            tab_file_path + "/LoadchangeModule/Stochastic_ElectricLoadMod" + ".tab",
+            tab_file_path / "LoadchangeModule/Stochastic_ElectricLoadMod.tab",
             header=True,
             index=None,
             sep="\t",
             mode="w",
+        )
+
+    if DLCMODULE:
+        if not os.path.exists(tab_file_path / "DLCModule"):
+            os.makedirs(tab_file_path / "DLCModule")
+        DLCMaxReduction.sort_values(
+            by=["Node",	"DLCType", "Scenario", "Period", "Operationalhour"], 
+            axis=0, ascending=True, inplace=True, ignore_index=False,
+        )
+        DLCMaxDispatch.sort_values(
+            by=["Node",	"DLCType", "Scenario", "Period", "Operationalhour"], 
+            axis=0, ascending=True, inplace=True, ignore_index=False,
+        )
+        DLCBaseLine.sort_values(
+            by=["Node",	"DLCType", "Scenario", "Period", "Operationalhour"], 
+            axis=0, ascending=True, inplace=True, ignore_index=False,
+        )
+        DLCMin.sort_values(
+            by=["Node",	"DLCType", "Scenario", "Period", "Operationalhour"], 
+            axis=0, ascending=True, inplace=True, ignore_index=False,
+        )
+        DLCMax.sort_values(
+            by=["Node",	"DLCType", "Scenario", "Period", "Operationalhour"], 
+            axis=0, ascending=True, inplace=True, ignore_index=False,
+        )
+        
+        logger.info("Saving 'Stochastic_DLC_Parameters.tab'.")
+        DLCMaxReduction.to_csv(
+            tab_file_path / "DLCModule/DLCStochastic_MaxReduction.tab", header=True, index=None, sep="\t", mode="w",
+        )
+        DLCMaxDispatch.to_csv(
+            tab_file_path / "DLCModule/DLCStochastic_MaxDispatch.tab", header=True, index=None, sep="\t", mode="w",
+        )
+        DLCBaseLine.to_csv(
+            tab_file_path / "DLCModule/DLCStochastic_BaseLine.tab", header=True, index=None, sep="\t", mode="w",
+        )
+        DLCMin.to_csv(
+            tab_file_path / "DLCModule/DLCStochastic_Min.tab", header=True, index=None, sep="\t", mode="w",
+        )
+        DLCMax.to_csv(
+            tab_file_path / "DLCModule/DLCStochastic_Max.tab", header=True, index=None, sep="\t", mode="w",
         )
 
 

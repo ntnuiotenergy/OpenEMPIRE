@@ -6,6 +6,7 @@ import os
 import sys
 import time
 from pathlib import Path
+import pandas
 
 import cloudpickle
 from pyomo.common.tempfiles import TempfileManager
@@ -16,9 +17,9 @@ logger = logging.getLogger(__name__)
 
 def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_path,
                solver, temp_dir, FirstHoursOfRegSeason, FirstHoursOfPeakSeason, lengthRegSeason,
-               lengthPeakSeason, Period, Operationalhour, Scenario, Season, HoursOfSeason,
-               discountrate, WACC, LeapYearsInvestment, IAMC_PRINT, WRITE_LP,
-               PICKLE_INSTANCE, EMISSION_CAP, USE_TEMP_DIR, LOADCHANGEMODULE, OPERATIONAL_DUALS):
+               NoOfRegSeason, lengthPeakSeason, NoOfPeakSeason, Period, Operationalhour, Scenario, 
+               Season, HoursOfSeason, discountrate, WACC, LeapYearsInvestment, IAMC_PRINT, WRITE_LP,
+               PICKLE_INSTANCE, EMISSION_CAP, USE_TEMP_DIR, LOADCHANGEMODULE, DLCMODULE, OPERATIONAL_DUALS):
 
     if USE_TEMP_DIR:
         TempfileManager.tempdir = temp_dir
@@ -99,6 +100,14 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_
     model.FirstHoursOfRegSeason = Set(within=model.Operationalhour, ordered=True, initialize=FirstHoursOfRegSeason)
     model.FirstHoursOfPeakSeason = Set(within=model.Operationalhour, ordered=True, initialize=FirstHoursOfPeakSeason)
 
+    if DLCMODULE:
+        # Sub-set of storage related to DR
+        model.StorageDLC = Set(ordered=True)  # b_DR
+        model.StorageAdvanceDLC = Set(ordered=True) 
+        model.StorageDelayDLC = Set(ordered=True)  
+        model.DependentStorageDLC = Set()
+        model.StoragesOfNodeDLC = Set(dimen=2)  # (n,b) for all n in N, b in B_DR
+
     logger.info("Reading sets...")
 
     #Load the data
@@ -112,7 +121,11 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_
     data.load(filename=str(tab_file_path / 'Sets_DependentStorage.tab'),format="set", set=model.DependentStorage)
     data.load(filename=str(tab_file_path / 'Sets_Technology.tab'),format="set", set=model.Technology)
     data.load(filename=str(tab_file_path / 'Sets_Node.tab'),format="set", set=model.Node)
-    data.load(filename=str(tab_file_path / 'Sets_OffshoreNode.tab'),format="set", set=model.OffshoreNode)
+    # The following line has been added because there is a bug in DataPortal for reading empty sets, and there are no offshore nodes in all datasets.
+    if pandas.read_csv(tab_file_path /'Sets_OffshoreNode.tab').shape[0] > 0:
+        data.load(filename=str(tab_file_path / 'Sets_OffshoreNode.tab'),format="set", set=model.OffshoreNode)
+    else:
+        logger.info("Warning: The set 'OffshoreNode' is empty.")
     data.load(filename=str(tab_file_path / 'Sets_Horizon.tab'),format="set", set=model.Period)
     data.load(filename=str(tab_file_path / 'Sets_DirectionalLines.tab'),format="set", set=model.DirectionalLink)
     data.load(filename=str(tab_file_path / 'Sets_LineType.tab'),format="set", set=model.TransmissionType)
@@ -120,6 +133,14 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_
     data.load(filename=str(tab_file_path / 'Sets_GeneratorsOfTechnology.tab'),format="set", set=model.GeneratorsOfTechnology)
     data.load(filename=str(tab_file_path / 'Sets_GeneratorsOfNode.tab'),format="set", set=model.GeneratorsOfNode)
     data.load(filename=str(tab_file_path / 'Sets_StorageOfNodes.tab'),format="set", set=model.StoragesOfNode)
+
+    if DLCMODULE:
+        # Sub-set of storage related to DR
+        data.load(filename=str(tab_file_path / 'DLCModule/DLCSets_Storage.tab'), format="set", set=model.StorageDLC)
+        data.load(filename=str(tab_file_path / 'DLCModule/DLCSets_StorageAdvance.tab'), format="set", set=model.StorageAdvanceDLC)  
+        data.load(filename=str(tab_file_path / 'DLCModule/DLCSets_StorageDelay.tab'), format="set", set=model.StorageDelayDLC)  
+        data.load(filename=str(tab_file_path / 'DLCModule/DLCSets_DependentStorage.tab'), format="set", set=model.DependentStorageDLC)
+        data.load(filename=str(tab_file_path / 'DLCModule/DLCSets_StorageOfNodes.tab'), format="set", set=model.StoragesOfNodeDLC)
 
     logger.info("Constructing sub sets...")
 
@@ -140,6 +161,16 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_
                 retval.append((i,j))
         return retval
     model.BidirectionalArc = Set(dimen=2, initialize=BidirectionalArc_init, ordered=True) #l
+
+    if DLCMODULE:
+        def prepSetsDLCModule_rule(model):
+            for b in model.StorageDLC:
+                model.Storage.add(b)
+            for b in model.DependentStorageDLC:
+                model.DependentStorage.add(b)
+            for nb in model.StoragesOfNodeDLC:
+                model.StoragesOfNode.add(nb)
+        model.build_SetsDLCModule = BuildAction(rule=prepSetsDLCModule_rule)
 
     ##############
     ##PARAMETERS##
@@ -239,6 +270,32 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_
     if LOADCHANGEMODULE:
         model.sloadMod = Param(model.Node, model.Operationalhour, model.Scenario, model.Period, default=0.0, mutable=True)
 
+    # Declare DLC module parameters
+
+    if DLCMODULE:
+        model.DLCMaxReduction = Param(model.StoragesOfNode, model.Operationalhour, model.Period, model.Scenario, default=0.0, mutable=True)
+        model.DLCMaxDispatch = Param(model.StoragesOfNodeDLC, model.Operationalhour, model.Period, model.Scenario, default=0.0, mutable=True)
+        model.DLCBaseLine = Param(model.StoragesOfNodeDLC, model.Operationalhour, model.Period, model.Scenario, default=0.0, mutable=True)
+        model.DLCMin = Param(model.StoragesOfNodeDLC, model.Operationalhour, model.Period, model.Scenario, default=0.0, mutable=True)
+        model.DLCMax = Param(model.StoragesOfNodeDLC, model.Operationalhour, model.Period, model.Scenario, default=0.0, mutable=True)
+        model.DLCActivationCost = Param(model.StoragesOfNodeDLC, model.Period, default=0.0, mutable=True)
+        model.storPWCapitalCostDLC = Param(model.StorageDLC, model.Period, default=0)
+        model.storENCapitalCostDLC = Param(model.StorageDLC, model.Period, default=0)
+        model.storPWFixedOMCostDLC = Param(model.StorageDLC, model.Period, default=0)
+        model.storENFixedOMCostDLC = Param(model.StorageDLC, model.Period, default=0)
+        model.storageLifetimeDLC = Param(model.StorageDLC, default=0.0)
+        model.storageChargeEffDLC = Param(model.StorageDLC, default=1.0)
+        model.storageDischargeEffDLC = Param(model.StorageDLC, default=1.0)
+        model.storageBleedEffDLC = Param(model.StorageDLC, default=1.0)
+        model.storPWInitCapDLC = Param(model.StoragesOfNodeDLC, model.Period, default=0.0)
+        model.storENInitCapDLC = Param(model.StoragesOfNodeDLC, model.Period, default=0.0)
+        model.storPWMaxBuiltCapDLC = Param(model.StoragesOfNodeDLC, model.Period, default=0.0, mutable=True)
+        model.storENMaxBuiltCapDLC = Param(model.StoragesOfNodeDLC, model.Period, default=0.0, mutable=True)
+        model.storPWMaxInstalledCapRawDLC = Param(model.StoragesOfNodeDLC, default=600000, mutable=True)
+        model.storENMaxInstalledCapRawDLC = Param(model.StoragesOfNodeDLC, default=4000000, mutable=True)
+        model.storOperationalInitDLC = Param(model.StorageDLC, default=0.0, mutable=True)  
+        model.storagePowToEnergyDLC = Param(model.DependentStorageDLC, default=1.0, mutable=True)
+
     #Load the parameters
 
     logger.info("Reading parameters...")
@@ -298,6 +355,12 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_
     data.load(filename=str(tab_file_path / 'Stochastic_ElectricLoadRaw.tab'), param=model.sloadRaw, format="table") 
 
     logger.info("Reading parameters for General...")
+    # Defining seasonal scale values and write them into a .tab file:
+    seasonScale = pandas.DataFrame(columns=["Season","seasonScale"], index=[x for x in range(0, NoOfRegSeason + NoOfPeakSeason)])
+    seasonScale["Season"] = Season
+    seasonScale["seasonScale"] = [(8760 - NoOfPeakSeason * lengthPeakSeason) / NoOfRegSeason / lengthRegSeason for x in range(NoOfRegSeason)] + [1 for x in range(NoOfPeakSeason)]
+    seasonScale.to_csv(tab_file_path / "General_seasonScale.tab", header=True, index=None, sep='\t', mode='w')
+    # Loading seasonal scale values
     data.load(filename=str(tab_file_path / 'General_seasonScale.tab'), param=model.seasScale, format="table") 
 
     if EMISSION_CAP:
@@ -305,9 +368,63 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_
     else:
         data.load(filename=str(tab_file_path / 'General_CO2Price.tab'), param=model.CO2price, format="table")
 
-    logger.info("Constructing parameter values...")
     if LOADCHANGEMODULE:
         data.load(filename=scenario_data_path / 'LoadchangeModule/Stochastic_ElectricLoadMod.tab', param=model.sloadMod, format="table")
+
+    logger.info("Reading parameters for DLC module...")
+    if DLCMODULE:
+        data.load(filename=str(tab_file_path / 'DLCModule/DLCStochastic_MaxReduction.tab'), param=model.DLCMaxReduction, format="table")
+        data.load(filename=str(tab_file_path / 'DLCModule/DLCStochastic_MaxDispatch.tab'), param=model.DLCMaxDispatch, format="table")
+        data.load(filename=str(tab_file_path / 'DLCModule/DLCStochastic_Baseline.tab'), param=model.DLCBaseLine, format="table")
+        data.load(filename=str(tab_file_path / 'DLCModule/DLCStochastic_Min.tab'), param=model.DLCMin, format="table")
+        data.load(filename=str(tab_file_path / 'DLCModule/DLCStochastic_Max.tab'), param=model.DLCMax, format="table")
+
+        data.load(filename=str(tab_file_path / 'DLCModule/DLCStorage_ActivationCost.tab'), param=model.DLCActivationCost, format="table")
+        data.load(filename=str(tab_file_path / 'DLCModule/DLCStorage_StorageBleedEfficiency.tab'), param=model.storageBleedEffDLC, format="table")
+        data.load(filename=str(tab_file_path / 'DLCModule/DLCStorage_StorageChargeEff.tab'), param=model.storageChargeEffDLC, format="table")
+        data.load(filename=str(tab_file_path / 'DLCModule/DLCStorage_StorageDischargeEff.tab'), param=model.storageDischargeEffDLC, format="table")
+        data.load(filename=str(tab_file_path / 'DLCModule/DLCStorage_StoragePowToEnergy.tab'), param=model.storagePowToEnergyDLC, format="table")
+        data.load(filename=str(tab_file_path / 'DLCModule/DLCStorage_EnergyCapitalCost.tab'), param=model.storENCapitalCostDLC, format="table")
+        data.load(filename=str(tab_file_path / 'DLCModule/DLCStorage_EnergyFixedOMCost.tab'), param=model.storENFixedOMCostDLC, format="table")
+        data.load(filename=str(tab_file_path / 'DLCModule/DLCStorage_EnergyInitialCapacity.tab'), param=model.storENInitCapDLC, format="table")
+        data.load(filename=str(tab_file_path / 'DLCModule/DLCStorage_EnergyMaxBuiltCapacity.tab'), param=model.storENMaxBuiltCapDLC, format="table")
+        data.load(filename=str(tab_file_path / 'DLCModule/DLCStorage_EnergyMaxInstalledCapacity.tab'), param=model.storENMaxInstalledCapRawDLC, format="table")
+        data.load(filename=str(tab_file_path / 'DLCModule/DLCStorage_StorageInitialEnergyLevel.tab'), param=model.storOperationalInitDLC, format="table")
+        data.load(filename=str(tab_file_path / 'DLCModule/DLCStorage_PowerCapitalCost.tab'), param=model.storPWCapitalCostDLC, format="table")
+        data.load(filename=str(tab_file_path / 'DLCModule/DLCStorage_PowerFixedOMCost.tab'), param=model.storPWFixedOMCostDLC, format="table")
+        data.load(filename=str(tab_file_path / 'DLCModule/DLCStorage_InitialPowerCapacity.tab'), param=model.storPWInitCapDLC, format="table")
+        data.load(filename=str(tab_file_path / 'DLCModule/DLCStorage_PowerMaxBuiltCapacity.tab'), param=model.storPWMaxBuiltCapDLC, format="table")
+        data.load(filename=str(tab_file_path / 'DLCModule/DLCStorage_PowerMaxInstalledCapacity.tab'), param=model.storPWMaxInstalledCapRawDLC, format="table")
+        data.load(filename=str(tab_file_path / 'DLCModule/DLCStorage_Lifetime.tab'), param=model.storageLifetimeDLC, format="table")
+
+    logger.info("Constructing parameter values...")
+
+    if DLCMODULE:
+        def prepParametersDLCModule_rule(model):
+            for b in model.StorageDLC:
+                model.storOperationalInit[b] = model.storOperationalInitDLC[b]
+                model.storageChargeEff[b] = model.storageChargeEffDLC[b]
+                model.storageDischargeEff[b] = model.storageDischargeEffDLC[b]
+                model.storageBleedEff[b] = model.storageBleedEffDLC[b]
+                model.storageLifetime[b] = model.storageLifetimeDLC[b]
+                if b in model.DependentStorageDLC:
+                    model.storagePowToEnergy[b] = model.storagePowToEnergyDLC[b]
+                for i in model.Period:
+                    model.storPWCapitalCost[b, i] = model.storPWCapitalCostDLC[b, i]
+                    model.storENCapitalCost[b, i] = model.storENCapitalCostDLC[b, i]
+                    model.storPWFixedOMCost[b, i] = model.storPWFixedOMCostDLC[b, i]
+                    model.storENFixedOMCost[b, i] = model.storENFixedOMCostDLC[b, i]
+                for n in model.Node:
+                    if (n, b) in model.StoragesOfNode:
+                        model.storPWMaxInstalledCapRaw[n, b] = model.storPWMaxInstalledCapRawDLC[n, b]
+                        model.storENMaxInstalledCapRaw[n, b] = model.storENMaxInstalledCapRawDLC[n, b]
+                        for i in model.Period:
+                            model.storPWInitCap[n, b, i] = model.storPWInitCapDLC[n, b, i]
+                            model.storPWMaxBuiltCap[n, b, i] = model.storPWMaxBuiltCapDLC[n, b, i]
+                            model.storENInitCap[n, b, i] = model.storENInitCapDLC[n, b, i]
+                            model.storENMaxBuiltCap[n, b, i] = model.storENMaxBuiltCapDLC[n, b, i]
+
+        model.build_ParametersDLCModule = BuildAction(rule=prepParametersDLCModule_rule)
 
     def prepSceProbab_rule(model):
     	#Build an equiprobable probability distribution for scenarios
@@ -506,6 +623,9 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_
     model.storPWInstalledCap = Var(model.StoragesOfNode, model.PeriodActive, domain=NonNegativeReals)
     model.storENInstalledCap = Var(model.StoragesOfNode, model.PeriodActive, domain=NonNegativeReals)
 
+    if DLCMODULE:
+        model.storMargCost = Var(model.StoragesOfNodeDLC, model.Operationalhour, model.PeriodActive, model.Scenario, domain=NonNegativeReals)
+
     ###############
     ##EXPRESSIONS##
     ###############
@@ -522,7 +642,11 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_
     model.shedcomponent=Expression(model.PeriodActive,rule=shed_component_rule)
 
     def operational_cost_rule(model,i):
-        return sum(model.operationalDiscountrate*model.seasScale[s]*model.sceProbab[w]*model.genMargCost[g,i]*model.genOperational[n,g,h,i,w] for (n,g) in model.GeneratorsOfNode for (s,h) in model.HoursOfSeason for w in model.Scenario)
+        if DLCMODULE:
+            return sum(model.operationalDiscountrate*model.seasScale[s]*model.sceProbab[w]*model.genMargCost[g,i]*model.genOperational[n,g,h,i,w] for (n,g) in model.GeneratorsOfNode for (s,h) in model.HoursOfSeason for w in model.Scenario) + \
+                   sum(model.operationalDiscountrate*model.seasScale[s]*model.sceProbab[w]*model.storMargCost[n,b,h,i,w] for (n,b) in model.StoragesOfNodeDLC for (s,h) in model.HoursOfSeason for w in model.Scenario)
+        else:
+            return sum(model.operationalDiscountrate*model.seasScale[s]*model.sceProbab[w]*model.genMargCost[g,i]*model.genOperational[n,g,h,i,w] for (n,g) in model.GeneratorsOfNode for (s,h) in model.HoursOfSeason for w in model.Scenario)
     model.operationalcost=Expression(model.PeriodActive,rule=operational_cost_rule)
 
     #############
@@ -570,23 +694,69 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_
 
     #################################################################
 
-    def storage_energy_balance_rule(model, n, b, h, i, w):
-        if h in model.FirstHoursOfRegSeason or h in model.FirstHoursOfPeakSeason:
-            return model.storOperationalInit[b]*model.storENInstalledCap[n,b,i] + model.storageChargeEff[b]*model.storCharge[n,b,h,i,w]-model.storDischarge[n,b,h,i,w]-model.storOperational[n,b,h,i,w] == 0   #
-        else:
-            return model.storageBleedEff[b]*model.storOperational[n,b,(h-1),i,w] + model.storageChargeEff[b]*model.storCharge[n,b,h,i,w]-model.storDischarge[n,b,h,i,w]-model.storOperational[n,b,h,i,w] == 0   #
-    model.storage_energy_balance = Constraint(model.StoragesOfNode, model.Operationalhour, model.PeriodActive, model.Scenario, rule=storage_energy_balance_rule)
+    if DLCMODULE:
+        def storage_energy_balance_DLC_rule(model,n,b,h,i,w):
+            if h in model.FirstHoursOfRegSeason or h in model.FirstHoursOfPeakSeason:
+                return model.storOperationalInit[b]*model.storENInstalledCap[n,b,i] + model.storageChargeEff[b]*model.storCharge[n,b,h,i,w] - model.storDischarge[n,b,h,i,w] + model.DLCMaxReduction[n,b,h,i,w] - model.storOperational[n,b,h,i,w] == 0   #
+            else:
+                return model.storageBleedEff[b]*model.storOperational[n,b,(h-1),i,w] + model.storageChargeEff[b]*model.storCharge[n,b,h,i,w] - model.storDischarge[n,b,h,i,w] + model.DLCMaxReduction[n,b,h,i,w] - model.storOperational[n,b,h,i,w] == 0   #
+        model.storage_energy_balance = Constraint(model.StoragesOfNode, model.Operationalhour, model.PeriodActive, model.Scenario, rule=storage_energy_balance_DLC_rule)
+    else:
+        def storage_energy_balance_rule(model, n, b, h, i, w):
+            if h in model.FirstHoursOfRegSeason or h in model.FirstHoursOfPeakSeason:
+                return model.storOperationalInit[b]*model.storENInstalledCap[n,b,i] + model.storageChargeEff[b]*model.storCharge[n,b,h,i,w] - model.storDischarge[n,b,h,i,w] - model.storOperational[n,b,h,i,w] == 0   #
+            else:
+                return model.storageBleedEff[b]*model.storOperational[n,b,(h-1),i,w] + model.storageChargeEff[b]*model.storCharge[n,b,h,i,w] - model.storDischarge[n,b,h,i,w] - model.storOperational[n,b,h,i,w] == 0   #
+        model.storage_energy_balance = Constraint(model.StoragesOfNode, model.Operationalhour, model.PeriodActive, model.Scenario, rule=storage_energy_balance_rule)
 
     #################################################################
 
-    def storage_seasonal_net_zero_balance_rule(model, n, b, h, i, w):
-        if h in model.FirstHoursOfRegSeason:
-            return model.storOperational[n,b,h+value(model.lengthRegSeason)-1,i,w] - model.storOperationalInit[b]*model.storENInstalledCap[n,b,i] == 0  #
-        elif h in model.FirstHoursOfPeakSeason:
-            return model.storOperational[n,b,h+value(model.lengthPeakSeason)-1,i,w] - model.storOperationalInit[b]*model.storENInstalledCap[n,b,i] == 0  #
-        else:
-            return Constraint.Skip
-    model.storage_seasonal_net_zero_balance = Constraint(model.StoragesOfNode, model.Operationalhour, model.PeriodActive, model.Scenario, rule=storage_seasonal_net_zero_balance_rule)
+    if DLCMODULE:
+        def storage_seasonal_net_zero_balance_DLC_rule(model, n, b, h, i, w):
+            if b in model.StorageDLC:
+                return Constraint.Skip
+            if h in model.FirstHoursOfRegSeason:
+                return model.storOperational[n,b,h+value(model.lengthRegSeason)-1,i,w] - model.storOperationalInit[b]*model.storENInstalledCap[n,b,i] == 0  #
+            elif h in model.FirstHoursOfPeakSeason:
+                return model.storOperational[n,b,h+value(model.lengthPeakSeason)-1,i,w] - model.storOperationalInit[b]*model.storENInstalledCap[n,b,i] == 0  #
+            else:
+                return Constraint.Skip
+        model.storage_seasonal_net_zero_balance = Constraint(model.StoragesOfNode, model.Operationalhour, model.PeriodActive, model.Scenario, rule=storage_seasonal_net_zero_balance_DLC_rule)
+    else:
+        def storage_seasonal_net_zero_balance_rule(model, n, b, h, i, w):
+            if h in model.FirstHoursOfRegSeason:
+                return model.storOperational[n,b,h+value(model.lengthRegSeason)-1,i,w] - model.storOperationalInit[b]*model.storENInstalledCap[n,b,i] == 0  #
+            elif h in model.FirstHoursOfPeakSeason:
+                return model.storOperational[n,b,h+value(model.lengthPeakSeason)-1,i,w] - model.storOperationalInit[b]*model.storENInstalledCap[n,b,i] == 0  #
+            else:
+                return Constraint.Skip
+        model.storage_seasonal_net_zero_balance = Constraint(model.StoragesOfNode, model.Operationalhour, model.PeriodActive, model.Scenario, rule=storage_seasonal_net_zero_balance_rule)
+
+    # ################################################################
+
+    if DLCMODULE:
+        def DLC_operational_upper_bound_rule(model, n, b, h, i, w):
+            if b in model.StorageDelayDLC:  
+                return model.storOperational[n, b, h, i, w] - model.DLCBaseLine[n, b, h, i, w] <= 0
+            elif b in model.StorageDLC:
+                return model.storOperational[n, b, h, i, w] - model.DLCMax[n, b, h, i, w] <= 0
+            else:
+                return Constraint.Skip
+
+        model.DR_operational_upper_bound = Constraint(model.StoragesOfNodeDLC, model.Operationalhour, model.PeriodActive, model.Scenario,rule=DLC_operational_upper_bound_rule)
+
+    # ################################################################
+
+    if DLCMODULE:
+        def DLC_operational_lower_bound_rule(model, n, b, h, i, w):
+            if b in model.StorageAdvanceDLC:  
+                return model.DLCBaseLine[n, b, h, i, w] - model.storOperational[n, b, h, i, w] <= 0
+            elif b in model.StorageDLC:
+                return model.DLCMin[n, b, h, i, w] - model.storOperational[n, b, h, i, w] <= 0
+            else:
+                return Constraint.Skip
+
+        model.DR_operational_lower_bound = Constraint(model.StoragesOfNodeDLC, model.Operationalhour, model.Period, model.Scenario, rule=DLC_operational_lower_bound_rule)
 
     #################################################################
 
@@ -605,6 +775,37 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_
     def storage_power_charg_cap_rule(model, n, b, h, i, w):
         return model.storCharge[n,b,h,i,w] - model.storPWInstalledCap[n,b,i] <= 0   #
     model.storage_power_charg_cap = Constraint(model.StoragesOfNode, model.Operationalhour, model.PeriodActive, model.Scenario, rule=storage_power_charg_cap_rule)
+
+    #################################################################
+
+    if DLCMODULE:
+        def storage_DLC_power_discharg_cap_rule(model, n, b, h, i, w):
+            if b in model.StorageDLC:
+                return model.storDischarge[n,b,h,i,w] - model.DLCMaxReduction[n,b,h,i,w] <= 0   #
+            else:
+                return Constraint.Skip
+        model.storage_DLC_power_discharg_cap = Constraint(model.StoragesOfNode, model.Operationalhour, model.PeriodActive, model.Scenario, rule=storage_DLC_power_discharg_cap_rule)
+
+    #################################################################
+
+    if DLCMODULE:
+        def storage_DLC_power_charg_cap_rule(model, n, b, h, i, w):
+            if b in model.StorageDLC:
+                return model.storCharge[n,b,h,i,w] - model.DLCMaxDispatch[n,b,h,i,w] <= 0   #
+            else:
+                return Constraint.Skip
+        model.storage_DLC_power_charg_cap = Constraint(model.StoragesOfNode, model.Operationalhour, model.PeriodActive, model.Scenario, rule=storage_DLC_power_charg_cap_rule)
+        
+    #################################################################
+        
+    if DLCMODULE:
+        def DLC_cost_def_rule(model, n, b, h, i, w):
+            if b in model.StorageDLC:
+                return model.DLCActivationCost[n,b,i] * (1/2) *  (model.storDischarge[n, b, h, i, w] + model.storCharge[n, b, h, i, w]) - model.storMargCost[n, b, h, i, w] <= 0
+            else:
+                return Constraint.Skip
+
+        model.DLC_cost_def = Constraint(model.StoragesOfNodeDLC, model.Operationalhour, model.PeriodActive, model.Scenario, rule=DLC_cost_def_rule)
 
     #################################################################
 
@@ -910,7 +1111,7 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_
                 value(instance.storENInvCap[n,b,i]),
                 value(instance.storENInstalledCap[n,b,i]), 
                 value(instance.discount_multiplier[i]*(instance.storPWInvCap[n,b,i]*instance.storPWInvCost[b,i] + instance.storENInvCap[n,b,i]*instance.storENInvCost[b,i])), 
-                value(sum(instance.sceProbab[w]*instance.seasScale[s]*instance.storDischarge[n,b,h,i,w]/1000 for (s,h) in instance.HoursOfSeason for w in instance.Scenario)), 
+                value(sum(instance.sceProbab[w]*instance.seasScale[s]*(value(instance.storDischarge[n,b,h,i,w]-instance.storCharge[n, b, h, i, w] if value(instance.storDischarge[n, b, h, i, w] - instance.storCharge[n, b, h, i, w]) > 0 else 0))/1000 for (s,h) in instance.HoursOfSeason for w in instance.Scenario)), 
                 value(sum(instance.sceProbab[w]*instance.seasScale[s]*((1 - instance.storageDischargeEff[b])*instance.storDischarge[n,b,h,i,w] + (1 - instance.storageChargeEff[b])*instance.storCharge[n,b,h,i,w])/1000 for (s,h) in instance.HoursOfSeason for w in instance.Scenario))])
     f.close()
 
@@ -956,6 +1157,8 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_
     for g in instance.Generator:
         my_string = str(g)+"_MW"
         my_header.append(my_string)
+    if DLCMODULE:
+        my_header.extend(["DLCCharge_MW", "DLCDischarge_MW", "DLCEnergyLevel_MWh", "DLCMargCost_Euro"])
     my_header.extend(["storCharge_MW","storDischarge_MW","storEnergyLevel_MWh","LossesChargeDischargeBleed_MW","FlowOut_MW","FlowIn_MW","LossesFlowIn_MW","LoadShed_MW","Price_EURperMWh","AvgCO2_kgCO2perMWh"])    
     writer.writerow(my_header)
     for n in instance.Node:
@@ -978,6 +1181,11 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_
                             my_string.append(value(instance.genOperational[n,g,h,i,w]))
                         else:
                             my_string.append(0)
+                    if DLCMODULE:
+                        my_string.extend([value(sum(-instance.storCharge[n, b, h, i, w] for b in instance.StorageDLC if (n, b) in instance.StoragesOfNode)),
+                            value(sum(instance.storDischarge[n, b, h, i, w] for b in instance.StorageDLC if (n, b) in instance.StoragesOfNode)),
+                            value(sum(instance.storOperational[n, b, h, i, w] for b in instance.StorageDLC if (n, b) in instance.StoragesOfNode)),
+                            value(sum(instance.storMargCost[n, b, h, i, w] for b in instance.StorageDLC if (n, b) in instance.StoragesOfNode))])
                     my_string.extend([value(sum(-instance.storCharge[n,b,h,i,w] for b in instance.Storage if (n,b) in instance.StoragesOfNode)), 
                         value(sum(instance.storDischarge[n,b,h,i,w] for b in instance.Storage if (n,b) in instance.StoragesOfNode)), 
                         value(sum(instance.storOperational[n,b,h,i,w] for b in instance.Storage if (n,b) in instance.StoragesOfNode)), 
@@ -1086,7 +1294,7 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_
     for i in instance.PeriodActive:
         my_string=[inv_per[int(i-1)]]
         for b in instance.Storage:
-            my_string.append(value(sum(instance.sceProbab[w]*instance.seasScale[s]*instance.storDischarge[n,b,h,i,w]/1000 for n in instance.Node if (n,b) in instance.StoragesOfNode for (s,h) in instance.HoursOfSeason for w in instance.Scenario)))
+            my_string.append(value(sum(instance.sceProbab[w]*instance.seasScale[s]*(value(instance.storDischarge[n,b,h,i,w]-instance.storCharge[n,b,h,i,w] if value(instance.storDischarge[n, b, h, i, w] - instance.storCharge[n,b,h,i,w]) > 0 else 0))/1000 for n in instance.Node if (n,b) in instance.StoragesOfNode for (s,h) in instance.HoursOfSeason for w in instance.Scenario)))
         writer.writerow(my_string)
     f.close()
 
@@ -1125,7 +1333,7 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_
             value(sum(instance.storENInvCap[n,b,i] for n in instance.Node if (n,b) in instance.StoragesOfNode)), 
             value(sum(instance.storENInstalledCap[n,b,i] for n in instance.Node if (n,b) in instance.StoragesOfNode)), 
             value(sum(instance.discount_multiplier[i]*(instance.storPWInvCap[n,b,i]*instance.storPWInvCost[b,i] + instance.storENInvCap[n,b,i]*instance.storENInvCost[b,i]) for n in instance.Node if (n,b) in instance.StoragesOfNode)), 
-            value(sum(instance.seasScale[s]*instance.sceProbab[w]*instance.storDischarge[n,b,h,i,w]/1000 for n in instance.Node if (n,b) in instance.StoragesOfNode for (s,h) in instance.HoursOfSeason for w in instance.Scenario))])
+            value(sum(instance.seasScale[s]*instance.sceProbab[w]*(value(instance.storDischarge[n,b,h,i,w]-instance.storCharge[n,b,h,i,w] if value(instance.storDischarge[n,b,h,i,w] - instance.storCharge[n,b,h,i,w]) > 0 else 0))/1000 for n in instance.Node if (n,b) in instance.StoragesOfNode for (s,h) in instance.HoursOfSeason for w in instance.Scenario))])
     f.close()
 
 
