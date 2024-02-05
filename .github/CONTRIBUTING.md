@@ -56,6 +56,8 @@ By participating in this project, you agree to abide by our [Code of Conduct](CO
     pytest
     ```
 
+6. If this is your first time contributing, add your name and email (optional) to the list of [contributors](../docs/source/contributors.rst).
+
 6. Commit your changes with a clear and descriptive commit message.
 
 ## Submitting a pull request
