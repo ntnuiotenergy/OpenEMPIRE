@@ -102,7 +102,7 @@ def plot_results(results_path: Path, save_to_file: bool = False):
 
     for period in results["Period"].unique():
         G = build_graph_with_results(coordinates, results, period)
-        fig = plot_graph(G)
+        plot_graph(G)
         plt.title(f"{period}")
 
         if save_to_file:

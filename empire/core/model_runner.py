@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import json
 import logging
-import pprint
 from pathlib import Path
 
 from empire import run_empire
