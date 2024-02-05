@@ -13,9 +13,6 @@ readme = "README.md"
 [tool.black]
 line-length = 120
 
-[tool.ruff]
-line-length = 120
-
 [tool.poetry.dependencies]
 python = ">=3.7"
 cloudpickle = ">=1.0.0"
@@ -23,3 +20,41 @@ openpyxl = ">=3.0.0"
 pandas = ">=1.2"
 pyomo = ">=6.0"
 pyyaml = ">=5.1"
+
+
+[tool.ruff]
+# Exclude a variety of commonly ignored directories.
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".hg",
+    ".ipynb_checkpoints",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pyenv",
+    ".pytest_cache",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    ".vscode",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "site-packages",
+    "venv",
+    "empire/core/reader.py",
+    "empire/core/empire.py",
+    "empire/core/scenario_random.py"
+]
+
+line-length = 120
+
