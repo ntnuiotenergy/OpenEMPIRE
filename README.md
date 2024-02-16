@@ -184,7 +184,7 @@ For more details, please refer to the software documentation in the repository.
 Run the test using the following command:
 
 ```shell
-C:\Users\name\path_to_folder> scripts\python run.py -d test
+C:\Users\name\path_to_folder> python scripts/run.py -d test
 ```
 
 **No-Optimization Test**: To execute a test run without performing optimization, use:
