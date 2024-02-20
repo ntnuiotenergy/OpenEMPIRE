@@ -1,0 +1,25 @@
+# This is an OpenEMPIRE configuration file.
+# To be used with the execution script run.py
+
+use_temporary_directory: True       # Specifies whether to use a temporary directory for operations
+temporary_directory: './'           # Path to the temporary directory used for certain operations
+forecast_horizon_year: 2060         # Target or end year for the run
+number_of_scenarios: 5              # Number of scenarios in every investment period
+length_of_regular_season: 168       # Number of hours in a regular season
+discount_rate: 0.05                 # Rate used to discount future cash flows to present value
+wacc: 0.05                          # Weighted average cost of capital
+optimization_solver: "Gurobi"       # Mathematical solver used for optimization tasks
+use_scenario_generation: False      # Indicates if scenarios should be generated dynamically
+use_fixed_sample: True              # Specifies if fixed scenario samples should be used
+load_change_module: False           #
+filter_make : False                 #
+filter_use : False                  #
+n_cluster : 10                      #
+moment_matching : False             #
+n_tree_compare : 20                 #
+use_emission_cap: True              # Indicates if there's a cap on CO2 emissions
+compute_operational_duals: True     # Resolve empire with fixed investment variables and write new duals
+print_in_iamc_format: False         # Output should be printed in a IAMC-compatible format
+write_in_lp_format: False           # Problem should be written in Linear Programming format
+serialize_instance: False           # Serialize the data structure or model for later use
+north_sea: True                     # Whether the north sea is modelled or not
