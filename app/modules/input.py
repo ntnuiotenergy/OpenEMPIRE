@@ -20,7 +20,7 @@ def input(active_results: Path):
 
     inital_year = 2020
     leap_years_investment = empire_config.leap_years_investment
-    forecast_horizon_year = empire_config.forecast_horizon_year
+
     n_periods = empire_config.n_periods
     periods_to_year_mapping = {
         i + 1: inital_year + i * leap_years_investment for i in range(20)
@@ -390,8 +390,6 @@ def input(active_results: Path):
     df_init_capacity = df_init_capacity.query(f"Period=={period}")
 
     df_length = input_client.transmission.get_length()
-
-    df_lifetime = input_client.transmission.get_lifetime()
 
     df_efficiency = input_client.transmission.get_line_efficiency()
     df_efficiency.loc[:, "FromNode"] = df_efficiency["FromNode"].str.replace(" ", "")

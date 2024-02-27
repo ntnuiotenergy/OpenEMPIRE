@@ -11,7 +11,7 @@ def test_complete_configuration():
         "number_of_scenarios": 10,
     }
     empire_config = EmpireConfiguration.from_dict(config)
-    assert empire_config.use_temporary_directory == True
+    assert empire_config.use_temporary_directory
     assert empire_config.temporary_directory == Path("/tmp")
 
 
@@ -24,9 +24,8 @@ def test_incomplete_configuration():
         "number_of_scenarios": 10,
     }
     empire_config = EmpireConfiguration.from_dict(config)
-    assert empire_config.use_temporary_directory == True
+    assert empire_config.use_temporary_directory
     assert empire_config.temporary_directory == Path("/tmp")
     # Assert that missing parameters are None or their default values
     assert empire_config.wacc is None
     assert empire_config.regular_seasons == ["winter", "spring", "summer", "fall"]
-

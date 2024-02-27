@@ -95,7 +95,7 @@ class OperationalResults:
         storage_columns = ["storCharge_MW", "storDischarge_MW", "storEnergyLevel_MWh", "LossesChargeDischargeBleed_MW"]
         current_columns = list(set(storage_columns).intersection(set(filtered_df.columns)))
 
-        column_sums = filtered_df[current_columns].sum().abs()
+        # column_sums = filtered_df[current_columns].sum().abs()
 
         # Find columns where the absolute sum is less than 1 MW
         # sum_hours = filtered_df["Hour"].max()

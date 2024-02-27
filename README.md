@@ -214,8 +214,6 @@ C:\Users\name\path_to_folder> python scripts/run.py -d europe_v51
 sh scripts/copy_and_run_empire_on_hpc.sh Solstorm
 ```
 
-This command copies the EMPIRE code to the Solstorm cluster and performs several runs managed by the SGE task manager. Ensure the "empire_env" conda environment is set up on the cluster with dependencies as listed in `environment.yml`.
-
 **Usage Windows**: Install "jq" on Windows: 
 ```shell
 curl -L -o /usr/bin/jq.exe https://github.com/stedolan/jq/releases/latest/download/jq-win64.exe
@@ -223,6 +221,12 @@ curl -L -o /usr/bin/jq.exe https://github.com/stedolan/jq/releases/latest/downlo
 From the project directory, execute the following command in Git Bash to run on the Solstorm cluster: 
 ```shell
 sh scripts/copy_and_run_empire_on_hpc.sh Solstorm
-```
+```  
+  
+This command copies the EMPIRE code to the Solstorm cluster and performs several runs managed by the SGE task manager. Ensure the "empire_env" conda environment is set up on the cluster with dependencies as listed in `environment.yml`.
 
 The `scripts/run_analysis.py` script demonstrates how to modify input data at execution time using data managers.
+
+# Contributing
+
+We welcome any contribution the OpenEMPIRE, whether it is fixing a bug, adding a new feature, or improving documentation, your help is appreciated. For more information, see [CONTRIBUTING](.github/CONTRIBUTING.md).
