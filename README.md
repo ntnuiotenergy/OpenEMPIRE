@@ -184,7 +184,7 @@ For more details, please refer to the software documentation in the repository.
 Run the test using the following command:
 
 ```shell
-C:\Users\name\path_to_folder> scripts\python run.py -d test
+C:\Users\name\path_to_folder> python scripts/run.py -d test
 ```
 
 **No-Optimization Test**: To execute a test run without performing optimization, use:
@@ -208,12 +208,21 @@ C:\Users\name\path_to_folder> python scripts/run.py -d europe_v51
 # Running on a High-Performance Cluster (HPC)
 **Example Script**: For running multiple cases on an HPC, refer to the script `scripts/copy_and_run_empire_on_hpc.sh`. This script uses configurations from config/cluster.json and is designed for NTNU's HPC clusters: Solstorm and Idun.
 
-**Usage**: From the project directory, execute the following to run on the Solstorm cluster:
+**Usage Linux or macOS**: From the project directory, execute the following to run on the Solstorm cluster:
 
 ```shell
 sh scripts/copy_and_run_empire_on_hpc.sh Solstorm
 ```
 
+**Usage Windows**: Install "jq" on Windows: 
+```shell
+curl -L -o /usr/bin/jq.exe https://github.com/stedolan/jq/releases/latest/download/jq-win64.exe
+```
+From the project directory, execute the following command in Git Bash to run on the Solstorm cluster: 
+```shell
+sh scripts/copy_and_run_empire_on_hpc.sh Solstorm
+```  
+  
 This command copies the EMPIRE code to the Solstorm cluster and performs several runs managed by the SGE task manager. Ensure the "empire_env" conda environment is set up on the cluster with dependencies as listed in `environment.yml`.
 
 The `scripts/run_analysis.py` script demonstrates how to modify input data at execution time using data managers.
