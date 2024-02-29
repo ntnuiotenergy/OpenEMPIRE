@@ -11,6 +11,8 @@ import cloudpickle
 from pyomo.common.tempfiles import TempfileManager
 from pyomo.environ import *
 
+from empire.utils import get_name_of_last_folder_in_path
+
 logger = logging.getLogger(__name__)
 
 
@@ -18,7 +20,8 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_
                solver, temp_dir, FirstHoursOfRegSeason, FirstHoursOfPeakSeason, lengthRegSeason,
                lengthPeakSeason, Period, Operationalhour, Scenario, Season, HoursOfSeason,
                discountrate, WACC, LeapYearsInvestment, IAMC_PRINT, WRITE_LP,
-               PICKLE_INSTANCE, EMISSION_CAP, USE_TEMP_DIR, LOADCHANGEMODULE, OPERATIONAL_DUALS):
+               PICKLE_INSTANCE, EMISSION_CAP, USE_TEMP_DIR, LOADCHANGEMODULE, OPERATIONAL_DUALS, north_sea,
+               OUT_OF_SAMPLE: bool = False, sample_file_path: Path | None = None):
 
     if USE_TEMP_DIR:
         TempfileManager.tempdir = temp_dir
@@ -79,7 +82,8 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_
 
     #Spatial sets
     model.Node = Set(ordered=True) #n
-    model.OffshoreNode = Set(ordered=True, within=model.Node) #n
+    if north_sea:
+        model.OffshoreNode = Set(ordered=True, within=model.Node) #n
     model.DirectionalLink = Set(dimen=2, within=model.Node*model.Node, ordered=True) #a
     model.TransmissionType = Set(ordered=True)
 
@@ -112,7 +116,8 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_
     data.load(filename=str(tab_file_path / 'Sets_DependentStorage.tab'),format="set", set=model.DependentStorage)
     data.load(filename=str(tab_file_path / 'Sets_Technology.tab'),format="set", set=model.Technology)
     data.load(filename=str(tab_file_path / 'Sets_Node.tab'),format="set", set=model.Node)
-    data.load(filename=str(tab_file_path / 'Sets_OffshoreNode.tab'),format="set", set=model.OffshoreNode)
+    if north_sea:
+        data.load(filename=str(tab_file_path / 'Sets_OffshoreNode.tab'),format="set", set=model.OffshoreNode)
     data.load(filename=str(tab_file_path / 'Sets_Horizon.tab'),format="set", set=model.Period)
     data.load(filename=str(tab_file_path / 'Sets_DirectionalLines.tab'),format="set", set=model.DirectionalLink)
     data.load(filename=str(tab_file_path / 'Sets_LineType.tab'),format="set", set=model.TransmissionType)
@@ -234,7 +239,7 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_
     model.storOperationalInit = Param(model.Storage, default=0.0, mutable=True) #Percentage of installed energy capacity initially
 
     if EMISSION_CAP:
-    	model.CO2cap = Param(model.Period, default=5000.0, mutable=True)
+        model.CO2cap = Param(model.Period, default=5000.0, mutable=True)
     
     if LOADCHANGEMODULE:
         model.sloadMod = Param(model.Node, model.Operationalhour, model.Scenario, model.Period, default=0.0, mutable=True)
@@ -293,9 +298,19 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_
     data.load(filename=str(tab_file_path / 'Node_HydroGenMaxAnnualProduction.tab'), param=model.maxHydroNode, format="table") 
     
     logger.info("Reading parameters for Stochastic...")
-    data.load(filename=str(tab_file_path / 'Stochastic_HydroGenMaxSeasonalProduction.tab'), param=model.maxRegHydroGenRaw, format="table")
-    data.load(filename=str(tab_file_path / 'Stochastic_StochasticAvailability.tab'), param=model.genCapAvailStochRaw, format="table") 
-    data.load(filename=str(tab_file_path / 'Stochastic_ElectricLoadRaw.tab'), param=model.sloadRaw, format="table") 
+
+    if OUT_OF_SAMPLE:
+        if sample_file_path:
+            # Load operational input data EMPIRE has not seen when optimizing (in-sample)
+            data.load(filename=str(sample_file_path / 'Stochastic_HydroGenMaxSeasonalProduction.tab'), param=model.maxRegHydroGenRaw, format="table")
+            data.load(filename=str(sample_file_path / 'Stochastic_StochasticAvailability.tab'), param=model.genCapAvailStochRaw, format="table") 
+            data.load(filename=str(sample_file_path / 'Stochastic_ElectricLoadRaw.tab'), param=model.sloadRaw, format="table")
+        else:
+            raise ValueError("'OUT_OF_SAMPLE = True' needs to be run with existing 'sample_file_path'")
+    else:
+        data.load(filename=str(tab_file_path / 'Stochastic_HydroGenMaxSeasonalProduction.tab'), param=model.maxRegHydroGenRaw, format="table")
+        data.load(filename=str(tab_file_path / 'Stochastic_StochasticAvailability.tab'), param=model.genCapAvailStochRaw, format="table") 
+        data.load(filename=str(tab_file_path / 'Stochastic_ElectricLoadRaw.tab'), param=model.sloadRaw, format="table") 
 
     logger.info("Reading parameters for General...")
     data.load(filename=str(tab_file_path / 'General_seasonScale.tab'), param=model.seasScale, format="table") 
@@ -310,94 +325,94 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_
         data.load(filename=scenario_data_path / 'LoadchangeModule/Stochastic_ElectricLoadMod.tab', param=model.sloadMod, format="table")
 
     def prepSceProbab_rule(model):
-    	#Build an equiprobable probability distribution for scenarios
+        #Build an equiprobable probability distribution for scenarios
 
-    	for sce in model.Scenario:
-    		model.sceProbab[sce] = value(1/len(model.Scenario))
+        for sce in model.Scenario:
+            model.sceProbab[sce] = value(1/len(model.Scenario))
 
     model.build_SceProbab = BuildAction(rule=prepSceProbab_rule)
 
     def prepInvCost_rule(model):
-    	#Build investment cost for generators, storages and transmission. Annual cost is calculated for the lifetime of the generator and discounted for a year.
-    	#Then cost is discounted for the investment period (or the remaining lifetime). CCS generators has additional fixed costs depending on emissions. 
+        #Build investment cost for generators, storages and transmission. Annual cost is calculated for the lifetime of the generator and discounted for a year.
+        #Then cost is discounted for the investment period (or the remaining lifetime). CCS generators has additional fixed costs depending on emissions. 
 
-    	#Generator 
-    	for g in model.Generator:
-    		for i in model.PeriodActive:
-    			costperyear=(model.WACC/(1-((1+model.WACC)**(-model.genLifetime[g]))))*model.genCapitalCost[g,i]+model.genFixedOMCost[g,i]
-    			costperperiod=costperyear*1000*(1-(1+model.discountrate)**-(min(value((len(model.PeriodActive)-i+1)*LeapYearsInvestment), value(model.genLifetime[g]))))/(1-(1/(1+model.discountrate)))
-    			if ('CCS',g) in model.GeneratorsOfTechnology:
-    				costperperiod+=model.CCSCostTSFix*model.CCSRemFrac*model.genCO2TypeFactor[g]*(3.6/model.genEfficiency[g,i])
-    			model.genInvCost[g,i]=costperperiod
+        #Generator 
+        for g in model.Generator:
+            for i in model.PeriodActive:
+                costperyear=(model.WACC/(1-((1+model.WACC)**(-model.genLifetime[g]))))*model.genCapitalCost[g,i]+model.genFixedOMCost[g,i]
+                costperperiod=costperyear*1000*(1-(1+model.discountrate)**-(min(value((len(model.PeriodActive)-i+1)*LeapYearsInvestment), value(model.genLifetime[g]))))/(1-(1/(1+model.discountrate)))
+                if ('CCS',g) in model.GeneratorsOfTechnology:
+                    costperperiod+=model.CCSCostTSFix*model.CCSRemFrac*model.genCO2TypeFactor[g]*(3.6/model.genEfficiency[g,i])
+                model.genInvCost[g,i]=costperperiod
 
-    	#Storage
-    	for b in model.Storage:
-    		for i in model.PeriodActive:
-    			costperyearPW=(model.WACC/(1-((1+model.WACC)**(-model.storageLifetime[b]))))*model.storPWCapitalCost[b,i]+model.storPWFixedOMCost[b,i]
-    			costperperiodPW=costperyearPW*1000*(1-(1+model.discountrate)**-(min(value((len(model.PeriodActive)-i+1)*LeapYearsInvestment), value(model.storageLifetime[b]))))/(1-(1/(1+model.discountrate)))
-    			model.storPWInvCost[b,i]=costperperiodPW
-    			costperyearEN=(model.WACC/(1-((1+model.WACC)**(-model.storageLifetime[b]))))*model.storENCapitalCost[b,i]+model.storENFixedOMCost[b,i]
-    			costperperiodEN=costperyearEN*1000*(1-(1+model.discountrate)**-(min(value((len(model.PeriodActive)-i+1)*LeapYearsInvestment), value(model.storageLifetime[b]))))/(1-(1/(1+model.discountrate)))
-    			model.storENInvCost[b,i]=costperperiodEN
+        #Storage
+        for b in model.Storage:
+            for i in model.PeriodActive:
+                costperyearPW=(model.WACC/(1-((1+model.WACC)**(-model.storageLifetime[b]))))*model.storPWCapitalCost[b,i]+model.storPWFixedOMCost[b,i]
+                costperperiodPW=costperyearPW*1000*(1-(1+model.discountrate)**-(min(value((len(model.PeriodActive)-i+1)*LeapYearsInvestment), value(model.storageLifetime[b]))))/(1-(1/(1+model.discountrate)))
+                model.storPWInvCost[b,i]=costperperiodPW
+                costperyearEN=(model.WACC/(1-((1+model.WACC)**(-model.storageLifetime[b]))))*model.storENCapitalCost[b,i]+model.storENFixedOMCost[b,i]
+                costperperiodEN=costperyearEN*1000*(1-(1+model.discountrate)**-(min(value((len(model.PeriodActive)-i+1)*LeapYearsInvestment), value(model.storageLifetime[b]))))/(1-(1/(1+model.discountrate)))
+                model.storENInvCost[b,i]=costperperiodEN
 
-    	#Transmission
-    	for (n1,n2) in model.BidirectionalArc:
-    		for i in model.PeriodActive:
-    			for t in model.TransmissionType:
-    				if (n1,n2,t) in model.TransmissionTypeOfDirectionalLink:
-    					costperyear=(model.WACC/(1-((1+model.WACC)**(-model.transmissionLifetime[n1,n2]))))*model.transmissionLength[n1,n2]*model.transmissionTypeCapitalCost[t,i]+model.transmissionTypeFixedOMCost[t,i]
-    					costperperiod=costperyear*(1-(1+model.discountrate)**-(min(value((len(model.PeriodActive)-i+1)*LeapYearsInvestment), value(model.transmissionLifetime[n1,n2]))))/(1-(1/(1+model.discountrate)))
-    					model.transmissionInvCost[n1,n2,i]=costperperiod
+        #Transmission
+        for (n1,n2) in model.BidirectionalArc:
+            for i in model.PeriodActive:
+                for t in model.TransmissionType:
+                    if (n1,n2,t) in model.TransmissionTypeOfDirectionalLink:
+                        costperyear=(model.WACC/(1-((1+model.WACC)**(-model.transmissionLifetime[n1,n2]))))*model.transmissionLength[n1,n2]*model.transmissionTypeCapitalCost[t,i]+model.transmissionTypeFixedOMCost[t,i]
+                        costperperiod=costperyear*(1-(1+model.discountrate)**-(min(value((len(model.PeriodActive)-i+1)*LeapYearsInvestment), value(model.transmissionLifetime[n1,n2]))))/(1-(1/(1+model.discountrate)))
+                        model.transmissionInvCost[n1,n2,i]=costperperiod
 
     model.build_InvCost = BuildAction(rule=prepInvCost_rule)
 
     def prepOperationalCostGen_rule(model):
-    	#Build generator short term marginal costs
+        #Build generator short term marginal costs
 
-    	for g in model.Generator:
-    		for i in model.PeriodActive:
-    			if ('CCS',g) in model.GeneratorsOfTechnology:
-    				costperenergyunit=(3.6/model.genEfficiency[g,i])*(model.genFuelCost[g,i]+(1-model.CCSRemFrac)*model.genCO2TypeFactor[g]*model.CO2price[i])+ \
-    				(3.6/model.genEfficiency[g,i])*(model.CCSRemFrac*model.genCO2TypeFactor[g]*model.CCSCostTSVariable[i])+ \
-    				model.genVariableOMCost[g]
-    			else:
-    				costperenergyunit=(3.6/model.genEfficiency[g,i])*(model.genFuelCost[g,i]+model.genCO2TypeFactor[g]*model.CO2price[i])+ \
-    				model.genVariableOMCost[g]
-    			model.genMargCost[g,i]=costperenergyunit
+        for g in model.Generator:
+            for i in model.PeriodActive:
+                if ('CCS',g) in model.GeneratorsOfTechnology:
+                    costperenergyunit=(3.6/model.genEfficiency[g,i])*(model.genFuelCost[g,i]+(1-model.CCSRemFrac)*model.genCO2TypeFactor[g]*model.CO2price[i])+ \
+                    (3.6/model.genEfficiency[g,i])*(model.CCSRemFrac*model.genCO2TypeFactor[g]*model.CCSCostTSVariable[i])+ \
+                    model.genVariableOMCost[g]
+                else:
+                    costperenergyunit=(3.6/model.genEfficiency[g,i])*(model.genFuelCost[g,i]+model.genCO2TypeFactor[g]*model.CO2price[i])+ \
+                    model.genVariableOMCost[g]
+                model.genMargCost[g,i]=costperenergyunit
 
     model.build_OperationalCostGen = BuildAction(rule=prepOperationalCostGen_rule)
 
     def prepInitialCapacityNodeGen_rule(model):
-    	#Build initial capacity for generator type in node
+        #Build initial capacity for generator type in node
 
-    	for (n,g) in model.GeneratorsOfNode:
-    		for i in model.PeriodActive:
-    			if value(model.genInitCap[n,g,i]) == 0:
-    				model.genInitCap[n,g,i] = model.genRefInitCap[n,g]*(1-model.genScaleInitCap[g,i])
+        for (n,g) in model.GeneratorsOfNode:
+            for i in model.PeriodActive:
+                if value(model.genInitCap[n,g,i]) == 0:
+                    model.genInitCap[n,g,i] = model.genRefInitCap[n,g]*(1-model.genScaleInitCap[g,i])
 
     model.build_InitialCapacityNodeGen = BuildAction(rule=prepInitialCapacityNodeGen_rule)
 
     def prepInitialCapacityTransmission_rule(model):
-    	#Build initial capacity for transmission lines to ensure initial capacity is the upper installation bound if infeasible
+        #Build initial capacity for transmission lines to ensure initial capacity is the upper installation bound if infeasible
 
-    	for (n1,n2) in model.BidirectionalArc:
-    		for i in model.PeriodActive:
-    			if value(model.transmissionMaxInstalledCapRaw[n1,n2,i]) <= value(model.transmissionInitCap[n1,n2,i]):
-    				model.transmissionMaxInstalledCap[n1,n2,i] = model.transmissionInitCap[n1,n2,i]
-    			else:
-    				model.transmissionMaxInstalledCap[n1,n2,i] = model.transmissionMaxInstalledCapRaw[n1,n2,i]
+        for (n1,n2) in model.BidirectionalArc:
+            for i in model.PeriodActive:
+                if value(model.transmissionMaxInstalledCapRaw[n1,n2,i]) <= value(model.transmissionInitCap[n1,n2,i]):
+                    model.transmissionMaxInstalledCap[n1,n2,i] = model.transmissionInitCap[n1,n2,i]
+                else:
+                    model.transmissionMaxInstalledCap[n1,n2,i] = model.transmissionMaxInstalledCapRaw[n1,n2,i]
 
     model.build_InitialCapacityTransmission = BuildAction(rule=prepInitialCapacityTransmission_rule)
 
     def prepOperationalDiscountrate_rule(model):
-    	#Build operational discount rate
+        #Build operational discount rate
 
         model.operationalDiscountrate = sum((1+model.discountrate)**(-j) for j in list(range(0,value(model.LeapYearsInvestment))))
 
     model.build_operationalDiscountrate = BuildAction(rule=prepOperationalDiscountrate_rule)     
 
     def prepGenMaxInstalledCap_rule(model):
-    	#Build resource limit (installed limit) for all periods. Avoid infeasibility if installed limit lower than initially installed cap.
+        #Build resource limit (installed limit) for all periods. Avoid infeasibility if installed limit lower than initially installed cap.
 
         for t in model.Technology:
             for n in model.Node:
@@ -410,7 +425,7 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_
     model.build_genMaxInstalledCap = BuildAction(rule=prepGenMaxInstalledCap_rule)
 
     def storENMaxInstalledCap_rule(model):
-    	#Build installed limit (resource limit) for storEN
+        #Build installed limit (resource limit) for storEN
 
         for (n,b) in model.StoragesOfNode:
             for i in model.PeriodActive:
@@ -419,7 +434,7 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_
     model.build_storENMaxInstalledCap = BuildAction(rule=storENMaxInstalledCap_rule)
 
     def storPWMaxInstalledCap_rule(model):
-    	#Build installed limit (resource limit) for storPW
+        #Build installed limit (resource limit) for storPW
 
         for (n,b) in model.StoragesOfNode:
             for i in model.PeriodActive:
@@ -428,7 +443,7 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_
     model.build_storPWMaxInstalledCap = BuildAction(rule=storPWMaxInstalledCap_rule)
 
     def prepRegHydro_rule(model):
-    	#Build hydrolimits for all periods
+        #Build hydrolimits for all periods
 
         for n in model.Node:
             for s in model.Season:
@@ -439,7 +454,7 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_
     model.build_maxRegHydroGen = BuildAction(rule=prepRegHydro_rule)
 
     def prepGenCapAvail_rule(model):
-    	#Build generator availability for all periods
+        #Build generator availability for all periods
 
         for (n,g) in model.GeneratorsOfNode:
             for h in model.Operationalhour:
@@ -453,7 +468,7 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_
     model.build_genCapAvail = BuildAction(rule=prepGenCapAvail_rule)
 
     def prepSload_rule(model):
-    	#Build load profiles for all periods
+        #Build load profiles for all periods
 
         counter = 0
         f = open(result_file_path / f"AdjustedNegativeLoad_{name}.txt", 'w')
@@ -491,20 +506,48 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_
 
     logger.info("Declaring variables...")
 
-    model.genInvCap = Var(model.GeneratorsOfNode, model.PeriodActive, domain=NonNegativeReals)
-    model.transmisionInvCap = Var(model.BidirectionalArc, model.PeriodActive, domain=NonNegativeReals)
-    model.storPWInvCap = Var(model.StoragesOfNode, model.PeriodActive, domain=NonNegativeReals)
-    model.storENInvCap = Var(model.StoragesOfNode, model.PeriodActive, domain=NonNegativeReals)
+    if OUT_OF_SAMPLE:
+        # Redefine investment vars as input parameters
+        model.genInvCap = Param(model.GeneratorsOfNode, model.PeriodActive, domain=NonNegativeReals)
+        model.transmisionInvCap = Param(model.BidirectionalArc, model.PeriodActive, domain=NonNegativeReals)
+        model.storPWInvCap = Param(model.StoragesOfNode, model.PeriodActive, domain=NonNegativeReals)
+        model.storENInvCap = Param(model.StoragesOfNode, model.PeriodActive, domain=NonNegativeReals)
+        model.genInstalledCap = Param(model.GeneratorsOfNode, model.PeriodActive, domain=NonNegativeReals)
+        model.transmissionInstalledCap = Param(model.BidirectionalArc, model.PeriodActive, domain=NonNegativeReals)
+        model.storPWInstalledCap = Param(model.StoragesOfNode, model.PeriodActive, domain=NonNegativeReals)
+        model.storENInstalledCap = Param(model.StoragesOfNode, model.PeriodActive, domain=NonNegativeReals)
+
+        # Optimized investment decisions read from result file from in-sample runs
+        data.load(filename=str(result_file_path / 'genInvCap.tab'), param=model.genInvCap, format="table")
+        data.load(filename=str(result_file_path / 'transmisionInvCap.tab'), param=model.transmisionInvCap, format="table")
+        data.load(filename=str(result_file_path / 'storPWInvCap.tab'), param=model.storPWInvCap, format="table")
+        data.load(filename=str(result_file_path / 'storENInvCap.tab'), param=model.storENInvCap, format="table")
+        data.load(filename=str(result_file_path / 'genInstalledCap.tab'), param=model.genInstalledCap, format="table")
+        data.load(filename=str(result_file_path / 'transmissionInstalledCap.tab'), param=model.transmissionInstalledCap, format="table")
+        data.load(filename=str(result_file_path / 'storPWInstalledCap.tab'), param=model.storPWInstalledCap, format="table")
+        data.load(filename=str(result_file_path / 'storENInstalledCap.tab'), param=model.storENInstalledCap, format="table")
+
+        # Update result_file_path to output for given out_of_sample tree
+        sample_tree = get_name_of_last_folder_in_path(sample_file_path)
+        result_file_path = result_file_path / f"OutOfSample/{sample_tree}"
+        if not os.path.exists(result_file_path):
+            os.makedirs(result_file_path)
+    else:
+        model.genInvCap = Var(model.GeneratorsOfNode, model.PeriodActive, domain=NonNegativeReals)
+        model.transmisionInvCap = Var(model.BidirectionalArc, model.PeriodActive, domain=NonNegativeReals)
+        model.storPWInvCap = Var(model.StoragesOfNode, model.PeriodActive, domain=NonNegativeReals)
+        model.storENInvCap = Var(model.StoragesOfNode, model.PeriodActive, domain=NonNegativeReals)
+        model.genInstalledCap = Var(model.GeneratorsOfNode, model.PeriodActive, domain=NonNegativeReals)
+        model.transmissionInstalledCap = Var(model.BidirectionalArc, model.PeriodActive, domain=NonNegativeReals)
+        model.storPWInstalledCap = Var(model.StoragesOfNode, model.PeriodActive, domain=NonNegativeReals)
+        model.storENInstalledCap = Var(model.StoragesOfNode, model.PeriodActive, domain=NonNegativeReals)
+
     model.genOperational = Var(model.GeneratorsOfNode, model.Operationalhour, model.PeriodActive, model.Scenario, domain=NonNegativeReals)
     model.storOperational = Var(model.StoragesOfNode, model.Operationalhour, model.PeriodActive, model.Scenario, domain=NonNegativeReals)
     model.transmisionOperational = Var(model.DirectionalLink, model.Operationalhour, model.PeriodActive, model.Scenario, domain=NonNegativeReals) #flow
     model.storCharge = Var(model.StoragesOfNode, model.Operationalhour, model.PeriodActive, model.Scenario, domain=NonNegativeReals)
     model.storDischarge = Var(model.StoragesOfNode, model.Operationalhour, model.PeriodActive, model.Scenario, domain=NonNegativeReals)
     model.loadShed = Var(model.Node, model.Operationalhour, model.PeriodActive, model.Scenario, domain=NonNegativeReals)
-    model.genInstalledCap = Var(model.GeneratorsOfNode, model.PeriodActive, domain=NonNegativeReals)
-    model.transmissionInstalledCap = Var(model.BidirectionalArc, model.PeriodActive, domain=NonNegativeReals)
-    model.storPWInstalledCap = Var(model.StoragesOfNode, model.PeriodActive, domain=NonNegativeReals)
-    model.storENInstalledCap = Var(model.StoragesOfNode, model.PeriodActive, domain=NonNegativeReals)
 
     ###############
     ##EXPRESSIONS##
@@ -632,124 +675,127 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_
     model.transmission_cap = Constraint(model.DirectionalLink, model.Operationalhour, model.PeriodActive, model.Scenario, rule=transmission_cap_rule)
 
     #################################################################
-
-    def wind_farm_tranmission_cap_rule(model, n1, n2, i):
-        if n1 in model.OffshoreNode or n2 in model.OffshoreNode:
-            if (n1,n2) in model.BidirectionalArc:
-                if n1 in model.OffshoreNode:
-                    return model.transmissionInstalledCap[(n1,n2),i] <= sum(model.genInstalledCap[n1,g,i] for g in model.Generator if (n1,g) in model.GeneratorsOfNode)
+    if north_sea:
+        def wind_farm_tranmission_cap_rule(model, n1, n2, i):
+            if n1 in model.OffshoreNode or n2 in model.OffshoreNode:
+                if (n1,n2) in model.BidirectionalArc:
+                    if n1 in model.OffshoreNode:
+                        return model.transmissionInstalledCap[(n1,n2),i] <= sum(model.genInstalledCap[n1,g,i] for g in model.Generator if (n1,g) in model.GeneratorsOfNode)
+                    else:
+                        return model.transmissionInstalledCap[(n1,n2),i] <= sum(model.genInstalledCap[n2,g,i] for g in model.Generator if (n2,g) in model.GeneratorsOfNode)
+                elif (n2,n1) in model.BidirectionalArc:
+                    if n1 in model.OffshoreNode:
+                        return model.transmissionInstalledCap[(n2,n1),i] <= sum(model.genInstalledCap[n1,g,i] for g in model.Generator if (n1,g) in model.GeneratorsOfNode)
+                    else:
+                        return model.transmissionInstalledCap[(n2,n1),i] <= sum(model.genInstalledCap[n2,g,i] for g in model.Generator if (n2,g) in model.GeneratorsOfNode)
                 else:
-                    return model.transmissionInstalledCap[(n1,n2),i] <= sum(model.genInstalledCap[n2,g,i] for g in model.Generator if (n2,g) in model.GeneratorsOfNode)
-            elif (n2,n1) in model.BidirectionalArc:
-                if n1 in model.OffshoreNode:
-                    return model.transmissionInstalledCap[(n2,n1),i] <= sum(model.genInstalledCap[n1,g,i] for g in model.Generator if (n1,g) in model.GeneratorsOfNode)
-                else:
-                    return model.transmissionInstalledCap[(n2,n1),i] <= sum(model.genInstalledCap[n2,g,i] for g in model.Generator if (n2,g) in model.GeneratorsOfNode)
+                    return Constraint.Skip
             else:
                 return Constraint.Skip
-        else:
-            return Constraint.Skip
-    model.wind_farm_transmission_cap = Constraint(model.Node, model.Node, model.PeriodActive, rule=wind_farm_tranmission_cap_rule)
+        model.wind_farm_transmission_cap = Constraint(model.Node, model.Node, model.PeriodActive, rule=wind_farm_tranmission_cap_rule)
     #################################################################
 
     if EMISSION_CAP:
-    	def emission_cap_rule(model, i, w):
-    	    return sum(model.seasScale[s]*model.genCO2TypeFactor[g]*(3.6/model.genEfficiency[g,i])*model.genOperational[n,g,h,i,w] for (n,g) in model.GeneratorsOfNode for (s,h) in model.HoursOfSeason)/1000000 \
-    	        - model.CO2cap[i] <= 0   #
-    	model.emission_cap = Constraint(model.PeriodActive, model.Scenario, rule=emission_cap_rule)
+        def emission_cap_rule(model, i, w):
+            return sum(model.seasScale[s]*model.genCO2TypeFactor[g]*(3.6/model.genEfficiency[g,i])*model.genOperational[n,g,h,i,w] for (n,g) in model.GeneratorsOfNode for (s,h) in model.HoursOfSeason)/1000000 \
+                - model.CO2cap[i] <= 0   #
+        model.emission_cap = Constraint(model.PeriodActive, model.Scenario, rule=emission_cap_rule)
 
     #################################################################
 
-    def lifetime_rule_gen(model, n, g, i):
-        startPeriod=1
-        if value(1+i-(model.genLifetime[g]/model.LeapYearsInvestment))>startPeriod:
-            startPeriod=value(1+i-model.genLifetime[g]/model.LeapYearsInvestment)
-        return sum(model.genInvCap[n,g,j]  for j in model.PeriodActive if j>=startPeriod and j<=i ) - model.genInstalledCap[n,g,i] + model.genInitCap[n,g,i]== 0   #
-    model.installedCapDefinitionGen = Constraint(model.GeneratorsOfNode, model.PeriodActive, rule=lifetime_rule_gen)
+    if not OUT_OF_SAMPLE:
+        # All constraints exclusively for investment decisions inactive when out_of_sample
 
-    #################################################################
+        def lifetime_rule_gen(model, n, g, i):
+            startPeriod=1
+            if value(1+i-(model.genLifetime[g]/model.LeapYearsInvestment))>startPeriod:
+                startPeriod=value(1+i-model.genLifetime[g]/model.LeapYearsInvestment)
+            return sum(model.genInvCap[n,g,j]  for j in model.PeriodActive if j>=startPeriod and j<=i ) - model.genInstalledCap[n,g,i] + model.genInitCap[n,g,i]== 0   #
+        model.installedCapDefinitionGen = Constraint(model.GeneratorsOfNode, model.PeriodActive, rule=lifetime_rule_gen)
 
-    def lifetime_rule_storEN(model, n, b, i):
-        startPeriod=1
-        if value(1+i-model.storageLifetime[b]*(1/model.LeapYearsInvestment))>startPeriod:
-            startPeriod=value(1+i-model.storageLifetime[b]/model.LeapYearsInvestment)
-        return sum(model.storENInvCap[n,b,j]  for j in model.PeriodActive if j>=startPeriod and j<=i )- model.storENInstalledCap[n,b,i] + model.storENInitCap[n,b,i]== 0   #
-    model.installedCapDefinitionStorEN = Constraint(model.StoragesOfNode, model.PeriodActive, rule=lifetime_rule_storEN)
+        ############################################################
 
-    #################################################################
+        def lifetime_rule_storEN(model, n, b, i):
+            startPeriod=1
+            if value(1+i-model.storageLifetime[b]*(1/model.LeapYearsInvestment))>startPeriod:
+                startPeriod=value(1+i-model.storageLifetime[b]/model.LeapYearsInvestment)
+            return sum(model.storENInvCap[n,b,j]  for j in model.PeriodActive if j>=startPeriod and j<=i )- model.storENInstalledCap[n,b,i] + model.storENInitCap[n,b,i]== 0   #
+        model.installedCapDefinitionStorEN = Constraint(model.StoragesOfNode, model.PeriodActive, rule=lifetime_rule_storEN)
 
-    def lifetime_rule_storPOW(model, n, b, i):
-        startPeriod=1
-        if value(1+i-model.storageLifetime[b]*(1/model.LeapYearsInvestment))>startPeriod:
-            startPeriod=value(1+i-model.storageLifetime[b]/model.LeapYearsInvestment)
-        return sum(model.storPWInvCap[n,b,j]  for j in model.PeriodActive if j>=startPeriod and j<=i )- model.storPWInstalledCap[n,b,i] + model.storPWInitCap[n,b,i]== 0   #
-    model.installedCapDefinitionStorPOW = Constraint(model.StoragesOfNode, model.PeriodActive, rule=lifetime_rule_storPOW)
+        ############################################################
 
-    #################################################################
+        def lifetime_rule_storPOW(model, n, b, i):
+            startPeriod=1
+            if value(1+i-model.storageLifetime[b]*(1/model.LeapYearsInvestment))>startPeriod:
+                startPeriod=value(1+i-model.storageLifetime[b]/model.LeapYearsInvestment)
+            return sum(model.storPWInvCap[n,b,j]  for j in model.PeriodActive if j>=startPeriod and j<=i )- model.storPWInstalledCap[n,b,i] + model.storPWInitCap[n,b,i]== 0   #
+        model.installedCapDefinitionStorPOW = Constraint(model.StoragesOfNode, model.PeriodActive, rule=lifetime_rule_storPOW)
 
-    def lifetime_rule_trans(model, n1, n2, i):
-        startPeriod=1
-        if value(1+i-model.transmissionLifetime[n1,n2]*(1/model.LeapYearsInvestment))>startPeriod:
-            startPeriod=value(1+i-model.transmissionLifetime[n1,n2]/model.LeapYearsInvestment)
-        return sum(model.transmisionInvCap[n1,n2,j]  for j in model.PeriodActive if j>=startPeriod and j<=i )- model.transmissionInstalledCap[n1,n2,i] + model.transmissionInitCap[n1,n2,i] == 0   #
-    model.installedCapDefinitionTrans = Constraint(model.BidirectionalArc, model.PeriodActive, rule=lifetime_rule_trans)
+        ############################################################
 
-    #################################################################
+        def lifetime_rule_trans(model, n1, n2, i):
+            startPeriod=1
+            if value(1+i-model.transmissionLifetime[n1,n2]*(1/model.LeapYearsInvestment))>startPeriod:
+                startPeriod=value(1+i-model.transmissionLifetime[n1,n2]/model.LeapYearsInvestment)
+            return sum(model.transmisionInvCap[n1,n2,j]  for j in model.PeriodActive if j>=startPeriod and j<=i )- model.transmissionInstalledCap[n1,n2,i] + model.transmissionInitCap[n1,n2,i] == 0   #
+        model.installedCapDefinitionTrans = Constraint(model.BidirectionalArc, model.PeriodActive, rule=lifetime_rule_trans)
 
-    def investment_gen_cap_rule(model, t, n, i):
-        return sum(model.genInvCap[n,g,i] for g in model.Generator if (n,g) in model.GeneratorsOfNode and (t,g) in model.GeneratorsOfTechnology) - model.genMaxBuiltCap[n,t,i] <= 0
-    model.investment_gen_cap = Constraint(model.Technology, model.Node, model.PeriodActive, rule=investment_gen_cap_rule)
+        ############################################################
 
-    #################################################################
+        def investment_gen_cap_rule(model, t, n, i):
+            return sum(model.genInvCap[n,g,i] for g in model.Generator if (n,g) in model.GeneratorsOfNode and (t,g) in model.GeneratorsOfTechnology) - model.genMaxBuiltCap[n,t,i] <= 0
+        model.investment_gen_cap = Constraint(model.Technology, model.Node, model.PeriodActive, rule=investment_gen_cap_rule)
 
-    def investment_trans_cap_rule(model, n1, n2, i):
-        return model.transmisionInvCap[n1,n2,i] - model.transmissionMaxBuiltCap[n1,n2,i] <= 0
-    model.investment_trans_cap = Constraint(model.BidirectionalArc, model.PeriodActive, rule=investment_trans_cap_rule)
+        ############################################################
 
-    #################################################################
+        def investment_trans_cap_rule(model, n1, n2, i):
+            return model.transmisionInvCap[n1,n2,i] - model.transmissionMaxBuiltCap[n1,n2,i] <= 0
+        model.investment_trans_cap = Constraint(model.BidirectionalArc, model.PeriodActive, rule=investment_trans_cap_rule)
 
-    def investment_storage_power_cap_rule(model, n, b, i):
-        return model.storPWInvCap[n,b,i] - model.storPWMaxBuiltCap[n,b,i] <= 0
-    model.investment_storage_power_cap = Constraint(model.StoragesOfNode, model.PeriodActive, rule=investment_storage_power_cap_rule)
+        ############################################################
 
-    #################################################################
+        def investment_storage_power_cap_rule(model, n, b, i):
+            return model.storPWInvCap[n,b,i] - model.storPWMaxBuiltCap[n,b,i] <= 0
+        model.investment_storage_power_cap = Constraint(model.StoragesOfNode, model.PeriodActive, rule=investment_storage_power_cap_rule)
 
-    def investment_storage_energy_cap_rule(model, n, b, i):
-        return model.storENInvCap[n,b,i] - model.storENMaxBuiltCap[n,b,i] <= 0
-    model.investment_storage_energy_cap = Constraint(model.StoragesOfNode, model.PeriodActive, rule=investment_storage_energy_cap_rule)
+        ############################################################
 
-    ################################################################
+        def investment_storage_energy_cap_rule(model, n, b, i):
+            return model.storENInvCap[n,b,i] - model.storENMaxBuiltCap[n,b,i] <= 0
+        model.investment_storage_energy_cap = Constraint(model.StoragesOfNode, model.PeriodActive, rule=investment_storage_energy_cap_rule)
 
-    def installed_gen_cap_rule(model, t, n, i):
-        return sum(model.genInstalledCap[n,g,i] for g in model.Generator if (n,g) in model.GeneratorsOfNode and (t,g) in model.GeneratorsOfTechnology) - model.genMaxInstalledCap[n,t,i] <= 0
-    model.installed_gen_cap = Constraint(model.Technology, model.Node, model.PeriodActive, rule=installed_gen_cap_rule)
+        ############################################################
 
-    #################################################################
+        def installed_gen_cap_rule(model, t, n, i):
+            return sum(model.genInstalledCap[n,g,i] for g in model.Generator if (n,g) in model.GeneratorsOfNode and (t,g) in model.GeneratorsOfTechnology) - model.genMaxInstalledCap[n,t,i] <= 0
+        model.installed_gen_cap = Constraint(model.Technology, model.Node, model.PeriodActive, rule=installed_gen_cap_rule)
 
-    def installed_trans_cap_rule(model, n1, n2, i):
-        return model.transmissionInstalledCap[n1,n2,i] - model.transmissionMaxInstalledCap[n1,n2,i] <= 0
-    model.installed_trans_cap = Constraint(model.BidirectionalArc, model.PeriodActive, rule=installed_trans_cap_rule)
+        ############################################################
 
-    #################################################################
+        def installed_trans_cap_rule(model, n1, n2, i):
+            return model.transmissionInstalledCap[n1,n2,i] - model.transmissionMaxInstalledCap[n1,n2,i] <= 0
+        model.installed_trans_cap = Constraint(model.BidirectionalArc, model.PeriodActive, rule=installed_trans_cap_rule)
 
-    def installed_storage_power_cap_rule(model, n, b, i):
-        return model.storPWInstalledCap[n,b,i] - model.storPWMaxInstalledCap[n,b,i] <= 0
-    model.installed_storage_power_cap = Constraint(model.StoragesOfNode, model.PeriodActive, rule=installed_storage_power_cap_rule)
+        ############################################################
 
-    #################################################################
+        def installed_storage_power_cap_rule(model, n, b, i):
+            return model.storPWInstalledCap[n,b,i] - model.storPWMaxInstalledCap[n,b,i] <= 0
+        model.installed_storage_power_cap = Constraint(model.StoragesOfNode, model.PeriodActive, rule=installed_storage_power_cap_rule)
 
-    def installed_storage_energy_cap_rule(model, n, b, i):
-        return model.storENInstalledCap[n,b,i] - model.storENMaxInstalledCap[n,b,i] <= 0
-    model.installed_storage_energy_cap = Constraint(model.StoragesOfNode, model.PeriodActive, rule=installed_storage_energy_cap_rule)
+        ############################################################
 
-    #################################################################
+        def installed_storage_energy_cap_rule(model, n, b, i):
+            return model.storENInstalledCap[n,b,i] - model.storENMaxInstalledCap[n,b,i] <= 0
+        model.installed_storage_energy_cap = Constraint(model.StoragesOfNode, model.PeriodActive, rule=installed_storage_energy_cap_rule)
 
-    def power_energy_relate_rule(model, n, b, i):
-        if b in model.DependentStorage:
-            return model.storPWInstalledCap[n,b,i] - model.storagePowToEnergy[b]*model.storENInstalledCap[n,b,i] == 0   #
-        else:
-            return Constraint.Skip
-    model.power_energy_relate = Constraint(model.StoragesOfNode, model.PeriodActive, rule=power_energy_relate_rule)
+        ############################################################
+
+        def power_energy_relate_rule(model, n, b, i):
+            if b in model.DependentStorage:
+                return model.storPWInstalledCap[n,b,i] - model.storagePowToEnergy[b]*model.storENInstalledCap[n,b,i] == 0   #
+            else:
+                return Constraint.Skip
+        model.power_energy_relate = Constraint(model.StoragesOfNode, model.PeriodActive, rule=power_energy_relate_rule)
 
     #################################################################
 
@@ -771,60 +817,59 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_
 
     #import pdb; pdb.set_trace()
     #instance.CO2price.pprint()
-
-    logger.info("----------------------Problem Statistics---------------------")
-    logger.info("Nodes: %s", len(instance.Node))
-    logger.info("Lines: %s", len(instance.BidirectionalArc))
-    logger.info("")
-    logger.info("GeneratorTypes: %s", len(instance.Generator))
-    logger.info("TotalGenerators: %s", len(instance.GeneratorsOfNode))
-    logger.info("StorageTypes: %s", len(instance.Storage))
-    logger.info("TotalStorages: %s", len(instance.StoragesOfNode))
-    logger.info("")
-    logger.info("InvestmentUntil: %s", value(2020+int(len(instance.PeriodActive)*LeapYearsInvestment)))
-    logger.info("Scenarios: %s", len(instance.Scenario))
-    logger.info("TotalOperationalHoursPerScenario: %s", len(instance.Operationalhour))
-    logger.info("TotalOperationalHoursPerInvYear: %s", len(instance.Operationalhour)*len(instance.Scenario))
-    logger.info("Seasons: %s", len(instance.Season))
-    logger.info("RegularSeasons: %s", len(instance.FirstHoursOfRegSeason))
-    logger.info("LengthRegSeason: %s", value(instance.lengthRegSeason))
-    logger.info("PeakSeasons: %s", len(instance.FirstHoursOfPeakSeason))
-    logger.info("LengthPeakSeason: %s", value(instance.lengthPeakSeason))
-    logger.info("")
-    logger.info("Discount rate: %s", value(instance.discountrate))
-    logger.info("Operational discount scale: %s", value(instance.operationalDiscountrate))
-    logger.info("--------------------------------------------------------------")
-    
-    if WRITE_LP:
-        logger.info("Writing LP-file...")
-        start = time.time()
-        lpstring = f"LP_{name}.lp"
-        if USE_TEMP_DIR:
-            lpstring = temp_dir / lpstring
-        instance.write(str(lpstring), io_options={'symbolic_solver_labels': True})
-        end = time.time()
-        logger.info("Writing LP-file took [sec]: %d", end - start)
-
+    if not OUT_OF_SAMPLE:	
+        logger.info("----------------------Problem Statistics---------------------")
+        logger.info("Nodes: %s", len(instance.Node))
+        logger.info("Lines: %s", len(instance.BidirectionalArc))
+        logger.info("")
+        logger.info("GeneratorTypes: %s", len(instance.Generator))
+        logger.info("TotalGenerators: %s", len(instance.GeneratorsOfNode))
+        logger.info("StorageTypes: %s", len(instance.Storage))
+        logger.info("TotalStorages: %s", len(instance.StoragesOfNode))
+        logger.info("")
+        logger.info("InvestmentUntil: %s", value(2020+int(len(instance.PeriodActive)*LeapYearsInvestment)))
+        logger.info("Scenarios: %s", len(instance.Scenario))
+        logger.info("TotalOperationalHoursPerScenario: %s", len(instance.Operationalhour))
+        logger.info("TotalOperationalHoursPerInvYear: %s", len(instance.Operationalhour)*len(instance.Scenario))
+        logger.info("Seasons: %s", len(instance.Season))
+        logger.info("RegularSeasons: %s", len(instance.FirstHoursOfRegSeason))
+        logger.info("LengthRegSeason: %s", value(instance.lengthRegSeason))
+        logger.info("PeakSeasons: %s", len(instance.FirstHoursOfPeakSeason))
+        logger.info("LengthPeakSeason: %s", value(instance.lengthPeakSeason))
+        logger.info("")
+        logger.info("Discount rate: %s", value(instance.discountrate))
+        logger.info("Operational discount scale: %s", value(instance.operationalDiscountrate))
+        logger.info("--------------------------------------------------------------")
         
-    # Write marginal costs to results folder
-    f = open(result_file_path / 'marginal_costs.csv', 'w', newline='')
-    writer = csv.writer(f)
-    writer.writerow(["Generator","Period","MarginalCost_EurperMWh"])
-    for g in instance.Generator:
-        for i in instance.PeriodActive:
-            writer.writerow([g, i, value(instance.genMargCost[g,i])])
+        if WRITE_LP:
+            logger.info("Writing LP-file...")
+            start = time.time()
+            lpstring = f"LP_{name}.lp"
+            if USE_TEMP_DIR:
+                lpstring = temp_dir / lpstring
+            instance.write(str(lpstring), io_options={'symbolic_solver_labels': True})
+            end = time.time()
+            logger.info("Writing LP-file took [sec]: %d", end - start)
 
-    f.close()
-    
-    # Write investment costs to results folder
-    f = open(result_file_path / 'investment_costs.csv', 'w', newline='')
-    writer = csv.writer(f)
-    writer.writerow(["Generator","Period","InvestmentCost_EurperMW"])
-    for g in instance.Generator:
-        for i in instance.PeriodActive:
-            writer.writerow([g, i, value(instance.genInvCost[g,i])])
+        # Write marginal costs to results folder
+        f = open(result_file_path / 'marginal_costs.csv', 'w', newline='')
+        writer = csv.writer(f)
+        writer.writerow(["Generator","Period","MarginalCost_EurperMWh"])
+        for g in instance.Generator:
+            for i in instance.PeriodActive:
+                writer.writerow([g, i, value(instance.genMargCost[g,i])])
 
-    f.close()
+        f.close()
+        
+        # Write investment costs to results folder
+        f = open(result_file_path / 'investment_costs.csv', 'w', newline='')
+        writer = csv.writer(f)
+        writer.writerow(["Generator","Period","InvestmentCost_EurperMW"])
+        for g in instance.Generator:
+            for i in instance.PeriodActive:
+                writer.writerow([g, i, value(instance.genInvCost[g,i])])
+
+        f.close()
 
     logger.info("Solving...")
 
@@ -858,7 +903,7 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_
             cloudpickle.dump(instance, file)
         end = time.time()
         logger.info("Pickling instance took [sec]: %d", end - start)
-            	
+                
     #instance.display('outputs_gurobi.txt')
 
     #import pdb; pdb.set_trace()
@@ -871,12 +916,16 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_
 
     inv_per = []
     for i in instance.PeriodActive:
-        my_string = str(value(2015+int(i)*LeapYearsInvestment))+"-"+str(value(2020+int(i)*LeapYearsInvestment))
+        my_string = str(value(2020+int(i-1)*LeapYearsInvestment))+"-"+str(value(2020+int(i)*LeapYearsInvestment))
         inv_per.append(my_string)
 
     f = open(result_file_path / 'results_objective.csv', 'w', newline='')
     writer = csv.writer(f)
     writer.writerow(["Objective function value:" + str(value(instance.Obj))])
+
+    if OUT_OF_SAMPLE:
+        # Only interested in objective function value
+        return
 
     f = open(result_file_path / 'results_output_gen.csv', 'w', newline='')
     writer = csv.writer(f)
@@ -1128,6 +1177,70 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_
             value(sum(instance.seasScale[s]*instance.sceProbab[w]*instance.storDischarge[n,b,h,i,w]/1000 for n in instance.Node if (n,b) in instance.StoragesOfNode for (s,h) in instance.HoursOfSeason for w in instance.Scenario))])
     f.close()
 
+    # Print first stage decisions for out-of-sample
+    f = open(result_file_path / 'genInvCap.tab', 'w', newline='')
+    writer = csv.writer(f, delimiter='\t')
+    writer.writerow(["Node","Generator","Period","genInvCap"])
+    for (n,g) in instance.GeneratorsOfNode:
+        for i in instance.PeriodActive:
+            writer.writerow([n,g,i,value(instance.genInvCap[n,g,i])])
+    f.close()
+
+    f = open(result_file_path / 'transmisionInvCap.tab', 'w', newline='')
+    writer = csv.writer(f, delimiter='\t')
+    writer.writerow(["FromNode","ToNode","Period","transmisionInvCap"])
+    for (n1,n2) in instance.BidirectionalArc:
+        for i in instance.PeriodActive:
+            writer.writerow([n1,n2,i,value(instance.transmisionInvCap[n1,n2,i])])
+    f.close()
+
+    f = open(result_file_path / 'storPWInvCap.tab', 'w', newline='')
+    writer = csv.writer(f, delimiter='\t')
+    writer.writerow(["Node","Storage","Period","storPWInvCap"])
+    for (n,b) in instance.StoragesOfNode:
+        for i in instance.PeriodActive:
+            writer.writerow([n,b,i,value(instance.storPWInvCap[n,b,i])])
+    f.close()
+
+    f = open(result_file_path / 'storENInvCap.tab', 'w', newline='')
+    writer = csv.writer(f, delimiter='\t')
+    writer.writerow(["Node","Storage","Period","storENInvCap"])
+    for (n,b) in instance.StoragesOfNode:
+        for i in instance.PeriodActive:
+            writer.writerow([n,b,i,value(instance.storENInvCap[n,b,i])])
+    f.close()
+
+    f = open(result_file_path / 'genInstalledCap.tab', 'w', newline='')
+    writer = csv.writer(f, delimiter='\t')
+    writer.writerow(["Node","Generator","Period","genInstalledCap"])
+    for (n,g) in instance.GeneratorsOfNode:
+        for i in instance.PeriodActive:
+            writer.writerow([n,g,i,value(instance.genInstalledCap[n,g,i])])
+    f.close()
+
+    f = open(result_file_path / 'transmissionInstalledCap.tab', 'w', newline='')
+    writer = csv.writer(f, delimiter='\t')
+    writer.writerow(["FromNode","ToNode","Period","transmissionInstalledCap"])
+    for (n1,n2) in instance.BidirectionalArc:
+        for i in instance.PeriodActive:
+            writer.writerow([n1,n2,i,value(instance.transmissionInstalledCap[n1,n2,i])])
+    f.close()
+
+    f = open(result_file_path / 'storPWInstalledCap.tab', 'w', newline='')
+    writer = csv.writer(f, delimiter='\t')
+    writer.writerow(["Node","Storage","Period","storPWInstalledCap"])
+    for (n,b) in instance.StoragesOfNode:
+        for i in instance.PeriodActive:
+            writer.writerow([n,b,i,value(instance.storPWInstalledCap[n,b,i])])
+    f.close()
+
+    f = open(result_file_path / 'storENInstalledCap.tab', 'w', newline='')
+    writer = csv.writer(f, delimiter='\t')
+    writer.writerow(["Node","Storage","Period","storENInstalledCap"])
+    for (n,b) in instance.StoragesOfNode:
+        for i in instance.PeriodActive:
+            writer.writerow([n,b,i,value(instance.storENInstalledCap[n,b,i])])
+    f.close()
 
         
     if IAMC_PRINT:
@@ -1272,7 +1385,7 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_
             os.makedirs(result_file_path / 'IAMC')
         f.to_csv(result_file_path / 'IAMC/empire_iamc.csv', index=None)
 
-    if OPERATIONAL_DUALS:
+    if OPERATIONAL_DUALS and not OUT_OF_SAMPLE:
         logger.info("Computing operational dual values by fixing investment variables and resolving.")
 
         logger.info("Fixing investment variables")

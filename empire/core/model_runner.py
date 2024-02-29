@@ -4,11 +4,14 @@ import logging
 from pathlib import Path
 
 from empire import run_empire
-from empire.core.config import EmpireConfiguration, EmpireRunConfiguration, read_config_file
+from empire.core.config import (EmpireConfiguration, EmpireRunConfiguration,
+                                read_config_file)
 from empire.core.reader import generate_tab_files
-from empire.core.scenario_random import check_scenarios_exist_and_copy, generate_random_scenario
+from empire.core.scenario_random import (check_scenarios_exist_and_copy,
+                                         generate_random_scenario)
 from empire.input_data_manager import IDataManager
-from empire.utils import copy_dataset, copy_scenario_data, create_if_not_exist, get_run_name
+from empire.utils import (copy_dataset, copy_scenario_data,
+                          create_if_not_exist, get_run_name)
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +21,9 @@ def run_empire_model(
     run_config: EmpireRunConfiguration,
     data_managers: list[IDataManager],
     test_run: bool,
-):
+    OUT_OF_SAMPLE: bool = False, 
+    sample_file_path: Path | None = None
+    ):
     for manager in data_managers:
         manager.apply()
 
@@ -141,7 +146,10 @@ def run_empire_model(
             USE_TEMP_DIR=empire_config.use_temporary_directory,
             LOADCHANGEMODULE=empire_config.load_change_module,
             OPERATIONAL_DUALS=empire_config.compute_operational_duals,
-        )
+            north_sea=empire_config.north_sea,
+            OUT_OF_SAMPLE=OUT_OF_SAMPLE, 
+            sample_file_path=sample_file_path
+            )
 
     config_path = run_config.dataset_path / "config.txt"
     logger.info("Writing config to: %s", config_path)
