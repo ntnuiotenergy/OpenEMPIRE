@@ -6,6 +6,7 @@ temporary_directory: './'           # Path to the temporary directory used for c
 forecast_horizon_year: 2060         # Target or end year for the run
 number_of_scenarios: 5              # Number of scenarios in every investment period
 length_of_regular_season: 168       # Number of hours in a regular season
+len_peak_season: 24                 # Number of hours in a peak season
 discount_rate: 0.05                 # Rate used to discount future cash flows to present value
 wacc: 0.05                          # Weighted average cost of capital
 optimization_solver: "Gurobi"       # Mathematical solver used for optimization tasks
@@ -23,3 +24,4 @@ print_in_iamc_format: False         # Output should be printed in a IAMC-compati
 write_in_lp_format: False           # Problem should be written in Linear Programming format
 serialize_instance: False           # Serialize the data structure or model for later use
 north_sea: True                     # Whether the north sea is modelled or not
+DLC_module: False                   # True: Activate Direct Load Control (DLC) module; False: Deactivate DLC module.
