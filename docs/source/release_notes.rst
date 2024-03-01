@@ -26,3 +26,9 @@ OpenEMPIRE 1.0.0
 **Minor Changes and bug-fixing**
 
 * Add scripts used for running OpenEMPIRE on high-performance cluters. 
+
+**Out-of-sample and in-sample stability logic + scripts**
+
+* Add out-of-sample logic
+
+* Create scripts for in-sample and out-of-sample stability tests

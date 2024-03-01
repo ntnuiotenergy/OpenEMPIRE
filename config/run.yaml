@@ -23,3 +23,5 @@ print_in_iamc_format: False         # Output should be printed in a IAMC-compati
 write_in_lp_format: False           # Problem should be written in Linear Programming format
 serialize_instance: False           # Serialize the data structure or model for later use
 north_sea: True                     # Whether the north sea is modelled or not
+leap_years_investment: 5            # Number of years per period
+time_format: "%d/%m/%Y %H:%M"       # Time format for scenario data files

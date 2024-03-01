@@ -1005,7 +1005,10 @@ def check_scenarios_exist_and_copy(run_config: EmpireRunConfiguration):
                 run_config.tab_file_path,
             )
         else:
-            shutil.copyfile(run_config.scenario_data_path / file, run_config.tab_file_path / file)
+            try:
+                shutil.copyfile(run_config.scenario_data_path / file, run_config.tab_file_path / file)
+            except shutil.SameFileError:
+                pass
 
 
 def check_scenarios_exist(scenario_data_path: Path) -> bool:

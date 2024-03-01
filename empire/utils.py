@@ -80,6 +80,8 @@ def restricted_float(x) -> float:
         raise ArgumentTypeError(f"{x} not in range [0.0, 1.0]")
     return x
 
+def get_name_of_last_folder_in_path(path: Path) -> str:
+    return str(path).split("/")[-1]
 
 def scale_and_shift_series(profile: pd.Series, scale: float, shift: float):
     """
