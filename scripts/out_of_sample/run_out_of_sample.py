@@ -108,10 +108,3 @@ for run_path in all_run_paths:
     df_final_row = pd.DataFrame({"Sample tree": ["Out-of-sample value"], "Objective value": [out_of_sample_value]})
     df_out_of_sample = pd.concat([df_out_of_sample, df_final_row], ignore_index = True) 
     df_out_of_sample.to_csv(results_file_path / "OutOfSample" / "out_of_sample_values.csv")
-
-
-
-
-
-
-
