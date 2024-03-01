@@ -23,7 +23,7 @@ def run_empire_model(
     test_run: bool,
     OUT_OF_SAMPLE: bool = False, 
     sample_file_path: Path | None = None
-    ):
+    ) -> None | float:
     for manager in data_managers:
         manager.apply()
 
@@ -120,7 +120,7 @@ def run_empire_model(
     generate_tab_files(file_path=workbook_path, tab_file_path=tab_file_path)
 
     if not test_run:
-        run_empire(
+        return run_empire(
             name=run_config.run_name,
             tab_file_path=tab_file_path,
             result_file_path=result_file_path,

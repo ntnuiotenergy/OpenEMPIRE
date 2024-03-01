@@ -1,12 +1,13 @@
 from argparse import ArgumentParser
 from pathlib import Path
 
+import pandas as pd
+
 from empire.core.config import (EmpireConfiguration, EmpireRunConfiguration,
                                 read_config_file)
 from empire.core.model_runner import run_empire_model
 from empire.logger import get_empire_logger
-from empire.utils import get_name_of_last_folder_in_path, get_run_name
-
+from empire.utils import get_name_of_last_folder_in_path
 
 ###############################################################################
 # Before running this script, you should run these scripts for given dataset: #
@@ -59,22 +60,23 @@ if len(all_run_paths) == 0:
 if len(out_of_sample_tree_paths) == 0:
     raise ValueError("Out of sample runs for directory is empty, generate using the script 'create_out_of_sample_trees.py'")
 
-# Set up run config manually to avoid duplicate input files and easier output struct
-run_name = get_run_name(empire_config=empire_config, version=dataset)
-
 for run_path in all_run_paths:
+    # Part of run config setup
+    dataset_path = run_path / "Input" / "Xlsx"
+    results_file_path = run_path / "Output"
+
+    # Workaround to avoid manual copying scenario files
+    tab_path = scenario_data_path = run_path / "Input" / "Tab"
+
+    # Save objective values in dataframe 
+    df_out_of_sample = pd.DataFrame({"Sample tree": [], "Objective value": []})
+
     for tree_path in out_of_sample_tree_paths:
         sample_file_path = tree_path
         sample_tree = get_name_of_last_folder_in_path(tree_path)
 
         # Set up run config manually to avoid duplicate input files and easier output struct
         run_name = get_name_of_last_folder_in_path(run_path) + f"_out-of-sample_{sample_tree}"
-        dataset_path = run_path / "Input" / "Xlsx"
-        results_file_path = run_path / "Output"
-
-        # Workaround to avoid manual copying scenario files
-        tab_path = scenario_data_path = run_path / "Input" / "Tab"
-
         run_config = EmpireRunConfiguration(
                         run_name=run_name,
                         dataset_path=dataset_path,
@@ -88,7 +90,7 @@ for run_path in all_run_paths:
         logger.info("Running EMPIRE Model")
 
         ## Run empire model
-        run_empire_model(
+        obj_value = run_empire_model(
             empire_config=empire_config,
             run_config=run_config,
             data_managers=[],
@@ -96,3 +98,20 @@ for run_path in all_run_paths:
             OUT_OF_SAMPLE=True,
             sample_file_path=sample_file_path
         )
+
+        # Append objective value to df for current out-of-sample tree
+        df_row = pd.DataFrame({"Sample tree": [sample_tree], "Objective value": [obj_value]})
+        df_out_of_sample = pd.concat([df_out_of_sample, df_row], ignore_index = True)
+    
+    # Calculate out of sample value as mean of objective value from all trees
+    out_of_sample_value = df_out_of_sample["Objective value"].mean()
+    df_final_row = pd.DataFrame({"Sample tree": ["Out-of-sample value"], "Objective value": [out_of_sample_value]})
+    df_out_of_sample = pd.concat([df_out_of_sample, df_final_row], ignore_index = True) 
+    df_out_of_sample.to_csv(results_file_path / "OutOfSample" / "out_of_sample_values.csv")
+
+
+
+
+
+
+

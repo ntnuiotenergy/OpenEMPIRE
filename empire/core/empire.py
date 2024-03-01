@@ -20,8 +20,8 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_
                solver, temp_dir, FirstHoursOfRegSeason, FirstHoursOfPeakSeason, lengthRegSeason,
                lengthPeakSeason, Period, Operationalhour, Scenario, Season, HoursOfSeason,
                discountrate, WACC, LeapYearsInvestment, IAMC_PRINT, WRITE_LP,
-               PICKLE_INSTANCE, EMISSION_CAP, USE_TEMP_DIR, LOADCHANGEMODULE, OPERATIONAL_DUALS, north_sea,
-               OUT_OF_SAMPLE: bool = False, sample_file_path: Path | None = None):
+               PICKLE_INSTANCE, EMISSION_CAP, USE_TEMP_DIR, LOADCHANGEMODULE, OPERATIONAL_DUALS, north_sea, 
+               OUT_OF_SAMPLE: bool = False, sample_file_path: Path | None = None) -> None | float:
 
     if USE_TEMP_DIR:
         TempfileManager.tempdir = temp_dir
@@ -675,6 +675,7 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_
     model.transmission_cap = Constraint(model.DirectionalLink, model.Operationalhour, model.PeriodActive, model.Scenario, rule=transmission_cap_rule)
 
     #################################################################
+
     if north_sea:
         def wind_farm_tranmission_cap_rule(model, n1, n2, i):
             if n1 in model.OffshoreNode or n2 in model.OffshoreNode:
@@ -914,18 +915,18 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_
 
     logger.info("Writing results to .csv...")
 
-    inv_per = []
-    for i in instance.PeriodActive:
-        my_string = str(value(2020+int(i-1)*LeapYearsInvestment))+"-"+str(value(2020+int(i)*LeapYearsInvestment))
-        inv_per.append(my_string)
-
     f = open(result_file_path / 'results_objective.csv', 'w', newline='')
     writer = csv.writer(f)
     writer.writerow(["Objective function value:" + str(value(instance.Obj))])
 
     if OUT_OF_SAMPLE:
         # Only interested in objective function value
-        return
+        return float(value(instance.Obj))
+    
+    inv_per = []
+    for i in instance.PeriodActive:
+        my_string = str(value(2020+int(i-1)*LeapYearsInvestment))+"-"+str(value(2020+int(i)*LeapYearsInvestment))
+        inv_per.append(my_string)
 
     f = open(result_file_path / 'results_output_gen.csv', 'w', newline='')
     writer = csv.writer(f)
