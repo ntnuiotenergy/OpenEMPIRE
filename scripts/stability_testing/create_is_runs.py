@@ -1,7 +1,7 @@
 import os
 
 ### CHANGE THIS ###
-# You can use the 'In-sample'-tab in the file 'Estimated_runtime.xlsx to define the methods you want to test
+# You can use the 'In-sample'-tab in the file 'Stability_tests_setup.xlsx to define the methods you want to test
 # and the Solstorm-nodes if you want to do several runs in parallell
 
 run_table = """
