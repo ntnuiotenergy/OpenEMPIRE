@@ -31,6 +31,11 @@ OpenEMPIRE 1.0.0
 
 * Implement out-of-sample testing logic (fixing investment decisions and solving with new scenarios).
 
+* Implement copula-strata SGR.
+
 * Add scripts for in-sample and out-of-sample testing.
 
 * Add plots for interpreting results from stability tests.
+
+* Add aggregated dataset 'europe_agg_v50' to be used for stability testing.
+
