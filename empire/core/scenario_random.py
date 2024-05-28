@@ -342,7 +342,7 @@ def make_mean(data, regularSeasonHours, seasons):
     return ws
 
 
-def _calculate_rank_values_for_cluster(data: pd.DataFrame) -> pd.DataFrame:
+def _calculate_rank_values(data: pd.DataFrame) -> pd.DataFrame:
     df = data.copy().reset_index(drop=True)
     df["rank"] = df[["Value"]].rank(method="first")
 
@@ -375,7 +375,7 @@ def make_copula_filter(
         season_dfs = [df[df["Season"] == s] for df in mean_dfs]
 
         # Calculate rank values for each dataset
-        season_dfs = [_calculate_rank_values_for_cluster(df) for df in season_dfs]
+        season_dfs = [_calculate_rank_values(df) for df in season_dfs]
 
         # Pick first of dfs as base
         base_df = season_dfs[0]

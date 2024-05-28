@@ -5,6 +5,7 @@
 SOLSTORM_USER = "" # Your username on Solstorm
 
 run_table = """
+#run	Node	Metode	Scenarier	Instanser	Tidsbruk (dager)		Instans fra	Instans til
 1	6-1	basic	100	5	0.8		1	5
 2	6-2	basic	100	5	0.8		6	10
 3	6-3	basic	100	5	0.8		11	15
