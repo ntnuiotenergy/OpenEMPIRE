@@ -30,6 +30,9 @@ class EmpireConfiguration:
         filter_use: bool,
         n_cluster: int,
         moment_matching: bool,
+        copula_clusters_make: bool,
+        copula_clusters_use: bool,
+        copulas_to_use: list[str],
         n_tree_compare: int,
         use_emission_cap: bool,
         compute_operational_duals: bool,
@@ -88,6 +91,9 @@ class EmpireConfiguration:
         self.load_change_module = load_change_module
         self.filter_make = filter_make
         self.filter_use = filter_use
+        self.copulas_to_use = copulas_to_use
+        self.copula_clusters_make = copula_clusters_make
+        self.copula_clusters_use = copula_clusters_use
         self.n_cluster = n_cluster
         self.moment_matching = moment_matching
         self.n_tree_compare = n_tree_compare
