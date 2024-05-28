@@ -77,9 +77,3 @@ for run_path in all_run_paths:
 
     if instance_num == 30:
         print(f"Done with {sgr_method}-sce{num_scenarios}")
-
-
-
-
-
-

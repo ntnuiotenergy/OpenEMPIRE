@@ -1,3 +1,5 @@
+import pandas as pd
+
 # -*- coding: utf-8 -*-
 """
 Created on Thu Aug 20 15:28:07 2020
@@ -38,8 +40,6 @@ def filter_countries(region, df):
         if c in df.columns:
             filtered_region.append(c)
     return filtered_region
-
-import pandas as pd
 
 filenames = ['electricload', 'hydroror', 'hydroseasonal', 'solar',
              'windoffshore', 'windonshore']
