@@ -2,6 +2,7 @@ import logging
 import os
 import shutil
 from pathlib import Path
+from typing import Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -10,6 +11,7 @@ from scipy.stats import kurtosis, skew, wasserstein_distance
 from sklearn.cluster import KMeans
 
 from empire.core.config import EmpireConfiguration, EmpireRunConfiguration
+from empire.core.constants import COPULA_TO_LABEL_MAPPING
 
 logger = logging.getLogger(__name__)
 
@@ -340,6 +342,86 @@ def make_mean(data, regularSeasonHours, seasons):
     return ws
 
 
+def _calculate_rank_values(data: pd.DataFrame) -> pd.DataFrame:
+    df = data.copy().reset_index(drop=True)
+    df["rank"] = df[["Value"]].rank(method="first")
+
+    # Transform to uniform distribution
+    df["rank_value"] = df["rank"] / len(df)
+    return df
+
+
+def make_copula_filter(
+        data: list[pd.DataFrame],
+        nodes: list[str],
+        copulas: list[str],            
+        regularSeasonHours: int, 
+        seasons: list[str],
+        n_cluster: int,
+        filepath: Path = Path.cwd()
+) -> None:
+    
+    filepath = filepath / "CopulaClusters" 
+
+    if not os.path.exists(filepath):
+        os.makedirs(filepath)
+
+    # Calculate mean values for all possible sampling hours
+    mean_dfs = [make_mean(df, regularSeasonHours, seasons) for df in data]
+
+    frames = []
+    for s in seasons:
+        # Filter by season for each dataset
+        season_dfs = [df[df["Season"] == s] for df in mean_dfs]
+
+        # Calculate rank values for each dataset
+        season_dfs = [_calculate_rank_values(df) for df in season_dfs]
+
+        # Pick first of dfs as base
+        base_df = season_dfs[0]
+        base_df["Value1"] = base_df["rank_value"]
+
+        # Add other rank values to base df
+        if len(season_dfs) > 1: 
+            for i in range(1, len(season_dfs)):
+                base_df.insert(len(base_df.columns), f"Value{i+1}", season_dfs[i]["rank_value"])
+
+        kmeans = KMeans(init="k-means++", n_clusters=n_cluster, n_init=100)
+        fit_predict_cols = [f"Value{i+1}" for i in range(len(season_dfs))]
+
+        kmeans.fit(base_df[fit_predict_cols])
+        group = kmeans.predict(base_df[fit_predict_cols])
+        base_df.insert(len(base_df.columns), "ClusterGroup", group)
+
+        if len(season_dfs) == 3:
+            # Create a 3D scatter plot
+            plt.rcParams.update({'font.size': 20})
+            fig = plt.figure(figsize=(10, 8))
+            ax = fig.add_subplot(projection='3d')
+            ax.scatter(xs=base_df["Value1"], ys=base_df["Value2"], zs=base_df["Value3"], c=base_df["ClusterGroup"], s=0.5)
+            ax.set_xlabel(f"{COPULA_TO_LABEL_MAPPING[copulas[0]]} {nodes[0]}", labelpad=15, rotation_mode='anchor')
+            ax.set_ylabel(f"{COPULA_TO_LABEL_MAPPING[copulas[0]]} {nodes[1]}", labelpad=20, rotation_mode='anchor')
+            ax.set_zlabel(f"{COPULA_TO_LABEL_MAPPING[copulas[0]]} {nodes[2]}", labelpad=20, rotation_mode='anchor')
+            ax.set_title(f"Season = {s}")
+
+            # Adjust axis label positions and angles
+            ax.tick_params(axis='x', pad=12)
+            ax.tick_params(axis='y', pad=3)
+            ax.tick_params(axis='z', pad=-1)
+
+            ticks = ["0.0", "0.0", "0.2", "0.4", "0.6", "0.8", "1.0"]
+            ax.set_xticklabels(ticks, verticalalignment='baseline', horizontalalignment='left')
+            ax.set_yticklabels(ticks, verticalalignment='baseline', horizontalalignment='left')
+            ax.set_zticklabels(ticks, verticalalignment='baseline', horizontalalignment='left')
+
+            plt.savefig(filepath / f"{s}")
+
+        frames.append(base_df)
+    copula_clusters = pd.concat(frames)
+    copula_clusters = copula_clusters.drop(columns=["Value", "rank", "rank_value"]).reset_index(drop=True)
+    copula_clusters.to_csv(filepath / "copula_clusters.csv", index=False)
+
+
 def make_filter_result(data1, data2, regularSeasonHours, seasons, n_cluster, filepath: Path):
     data1_ws = make_ws(data1, regularSeasonHours, seasons)
     data2_ws = make_mean(data2, regularSeasonHours, seasons)
@@ -387,6 +469,9 @@ def generate_random_scenario(
     LOADCHANGEMODULE = empire_config.load_change_module
     filter_make = empire_config.filter_make
     filter_use = empire_config.filter_use
+    copulas_to_use = empire_config.copulas_to_use
+    copula_clusters_make = empire_config.copula_clusters_make
+    copula_clusters_use = empire_config.copula_clusters_use
     n_cluster = empire_config.n_cluster
     moment_matching = empire_config.moment_matching
     n_tree_compare = empire_config.n_tree_compare
@@ -412,6 +497,9 @@ def generate_random_scenario(
     hydroseasonal_data = pd.read_csv(scenario_data_path / "hydroseasonal.csv")
     electricload_data = pd.read_csv(scenario_data_path / "electricload.csv")
 
+    # Unique nodes; for copula-based SGR
+    unique_nodes = [col for col in solar_data.columns if col != "time"]
+
     if LOADCHANGEMODULE:
         elecLoadMod_data = pd.read_csv(scenario_data_path / "LoadchangeModule/elec_load_mod.csv")
 
@@ -436,6 +524,34 @@ def generate_random_scenario(
     if filter_use:
         print("Using stratified filter...")
         filter_result = pd.read_csv(scenario_data_path / "filter_result.csv")
+        cluster = n_cluster - 1
+
+    COPULA_TO_DF_MAPPING = dict({
+            "electricload": electricload_data,
+            "solar": solar_data,
+            "windonshore": windonshore_data,
+            "windoffshore": windoffshore_data,
+            "hydroror": hydroror_data,
+            "hydroseasonal": hydroseasonal_data,
+        })
+    
+    if copula_clusters_make: 
+        print("Making copula clusters...")
+        data = [make_datetime(COPULA_TO_DF_MAPPING[copula][[node, "time"]], time_format) for copula in copulas_to_use for node in unique_nodes]
+        filepath = Path.cwd() / "Copulas"
+
+        make_copula_filter(data=data,
+                           nodes=unique_nodes,
+                           copulas=copulas_to_use,
+                           regularSeasonHours=len_of_regular_season, 
+                           seasons=seasons, 
+                           n_cluster=n_cluster, 
+                           filepath=filepath)
+
+    if copula_clusters_use:
+        print("Using copula clusters...")
+        filepath = Path.cwd() / "Copulas" / "CopulaClusters" 
+        copula_filter = pd.read_csv(filepath / "copula_clusters.csv")
         cluster = n_cluster - 1
 
     if moment_matching:
@@ -478,12 +594,15 @@ def generate_random_scenario(
 
                     # Get sample year for each season/scenario
 
-                    if filter_use:
+                    if filter_use or copula_clusters_use:
                         if cluster == n_cluster - 1:
                             cluster = 0
                         else:
                             cluster += 1
-                        valid_pick = filter_result[filter_result["ClusterGroup"] == cluster]
+                        if filter_use:
+                            valid_pick = filter_result[filter_result["ClusterGroup"] == cluster]
+                        else:
+                            valid_pick = copula_filter[copula_filter["ClusterGroup"] == cluster]
                         valid_pick = valid_pick[valid_pick["Season"] == s]
                         sample_year = np.random.choice(valid_pick["Year"])
                         valid_pick = valid_pick[valid_pick["Year"] == sample_year]
@@ -511,7 +630,7 @@ def generate_random_scenario(
 
                     # Filter the sample range by K-means if filter_sample=True
 
-                    if filter_use:
+                    if filter_use or copula_clusters_use:
                         sample_hour = np.random.choice(valid_pick["SampleIndex"])
                     else:
                         window = solar_season.shape[0] - len_of_regular_season - 1
@@ -1005,7 +1124,10 @@ def check_scenarios_exist_and_copy(run_config: EmpireRunConfiguration):
                 run_config.tab_file_path,
             )
         else:
-            shutil.copyfile(run_config.scenario_data_path / file, run_config.tab_file_path / file)
+            try:
+                shutil.copyfile(run_config.scenario_data_path / file, run_config.tab_file_path / file)
+            except shutil.SameFileError:
+                pass
 
 
 def check_scenarios_exist(scenario_data_path: Path) -> bool:
