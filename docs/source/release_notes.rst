@@ -11,6 +11,10 @@ Please add descriptive release notes like in `OpenEMPIRE <https://github.com/ntn
 
 **Minor Changes and bug-fixing**
 
+ * Removed authentication for streamlit app.
+ 
+ * Fix issue with config.txt not being written for test runs.
+
 
 OpenEMPIRE 1.0.0
 ----------------

@@ -120,7 +120,7 @@ def run_empire_model(
     generate_tab_files(file_path=workbook_path, tab_file_path=tab_file_path)
 
     if not test_run:
-        return run_empire(
+        run_empire(
             name=run_config.run_name,
             tab_file_path=tab_file_path,
             result_file_path=result_file_path,
