@@ -8,7 +8,7 @@ from app.modules.utils import get_active_results
 
 
 def app():
-    
+
     st.title("OpenEMPIRE")
 
     st.markdown(
@@ -22,7 +22,7 @@ def app():
     )
 
     result_folder = Path.cwd() / "Results"
-    
+
     other_results = st.sidebar.text_input("Absolute path to other folder with results:")
 
     if other_results:
@@ -51,9 +51,12 @@ def app():
         output(active_results)
 
 
-if __name__ == "__main__":
-    st.set_page_config(layout="wide")
-
+def with_authentication():
+    """
+    To be used if authentication is required to access the streamlit app.
+    Note that you have to create a app.yaml file in the config folder and update the credentials.
+    For more info, see: https://blog.streamlit.io/streamlit-authenticator-part-1-adding-an-authentication-component-to-your-app/
+    """
     import streamlit_authenticator as stauth
     import yaml
     from yaml.loader import SafeLoader
@@ -70,7 +73,7 @@ if __name__ == "__main__":
     )
 
     name, authenticatied, username = authenticator.login("Login", "main")
-    
+
     if authenticatied:
         # st.write(f"Welcome *{name}*")
         app()
@@ -79,3 +82,13 @@ if __name__ == "__main__":
         st.error("Username/password is incorrect")
     elif authenticatied is None:
         st.warning("Please enter your username and password")
+
+
+if __name__ == "__main__":
+    st.set_page_config(layout="wide")
+    use_authentication = False
+
+    if use_authentication:
+        with_authentication()
+    else:
+        app()
