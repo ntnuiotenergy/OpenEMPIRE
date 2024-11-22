@@ -30,7 +30,7 @@ def copy_scenario_data(base_dataset, scenario_data_path, use_scenario_generation
     :param use_fixed_sample: Use fixed samples or not.
     """
     for csv_file in (base_dataset / "ScenarioData").glob("*.csv"):
-        if csv_file.name == "samling_key.csv" and not use_fixed_sample:
+        if csv_file.name == "sampling_key.csv" and not use_fixed_sample:
             continue
 
         shutil.copyfile(csv_file, scenario_data_path / csv_file.name)
