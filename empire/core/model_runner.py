@@ -120,7 +120,7 @@ def run_empire_model(
     generate_tab_files(file_path=workbook_path, tab_file_path=tab_file_path)
 
     if not test_run:
-        run_empire(
+        obj_value = run_empire(
             name=run_config.run_name,
             tab_file_path=tab_file_path,
             result_file_path=result_file_path,
@@ -155,7 +155,7 @@ def run_empire_model(
     logger.info("Writing config to: %s", config_path)
     with open(config_path, "w", encoding="utf-8") as file:
         json.dump(empire_config.to_dict(), file, ensure_ascii=False, indent=4)
-
+    return obj_value
 
 def setup_run_paths(
     version: str,
