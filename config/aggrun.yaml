@@ -18,6 +18,9 @@ copula_clusters_make: False                            # Make copula clusters (f
 copula_clusters_use: False                             # Copula-based scenario generation (strata/filter approach)
 copulas_to_use: ["electricload"]                       # Emprical copula construction of ["electricload", "hydroror", "hydroseasonal", "solar", "windoffshore", "windonshore"]
 n_cluster : 10                                         #
+voronoi_sgr_make: False                                 # Set True to activate the Voronoi SGR algorithm
+voronoi_sgr_use: False                                  # Use the generated Voronoi clusters for sampling
+voronoi_mu_percentile: 90                              # Percentile used for automatic mu calculation (default: 80)
 moment_matching : False                                #
 n_tree_compare : 20                                    # Number of trees to compare for moment matching and copula-sampling
 use_emission_cap: True                                 # Indicates if there's a cap on CO2 emissions

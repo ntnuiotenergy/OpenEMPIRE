@@ -1,5 +1,7 @@
+import json
 import logging
 import os
+import random
 import shutil
 from pathlib import Path
 from typing import Tuple
@@ -12,57 +14,30 @@ from sklearn.cluster import KMeans
 
 from empire.core.config import EmpireConfiguration, EmpireRunConfiguration
 from empire.core.constants import COPULA_TO_LABEL_MAPPING
+from empire.core.voronoi_sgr import compute_voronoi_clusters, extract_candidate_windows, make_voronoi_filter
+from empire.core.scenario_utils import make_datetime, year_season_filter, remove_time_index, season_month
 
 logger = logging.getLogger(__name__)
 
-
-def season_month(season: str):
-    if season == "winter":
-        return [1, 2, 3]
-    if season == "spring":
-        return [4, 5, 6]
-    if season == "summer":
-        return [7, 8, 9]
-    if season == "fall":
-        return [10, 11, 12]
-
-    raise ValueError(f"{season} is not a valid season.")
-
-
-def year_season_filter(data, sample_year, season):
-    data = data.loc[data.year.isin([sample_year]), :]
-    data = data.loc[data.month.isin(season_month(season)), :]
-    return data
-
-
-def remove_time_index(data):
-    data = data.reset_index(drop=True)
-    data = data.drop(["time", "year", "month", "dayofweek", "hour"], axis=1)
-    return data
-
-
-def make_datetime(data, time_format):
-    data["time"] = pd.to_datetime(data["time"], format=time_format, exact=False)
-    data["year"] = data["time"].dt.year
-    data["month"] = data["time"].dt.month
-    data["hour"] = data["time"].dt.hour
-    data["dayofweek"] = data["time"].dt.dayofweek
-    return data
-
-
 def gather_regular_sample(data, season, seasons, regularSeasonHours, sample_hour):
     data = data.reset_index(drop=True)
+    
+    # Ensure we have enough hours remaining for a full window
+    if sample_hour + regularSeasonHours > len(data):
+        raise ValueError(f"Not enough hours remaining in season {season}. Need {regularSeasonHours} hours but only {len(data) - sample_hour} available.")
+    
     sample_data = data.iloc[sample_hour : sample_hour + regularSeasonHours, :]
-
     # Sort sample_data to start on midnight monday (INACTIVE)
     # sample_data = sample_data.sort_values(by=['dayofweek','hour'])
 
+    
     # Drop non-country columns
     sample_data = remove_time_index(sample_data)
 
-    hours = list(
-        range(1 + regularSeasonHours * seasons.index(season), regularSeasonHours * (seasons.index(season) + 1) + 1)
-    )
+    # Generate hours list
+    start_hour = 1 + regularSeasonHours * seasons.index(season)
+    hours = list(range(start_hour, start_hour + regularSeasonHours))
+    
     return [sample_data, hours]
 
 
@@ -438,6 +413,8 @@ def make_filter_result(data1, data2, regularSeasonHours, seasons, n_cluster, fil
         plt.title(str(n_cluster) + " clusters of data for season " + str(s))
         plt.xlabel("WS distance, total electricity load")
         plt.ylabel("Mean, total electricity load")
+        # Save the plot to a file
+        plt.savefig(filepath / f"filter_scatter_{s}.png")
         plt.show()
         frames.append(ws_1)
     filter_result = pd.concat(frames)
@@ -473,6 +450,7 @@ def generate_random_scenario(
     copula_clusters_make = empire_config.copula_clusters_make
     copula_clusters_use = empire_config.copula_clusters_use
     n_cluster = empire_config.n_cluster
+    VORONOI_N_CLUSTER = 100
     moment_matching = empire_config.moment_matching
     n_tree_compare = empire_config.n_tree_compare
 
@@ -513,6 +491,24 @@ def generate_random_scenario(
 
     if LOADCHANGEMODULE:
         elecLoadMod_data = make_datetime(elecLoadMod_data, "%Y-%m-%d %H:%M")
+
+    # ===== BEGIN VORONOI SGR BRANCH =====
+    if getattr(empire_config, "voronoi_sgr_make", False):
+        print("Making Voronoi clusters...")
+        make_voronoi_filter(scenario_data_path, len_of_regular_season, time_format, n_cluster = VORONOI_N_CLUSTER, 
+                          mu_percentile=getattr(empire_config, "voronoi_mu_percentile", 80))
+
+    if getattr(empire_config, "voronoi_sgr_use", False):
+        print("Using existing Voronoi clusters...")
+        voronoi_filter = pd.read_csv(Path.cwd() / "VoronoiClusters" / "voronoi_filter.csv")
+        # Calculate cluster weights per season
+        sizes = (voronoi_filter.groupby(["Season","ClusterGroup"]).size()
+                 .unstack(fill_value=0)
+                 .reindex(columns=range(VORONOI_N_CLUSTER), fill_value=0))
+        weights_by_season = sizes.div(sizes.sum(axis=1), axis=0)
+        print(f"Cluster sizes by season:\n{sizes}")
+        print(f"Cluster weights by season:\n{weights_by_season}")
+    # ===== END VORONOI SGR BRANCH =====
 
     if filter_make:
         print("Making stratified filter...")
@@ -594,18 +590,26 @@ def generate_random_scenario(
 
                     # Get sample year for each season/scenario
 
-                    if filter_use or copula_clusters_use:
-                        if cluster == n_cluster - 1:
-                            cluster = 0
-                        else:
-                            cluster += 1
+                    if filter_use or copula_clusters_use or getattr(empire_config, "voronoi_sgr_use", False):
+                        if filter_use or copula_clusters_use:
+                            if cluster == n_cluster - 1:
+                                cluster = 0
+                            else:
+                                cluster += 1
+                        else:  # voronoi_sgr_use
+                            # Use size-aware rotation for Voronoi clusters
+                            cluster = np.random.choice(np.arange(VORONOI_N_CLUSTER), p=weights_by_season.loc[s].values)
+                        
                         if filter_use:
                             valid_pick = filter_result[filter_result["ClusterGroup"] == cluster]
-                        else:
+                        elif copula_clusters_use:
                             valid_pick = copula_filter[copula_filter["ClusterGroup"] == cluster]
+                        else:  # voronoi_sgr_use
+                            valid_pick = voronoi_filter[voronoi_filter["ClusterGroup"] == cluster]
                         valid_pick = valid_pick[valid_pick["Season"] == s]
                         sample_year = np.random.choice(valid_pick["Year"])
                         valid_pick = valid_pick[valid_pick["Year"] == sample_year]
+                        sample_hour = np.random.choice(valid_pick["SampleIndex"])
                     else:
                         sample_year = np.random.choice(solar_data["time"].dt.year.unique())
 
@@ -630,8 +634,9 @@ def generate_random_scenario(
 
                     # Filter the sample range by K-means if filter_sample=True
 
-                    if filter_use or copula_clusters_use:
-                        sample_hour = np.random.choice(valid_pick["SampleIndex"])
+                    if filter_use or copula_clusters_use or getattr(empire_config, "voronoi_sgr_use", False):
+                        # sample_hour already selected above, no need to select again
+                        pass
                     else:
                         window = solar_season.shape[0] - len_of_regular_season - 1
                         if window <= 0:
