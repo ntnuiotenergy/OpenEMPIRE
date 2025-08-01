@@ -843,9 +843,21 @@ def generate_random_scenario(
                 # Peak1: The highest load when all loads are summed together
                 electricload_data_year_notime = remove_time_index(electricload_data_year)
                 overall_sample = electricload_data_year_notime.sum(axis=1).idxmax()
+                if not fix_sample:
+                    df = pd.DataFrame(
+                        data={"Period": i, "Scenario": scenario, "Season": "peak1", "Year": sample_year, "Hour": overall_sample},
+                        index=[0],
+                        )
+                    sampling_key = pd.concat([sampling_key, df], ignore_index=True)
                 # Peak2: The highest load of a single country
                 max_load_country = electricload_data_year_notime.max().idxmax()
                 country_sample = electricload_data_year_notime[max_load_country].idxmax()
+                if not fix_sample:
+                    df = pd.DataFrame(
+                        data={"Period": i, "Scenario": scenario, "Season": "peak2", "Year": sample_year, "Hour": country_sample},
+                        index=[0],
+                        )
+                    sampling_key = pd.concat([sampling_key, df], ignore_index=True)
 
                 # Sample generator availability for peak seasons
                 genAvail = pd.concat(
