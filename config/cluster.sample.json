@@ -12,3 +12,11 @@
     "SCHEDULER_SCRIPT": "./scripts/run_analysis_slurm.sh"
   }
 }
+
+# Solstorm example config:
+#  "Solstorm": {
+#    "REMOTE_USER": "wouterko", 
+#    "REMOTE_SERVER": "solstorm-login.iot.ntnu.no",
+#    "REMOTE_DIR": "/home/wouterko/OpenEMPIRE",
+#    "SCHEDULER_SCRIPT": "./scripts/run_analysis_sge.sh"
+#  },
