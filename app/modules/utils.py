@@ -10,9 +10,7 @@ def has_valid_data(folder_path: Path) -> bool:
     :param folder_path: _description_
     :return: _description_
     """
-    input_folder = folder_path / "Input/Xlsx/Sets.xlsx"
-    if not input_folder.exists():
-        return False
+
     results_file = folder_path / "Output/results_objective.csv"
     return results_file.exists()
 
