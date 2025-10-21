@@ -34,8 +34,10 @@ def copy_csv_dataset(src_path: Path, dest_path: Path):
         src_dir = src_path / dir_name
         dest_dir = dest_path / dir_name
         dest_dir.mkdir(parents=True, exist_ok=True)
-
-        for file in src_dir.glob(f"*.{format}"):
+        files = list(src_dir.glob("*.csv"))
+        if files == []:
+            raise ValueError(f"No CSV files found in '{src_dir}'")
+        for file in files:
             shutil.copyfile(file, dest_dir / file.name)
 
 
