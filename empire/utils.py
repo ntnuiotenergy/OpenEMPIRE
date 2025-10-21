@@ -20,6 +20,25 @@ def copy_dataset(src_path: Path, dest_path: Path):
         shutil.copyfile(src_path / f"{file}.xlsx", dest_path / f"{file}.xlsx")
 
 
+def copy_csv_dataset(src_path: Path, dest_path: Path):
+    """
+    Copy dataset from source to destination folder.
+
+    :param src_path: Folder containing dataset
+    :param dest_path: Folder to copy the dataset
+    """
+    if not src_path.is_dir():
+        raise ValueError(f"'{src_path}' is not a directory!")
+
+    for dir_name in ["General", "Generator", "Node", "Sets", "Storage", "Transmission"]:
+        src_dir = src_path / dir_name
+        dest_dir = dest_path / dir_name
+        dest_dir.mkdir(parents=True, exist_ok=True)
+
+        for file in src_dir.glob(f"*.{format}"):
+            shutil.copyfile(file, dest_dir / file.name)
+
+
 def copy_scenario_data(base_dataset, scenario_data_path, use_scenario_generation, use_fixed_sample):
     """
     Copy scenario data from base dataset to active Empire dataset.
