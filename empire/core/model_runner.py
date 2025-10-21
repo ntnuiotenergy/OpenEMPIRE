@@ -189,7 +189,10 @@ def setup_run_paths(
     scenario_data_path = create_if_not_exist(input_data_path / "ScenarioData")
 
     # Copy base dataset to input folder
-    copy_dataset(base_dataset, xlsx_path)
+    if empire_config.csv_input_flag:
+        copy_csv_dataset(base_dataset, input_data_path)
+    else:
+        copy_dataset(base_dataset, input_data_path)
     copy_scenario_data(
         base_dataset=base_dataset,
         scenario_data_path=scenario_data_path,
