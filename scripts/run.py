@@ -4,6 +4,7 @@ from pathlib import Path
 from empire.core.config import EmpireConfiguration, read_config_file
 from empire.core.model_runner import run_empire_model, setup_run_paths
 from empire.input_client.client import EmpireInputClient
+from empire.input_client.csv_client import EmpireInputClient as EmpireCSVInputClient
 from empire.logger import get_empire_logger
 
 parser = ArgumentParser(description="A CLI script to run the Empire model.")
@@ -33,12 +34,21 @@ run_path = Path.cwd() / f"Results/basic_run/dataset_{args.dataset}"
 if (run_path / "Output/results_objective.csv").exists() and not args.force:
     raise ValueError("There already exists results for this analysis run.")
 
-run_config = setup_run_paths(version=args.dataset, empire_config=empire_config, run_path=run_path)
+if empire_config.csv_input_flag:
+    input_data_dir = "input_data"
+    input_data_format = "csv"
+else:
+    input_data_dir = "Data Handler"
+    input_data_format = "xlsx"
+
+run_config = setup_run_paths(version=args.dataset, empire_config=empire_config, run_path=run_path, input_data_dir=input_data_dir, input_data_format=input_data_format)
 logger = get_empire_logger(run_config=run_config)
 
 logger.info("Running EMPIRE Model")
-
-client = EmpireInputClient(dataset_path=run_config.dataset_path)
+if empire_config.csv_input_flag:
+    client = EmpireCSVInputClient(dataset_path=run_config.dataset_path)
+else:
+    client = EmpireInputClient(dataset_path=run_config.dataset_path)
 
 data_managers = [
     # Add input data managers to alter the dataset

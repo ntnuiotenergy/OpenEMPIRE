@@ -10,9 +10,9 @@ from empire.core.reader import generate_tab_files
 from empire.core.scenario_random import (check_scenarios_exist_and_copy,
                                          generate_random_scenario)
 from empire.input_data_manager import IDataManager
-from empire.utils import (copy_dataset, copy_scenario_data,
+from empire.utils import (copy_csv_dataset, copy_dataset, copy_scenario_data,
                           create_if_not_exist, get_run_name)
-
+from empire.core.csv_reader import generate_tab_from_csv
 logger = logging.getLogger(__name__)
 
 
@@ -117,8 +117,11 @@ def run_empire_model(
             )
         check_scenarios_exist_and_copy(run_config)
 
-    generate_tab_files(file_path=workbook_path, tab_file_path=tab_file_path)
-
+    if empire_config.csv_input_flag:
+        generate_tab_from_csv(csv_root=workbook_path, tab_file_path=tab_file_path)
+    else:
+        generate_tab_files(file_path=workbook_path, tab_file_path=tab_file_path)
+        
     if not test_run:
         obj_value = run_empire(
             name=run_config.run_name,
@@ -162,6 +165,8 @@ def setup_run_paths(
     empire_config: EmpireConfiguration,
     run_path: Path,
     empire_path: Path = Path.cwd(),
+    input_data_dir: str = "input_data",
+    input_data_format: str = "csv",
 ) -> EmpireRunConfiguration:
     """
     Setup run paths for Empire.
@@ -174,14 +179,14 @@ def setup_run_paths(
     """
 
     # Original dataset
-    base_dataset = empire_path / f"Data handler/{version}"
+    base_dataset = empire_path / input_data_dir / version
 
     # Input folders
     run_name = get_run_name(empire_config=empire_config, version=version)
     input_path = create_if_not_exist(run_path / "Input")
-    xlsx_path = create_if_not_exist(input_path / "Xlsx")
+    input_data_path = create_if_not_exist(input_path / input_data_format)
     tab_path = create_if_not_exist(input_path / "Tab")
-    scenario_data_path = create_if_not_exist(xlsx_path / "ScenarioData")
+    scenario_data_path = create_if_not_exist(input_data_path / "ScenarioData")
 
     # Copy base dataset to input folder
     copy_dataset(base_dataset, xlsx_path)
@@ -197,7 +202,7 @@ def setup_run_paths(
 
     return EmpireRunConfiguration(
         run_name=run_name,
-        dataset_path=xlsx_path,
+        dataset_path=input_data_path,
         tab_path=tab_path,
         scenario_data_path=scenario_data_path,
         results_path=results_path,
