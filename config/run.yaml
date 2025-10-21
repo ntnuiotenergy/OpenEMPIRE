@@ -29,4 +29,4 @@ north_sea: True                                        # Whether the north sea i
 leap_years_investment: 5                               # Number of years per period (default: 5)
 time_format: "%d/%m/%Y %H:%M"                          # Time format for scenario data files
 
-csv_input_flag: False
+csv_input_flag: True
