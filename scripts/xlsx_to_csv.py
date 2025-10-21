@@ -4,10 +4,27 @@ import os
 import logging
 import pandas as pd
 from pathlib import Path
+import argparse 
+import shutil
+
+# input dataset from parameter
+parser = argparse.ArgumentParser(description="Convert Excel files to CSV.")
+parser.add_argument(
+    "-d",
+    "--dataset",
+    type=str,
+    required=False,
+    default="europe_v51",
+    help="Name of the dataset folder in Data Handler to convert.",
+)
+args = parser.parse_args()
+DATASET = args.dataset
+
+SOURCE_DIR = Path(f"Data Handler/{DATASET}")
+TARGET_DIR = Path(f"input_data/{DATASET}")
 
 
-SOURCE_DIR = Path("Data Handler/europe_v51")   # <--- change this
-TARGET_DIR = Path("input_data/europe_v51")    # <--- change this
+
 FILE_SUFFIX = ".csv"
 ENCODING = "utf-8"
 
@@ -134,6 +151,31 @@ def convert_excel_to_subfolder(excel_path: Path, target_root: Path):
             logger.error(f"Error converting {excel_path.name} [{sheet}]: {e}")
 
 
+def copy_scenario_data():
+    # # copy the csv files in SOURCE_DIR/ScenarioData to TARGET_DIR/ScenarioData
+    scenario_src = SOURCE_DIR / "ScenarioData"
+    scenario_dest = TARGET_DIR / "ScenarioData"
+    scenario_dest.mkdir(parents=True, exist_ok=True)
+    for csv_file in scenario_src.glob("*.csv"):
+        dest_file = scenario_dest / csv_file.name
+        pd.read_csv(csv_file).to_csv(dest_file, index=False, encoding=ENCODING)
+        logger.info(f"Copied scenario file {dest_file.relative_to(TARGET_DIR)}")
+    return 
+
+def copy_sources_file():
+    # copy everything in SOURCE_DIR/Sources to TARGET_DIR/Sources, by zipping sources and copying 
+    sources_src = SOURCE_DIR / "Sources"
+    sources_dest = TARGET_DIR / "Sources"
+    sources_dest.mkdir(parents=True, exist_ok=True)
+
+    zip_path = sources_dest / "sources.zip"
+    shutil.make_archive(str(zip_path.with_suffix('')), 'zip', sources_src)
+    logger.info(f"Copied sources to {zip_path.relative_to(TARGET_DIR)}")
+    # unzip sources in sources_dest
+    shutil.unpack_archive(zip_path, sources_dest)
+    logger.info(f"Unzipped sources to {sources_dest.relative_to(TARGET_DIR)}")
+    return 
+
 def main():
     TARGET_DIR.mkdir(parents=True, exist_ok=True)
     pattern = "*.xlsx"
@@ -149,14 +191,9 @@ def main():
         convert_excel_to_subfolder(excel_file, TARGET_DIR)
 
     logger.info("Conversion complete.")
+    copy_scenario_data()
+    copy_sources_file()
 
-    # copy the csv files in SOURCE_DIR/ScenarioData to TARGET_DIR/ScenarioData
-    scenario_src = SOURCE_DIR / "ScenarioData"
-    scenario_dest = TARGET_DIR / "ScenarioData"
-    scenario_dest.mkdir(parents=True, exist_ok=True)
-    for csv_file in scenario_src.glob("*.csv"):
-        dest_file = scenario_dest / csv_file.name
-        pd.read_csv(csv_file).to_csv(dest_file, index=False, encoding=ENCODING)
-        logger.info(f"Copied scenario file {dest_file.relative_to(TARGET_DIR)}")
+
 if __name__ == "__main__":
     main()
