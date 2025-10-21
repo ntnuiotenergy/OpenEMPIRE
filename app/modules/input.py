@@ -4,17 +4,18 @@ import plotly.express as px
 import streamlit as st
 
 from empire.core.config import EmpireConfiguration, read_config_file
-from empire.input_client.client import EmpireInputClient
+from empire.input_client.csv_client import EmpireInputClient
+
 from empire.results.maps import plot_max_transmission_capacity, plot_nodes_and_lines, plot_transmission
 
 
-def input(active_results: Path):
+def input(active_results: Path, input_data_path = "input_data/csv"):
     st.title("Input")
     # active_results = Path.cwd()/"Results/basic_run/dataset_test"
     #### Input data
-    input_client = EmpireInputClient(active_results / "Input/Xlsx")
-
-    config_file = active_results / "Input/Xlsx/config.txt"
+    input_client = EmpireInputClient(active_results / input_data_path)
+    # input_client = EmpireCSVClient(active_results / input_data_path)
+    config_file = active_results / f"{input_data_path}/config.txt"
     config = read_config_file(config_file)
     empire_config = EmpireConfiguration.from_dict(config=config)
 
@@ -337,6 +338,8 @@ def input(active_results: Path):
         title="Storage Power Capital Cost",
         markers=True,
     )
+
+
     df = input_client.storage.get_energy_capital_cost()
     df.loc[:, "Period"] = df.loc[:, "Period"].replace(periods_to_year_mapping)
     fig2 = px.line(
