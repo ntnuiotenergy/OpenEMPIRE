@@ -28,3 +28,5 @@ serialize_instance: False                              # Serialize the data stru
 north_sea: False                                       # Whether the north sea is modelled or not
 leap_years_investment: 5                               # Number of years per period (default: 5)
 time_format: "%d/%m/%Y %H:%M"                          # Time format for scenario data files
+
+csv_input_flag: False
