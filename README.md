@@ -227,6 +227,16 @@ This command copies the EMPIRE code to the Solstorm cluster and performs several
 
 The `scripts/run_analysis.py` script demonstrates how to modify input data at execution time using data managers.
 
+
+**Input data conversion**:
+Excel data can be converted to .csv format using: 
+
+```shell
+C:\Users\name\path_to_folder> python scripts/xlsx_to_csv.py -d europe_v51
+```
+Or another dataset name. This will copy excel files in Data Handler/europe_v51 to .csv files input_data/europe_v51, as well as non-excel files. 
+.csv files can be used as input to EMPIRE using the csv_input_flag in the config. 
+
 # Contributing
 
 We welcome any contribution the OpenEMPIRE, whether it is fixing a bug, adding a new feature, or improving documentation, your help is appreciated. For more information, see [CONTRIBUTING](.github/CONTRIBUTING.md).
