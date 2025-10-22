@@ -6,7 +6,6 @@ from pathlib import Path
 from empire import run_empire
 from empire.core.config import (EmpireConfiguration, EmpireRunConfiguration,
                                 read_config_file)
-from empire.core.reader import generate_tab_files
 from empire.core.scenario_random import (check_scenarios_exist_and_copy,
                                          generate_random_scenario)
 from empire.input_data_manager import IDataManager
@@ -118,10 +117,9 @@ def run_empire_model(
             )
         check_scenarios_exist_and_copy(run_config)
 
-    if empire_config.csv_input_flag:
-        generate_tab_from_csv(csv_root=workbook_path, tab_file_path=tab_file_path)
-    else:
-        generate_tab_files(file_path=workbook_path, tab_file_path=tab_file_path)
+
+    # generate_tab_from_csv(csv_root=workbook_path, tab_file_path=tab_file_path)
+
 
     if not test_run:
         obj_value = run_empire(
@@ -167,7 +165,6 @@ def setup_run_paths(
     run_path: Path,
     empire_path: Path = Path.cwd(),
     input_data_dir: str = "input_data",
-    input_data_format: str = "csv",
 ) -> EmpireRunConfiguration:
     """
     Setup run paths for Empire.
@@ -185,15 +182,13 @@ def setup_run_paths(
     # Input folders
     run_name = get_run_name(empire_config=empire_config, version=version)
     input_path = create_if_not_exist(run_path / "Input")
-    input_data_path = create_if_not_exist(input_path / input_data_format)
+    input_data_path = create_if_not_exist(input_path / "csv")
     tab_path = create_if_not_exist(input_path / "Tab")
     scenario_data_path = create_if_not_exist(input_data_path / "ScenarioData")
 
-    # Copy base dataset to input folder
-    if empire_config.csv_input_flag:
-        copy_csv_dataset(base_dataset, input_data_path)
-    else:
-        copy_dataset(base_dataset, input_data_path)
+
+    copy_csv_dataset(base_dataset, input_data_path)
+
     copy_scenario_data(
         base_dataset=base_dataset,
         scenario_data_path=scenario_data_path,

@@ -48,7 +48,6 @@ class EmpireConfiguration:
         len_peak_season: int = 24,
         leap_years_investment: int = 5,
         time_format: str = "%d/%m/%Y %H:%M",
-        csv_input_flag: bool = False,
         **kwargs,
     ):
         """
@@ -123,7 +122,6 @@ class EmpireConfiguration:
         self.periods = [i + 1 for i in range(int((self.forecast_horizon_year - 2020) / self.leap_years_investment))]
         self.n_periods = len(self.periods)
 
-        self.csv_input_flag = csv_input_flag
 
         # Validate the configuration
         self.validate()

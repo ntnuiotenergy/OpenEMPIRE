@@ -43,7 +43,7 @@ def output(active_results: Path) -> None:
 
     @st.cache_resource
     def get_input_client(active_results):
-        return EmpireInputClient(dataset_path=active_results / "Input/Xlsx")
+        return EmpireInputClient(dataset_path=active_results / "Input/csv")
 
     input_client = get_input_client(active_results)
 
