@@ -14,6 +14,28 @@ from pyomo.environ import *
 
 logger = logging.getLogger(__name__)
 
+def load_set(data, model, input_data_dir, component, set_name_dict):
+    for set_name, filename in set_name_dict.items():
+        try:
+            data.load(filename=str(input_data_dir / component / filename), set=getattr(model, set_name), format="set")
+        except Exception as e:
+            raise RuntimeError(f"Error loading {filename} for set {set_name} of component {component}: {e}")
+
+def load_param(data, model, input_data_dir, component, param_name_dict):
+    for param_name, filename in param_name_dict.items():
+        try:
+            data.load(filename=str(input_data_dir / component / filename), param=getattr(model, param_name), format="table")
+        except Exception as e:
+            raise RuntimeError(f"Error loading {filename} for parameter {param_name} of component {component}: {e}")
+
+
+def load_data_from_files(data: DataPortal, model: AbstractModel, input_data_dir: Path, filename_dict: dict) -> None:
+    for component, file_dict in filename_dict.items():
+        if component == "Sets":
+            load_set(data, model, input_data_dir, component, file_dict)
+        else:
+            load_param(data, model, input_data_dir, component, file_dict)
+
 
 def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_path,
                solver, temp_dir, FirstHoursOfRegSeason, FirstHoursOfPeakSeason, lengthRegSeason,
@@ -107,26 +129,30 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_
     #Load the data
 
     data = DataPortal()
-    data.load(filename=str(tab_file_path / 'Sets_Generator.tab'),format="set", set=model.Generator)
-    data.load(filename=str(tab_file_path / 'Sets_ThermalGenerators.tab'),format="set", set=model.ThermalGenerators)
-    data.load(filename=str(tab_file_path / 'Sets_HydroGenerator.tab'),format="set", set=model.HydroGenerator)
-    data.load(filename=str(tab_file_path / 'Sets_HydroGeneratorWithReservoir.tab'),format="set", set=model.RegHydroGenerator)
-    data.load(filename=str(tab_file_path / 'Sets_Storage.tab'),format="set", set=model.Storage)
-    data.load(filename=str(tab_file_path / 'Sets_DependentStorage.tab'),format="set", set=model.DependentStorage)
-    data.load(filename=str(tab_file_path / 'Sets_Technology.tab'),format="set", set=model.Technology)
-    data.load(filename=str(tab_file_path / 'Sets_Node.tab'),format="set", set=model.Node)
-    if north_sea:
-        data.load(filename=str(tab_file_path / 'Sets_OffshoreNode.tab'),format="set", set=model.OffshoreNode)
-    data.load(filename=str(tab_file_path / 'Sets_Horizon.tab'),format="set", set=model.Period)
-    data.load(filename=str(tab_file_path / 'Sets_DirectionalLines.tab'),format="set", set=model.DirectionalLink)
-    data.load(filename=str(tab_file_path / 'Sets_LineType.tab'),format="set", set=model.TransmissionType)
-    data.load(filename=str(tab_file_path / 'Sets_LineTypeOfDirectionalLines.tab'),format="set", set=model.TransmissionTypeOfDirectionalLink)
-    data.load(filename=str(tab_file_path / 'Sets_GeneratorsOfTechnology.tab'),format="set", set=model.GeneratorsOfTechnology)
-    data.load(filename=str(tab_file_path / 'Sets_GeneratorsOfNode.tab'),format="set", set=model.GeneratorsOfNode)
-    data.load(filename=str(tab_file_path / 'Sets_StorageOfNodes.tab'),format="set", set=model.StoragesOfNode)
 
     logger.info("Constructing sub sets...")
+    input_data_dir = Path(f"Results/basic_run/dataset_test/Input/csv")
 
+    sets_filename_dict = {
+    "Sets": {
+        "Generator": "Generator.csv",
+        "ThermalGenerators": "ThermalGenerators.csv",
+        "HydroGenerator": "HydroGenerator.csv",
+        "RegHydroGenerator": "HydroGeneratorWithReservoir.csv",
+        "Storage": "Storage.csv",
+        "DependentStorage": "DependentStorage.csv",
+        "Technology": "Technology.csv",
+        "Node": "Nodes.csv",
+        "Period": "Horizon.csv",
+        "DirectionalLink": "DirectionalLines.csv",
+        "TransmissionType": "LineType.csv",
+        "TransmissionTypeOfDirectionalLink": "LineTypeOfDirectionalLines.csv",
+        "GeneratorsOfTechnology": "GeneratorsOfTechnology.csv",
+        "GeneratorsOfNode": "GeneratorsOfNode.csv",
+        "StoragesOfNode": "StorageOfNodes.csv",
+    },
+    }
+    load_data_from_files(data, model, input_data_dir, sets_filename_dict)
     #Build arc subsets
 
     def NodesLinked_init(model, node):
@@ -144,6 +170,7 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_
                 retval.append((i,j))
         return retval
     model.BidirectionalArc = Set(dimen=2, initialize=BidirectionalArc_init, ordered=True) #l
+
 
     ##############
     ##PARAMETERS##
@@ -212,7 +239,7 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_
 
     #Type dependent technology limitations
 
-    model.genLifetime = Param(model.Generator, default=0.0, mutable=True)
+    model.genLifetime = Param(model.Generator, mutable=True)
     model.transmissionLifetime = Param(model.BidirectionalArc, default=40.0, mutable=True)
     model.storageLifetime = Param(model.Storage, default=0.0, mutable=True)
     model.genEfficiency = Param(model.Generator, model.Period, default=1.0, mutable=True)
@@ -247,77 +274,94 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_
 
     logger.info("Reading parameters...")
     logger.info("Reading parameters for Generator...")
-    data.load(filename=str(tab_file_path / 'Generator_CapitalCosts.tab'), param=model.genCapitalCost, format="table")
-    data.load(filename=str(tab_file_path / 'Generator_FixedOMCosts.tab'), param=model.genFixedOMCost, format="table")
-    data.load(filename=str(tab_file_path / 'Generator_VariableOMCosts.tab'), param=model.genVariableOMCost, format="table")
-    data.load(filename=str(tab_file_path / 'Generator_FuelCosts.tab'), param=model.genFuelCost, format="table")
-    data.load(filename=str(tab_file_path / 'Generator_CCSCostTSVariable.tab'), param=model.CCSCostTSVariable, format="table")
-    data.load(filename=str(tab_file_path / 'Generator_Efficiency.tab'), param=model.genEfficiency, format="table")
-    data.load(filename=str(tab_file_path / 'Generator_RefInitialCap.tab'), param=model.genRefInitCap, format="table")
-    data.load(filename=str(tab_file_path / 'Generator_ScaleFactorInitialCap.tab'), param=model.genScaleInitCap, format="table")
-    data.load(filename=str(tab_file_path / 'Generator_InitialCapacity.tab'), param=model.genInitCap, format="table") #node_generator_intial_capacity.xlsx
-    data.load(filename=str(tab_file_path / 'Generator_MaxBuiltCapacity.tab'), param=model.genMaxBuiltCap, format="table")#?
-    data.load(filename=str(tab_file_path / 'Generator_MaxInstalledCapacity.tab'), param=model.genMaxInstalledCapRaw, format="table")#maximum_capacity_constraint_040317_high
-    data.load(filename=str(tab_file_path / 'Generator_CO2Content.tab'), param=model.genCO2TypeFactor, format="table")
-    data.load(filename=str(tab_file_path / 'Generator_RampRate.tab'), param=model.genRampUpCap, format="table")
-    data.load(filename=str(tab_file_path / 'Generator_GeneratorTypeAvailability.tab'), param=model.genCapAvailTypeRaw, format="table")
-    data.load(filename=str(tab_file_path / 'Generator_Lifetime.tab'), param=model.genLifetime, format="table") 
-
-    logger.info("Reading parameters for Transmission...")
-    data.load(filename=str(tab_file_path / 'Transmission_InitialCapacity.tab'), param=model.transmissionInitCap, format="table")
-    data.load(filename=str(tab_file_path / 'Transmission_MaxBuiltCapacity.tab'), param=model.transmissionMaxBuiltCap, format="table")
-    data.load(filename=str(tab_file_path / 'Transmission_MaxInstallCapacityRaw.tab'), param=model.transmissionMaxInstalledCapRaw, format="table")
-    data.load(filename=str(tab_file_path / 'Transmission_Length.tab'), param=model.transmissionLength, format="table")
-    data.load(filename=str(tab_file_path / 'Transmission_TypeCapitalCost.tab'), param=model.transmissionTypeCapitalCost, format="table")
-    data.load(filename=str(tab_file_path / 'Transmission_TypeFixedOMCost.tab'), param=model.transmissionTypeFixedOMCost, format="table")
-    data.load(filename=str(tab_file_path / 'Transmission_lineEfficiency.tab'), param=model.lineEfficiency, format="table")
-    data.load(filename=str(tab_file_path / 'Transmission_Lifetime.tab'), param=model.transmissionLifetime, format="table")
-
-    logger.info("Reading parameters for Storage...")
-    data.load(filename=str(tab_file_path / 'Storage_StorageBleedEfficiency.tab'), param=model.storageBleedEff, format="table")
-    data.load(filename=str(tab_file_path / 'Storage_StorageChargeEff.tab'), param=model.storageChargeEff, format="table")
-    data.load(filename=str(tab_file_path / 'Storage_StorageDischargeEff.tab'), param=model.storageDischargeEff, format="table")
-    data.load(filename=str(tab_file_path / 'Storage_StoragePowToEnergy.tab'), param=model.storagePowToEnergy, format="table")
-    data.load(filename=str(tab_file_path / 'Storage_EnergyCapitalCost.tab'), param=model.storENCapitalCost, format="table")
-    data.load(filename=str(tab_file_path / 'Storage_EnergyFixedOMCost.tab'), param=model.storENFixedOMCost, format="table")
-    data.load(filename=str(tab_file_path / 'Storage_EnergyInitialCapacity.tab'), param=model.storENInitCap, format="table")
-    data.load(filename=str(tab_file_path / 'Storage_EnergyMaxBuiltCapacity.tab'), param=model.storENMaxBuiltCap, format="table")
-    data.load(filename=str(tab_file_path / 'Storage_EnergyMaxInstalledCapacity.tab'), param=model.storENMaxInstalledCapRaw, format="table")
-    data.load(filename=str(tab_file_path / 'Storage_StorageInitialEnergyLevel.tab'), param=model.storOperationalInit, format="table")
-    data.load(filename=str(tab_file_path / 'Storage_PowerCapitalCost.tab'), param=model.storPWCapitalCost, format="table")
-    data.load(filename=str(tab_file_path / 'Storage_PowerFixedOMCost.tab'), param=model.storPWFixedOMCost, format="table")
-    data.load(filename=str(tab_file_path / 'Storage_InitialPowerCapacity.tab'), param=model.storPWInitCap, format="table")
-    data.load(filename=str(tab_file_path / 'Storage_PowerMaxBuiltCapacity.tab'), param=model.storPWMaxBuiltCap, format="table")
-    data.load(filename=str(tab_file_path / 'Storage_PowerMaxInstalledCapacity.tab'), param=model.storPWMaxInstalledCapRaw, format="table")
-    data.load(filename=str(tab_file_path / 'Storage_Lifetime.tab'), param=model.storageLifetime, format="table")
-
-    logger.info("Reading parameters for Node...")
-    data.load(filename=str(tab_file_path / 'Node_NodeLostLoadCost.tab'), param=model.nodeLostLoadCost, format="table")
-    data.load(filename=str(tab_file_path / 'Node_ElectricAnnualDemand.tab'), param=model.sloadAnnualDemand, format="table") 
-    data.load(filename=str(tab_file_path / 'Node_HydroGenMaxAnnualProduction.tab'), param=model.maxHydroNode, format="table") 
     
-    logger.info("Reading parameters for Stochastic...")
+    filename_dict = {
+    "Generator": {
+        "genCapitalCost": "CapitalCosts.csv",
+        "genFixedOMCost": "FixedOMCosts.csv",
+        "genVariableOMCost": "VariableOMCosts.csv",
+        "genFuelCost": "FuelCosts.csv",
+        "CCSCostTSVariable": "CCSCostTSVariable.csv",
+        "genEfficiency": "Efficiency.csv",
+        "genRefInitCap": "RefInitialCap.csv",
+        "genScaleInitCap": "ScaleFactorInitialCap.csv",
+        "genInitCap": "InitialCapacity.csv",
+        "genMaxBuiltCap": "MaxBuiltCapacity.csv",
+        "genMaxInstalledCapRaw": "MaxInstalledCapacity.csv",
+        "genRampUpCap": "RampRate.csv",
+        "genCapAvailTypeRaw": "GeneratorTypeAvailability.csv",
+        "genCO2TypeFactor": "CO2Content.csv",
+        "genLifetime": "Lifetime.csv",
+    },
 
-    if OUT_OF_SAMPLE:
-        if sample_file_path:
-            # Load operational input data EMPIRE has not seen when optimizing (in-sample)
-            data.load(filename=str(sample_file_path / 'Stochastic_HydroGenMaxSeasonalProduction.tab'), param=model.maxRegHydroGenRaw, format="table")
-            data.load(filename=str(sample_file_path / 'Stochastic_StochasticAvailability.tab'), param=model.genCapAvailStochRaw, format="table") 
-            data.load(filename=str(sample_file_path / 'Stochastic_ElectricLoadRaw.tab'), param=model.sloadRaw, format="table")
-        else:
-            raise ValueError("'OUT_OF_SAMPLE = True' needs to be run with existing 'sample_file_path'")
-    else:
-        data.load(filename=str(tab_file_path / 'Stochastic_HydroGenMaxSeasonalProduction.tab'), param=model.maxRegHydroGenRaw, format="table")
-        data.load(filename=str(tab_file_path / 'Stochastic_StochasticAvailability.tab'), param=model.genCapAvailStochRaw, format="table") 
-        data.load(filename=str(tab_file_path / 'Stochastic_ElectricLoadRaw.tab'), param=model.sloadRaw, format="table") 
+    "Transmission": {
+        "transmissionInitCap": "InitialCapacity.csv",
+        "transmissionMaxBuiltCap": "MaxBuiltCapacity.csv",
+        "transmissionMaxInstalledCapRaw": "MaxInstallCapacityRaw.csv",
+        "transmissionLength": "Length.csv",
+        "transmissionTypeCapitalCost": "TypeCapitalCost.csv",
+        "transmissionTypeFixedOMCost": "TypeFixedOMCost.csv",
+        "lineEfficiency": "lineEfficiency.csv",
+        "transmissionLifetime": "Lifetime.csv",
+    },
 
-    logger.info("Reading parameters for General...")
-    data.load(filename=str(tab_file_path / 'General_seasonScale.tab'), param=model.seasScale, format="table") 
+    "Storage": {
+        "storageBleedEff": "StorageBleedEfficiency.csv",
+        "storageChargeEff": "StorageChargeEff.csv",
+        "storageDischargeEff": "StorageDischargeEff.csv",
+        "storagePowToEnergy": "StoragePowToEnergy.csv",
+        "storENCapitalCost": "EnergyCapitalCost.csv",
+        "storENFixedOMCost": "EnergyFixedOMCost.csv",
+        "storENInitCap": "EnergyInitialCapacity.csv",
+        "storENMaxBuiltCap": "EnergyMaxBuiltCapacity.csv",
+        "storENMaxInstalledCapRaw": "EnergyMaxInstalledCapacity.csv",
+        "storOperationalInit": "StorageInitialEnergyLevel.csv",
+        "storPWCapitalCost": "PowerCapitalCost.csv",
+        "storPWFixedOMCost": "PowerFixedOMCost.csv",
+        "storPWInitCap": "InitialPowerCapacity.csv",
+        "storPWMaxBuiltCap": "PowerMaxBuiltCapacity.csv",   
+        "storPWMaxInstalledCapRaw": "PowerMaxInstalledCapacity.csv",
+        "storageLifetime": "Lifetime.csv",
+    },
+    "Node": {
+        "nodeLostLoadCost": "NodeLostLoadCost.csv",
+        "sloadAnnualDemand": "ElectricAnnualDemand.csv",
+        "maxHydroNode": "HydroGenMaxAnnualProduction.csv",
+    },
+
+    "General": {
+        "seasScale": "seasonScale.csv",
+    },
+    }
+    if north_sea:
+        filename_dict['Sets']["OffshoreNode"] = "Sets_OffshoreNode.csv"
 
     if EMISSION_CAP:
-        data.load(filename=str(tab_file_path / 'General_CO2Cap.tab'), param=model.CO2cap, format="table")
+        filename_dict["General"]["CO2cap"] = "CO2Cap.csv"
     else:
-        data.load(filename=str(tab_file_path / 'General_CO2Price.tab'), param=model.CO2price, format="table")
+        filename_dict["General"]["CO2price"] = "CO2Price.csv"
+
+    stochastic_filename_dict = {
+        "Stochastic": {
+            "sloadRaw": "ElectricLoadRaw.csv",
+            "genCapAvailStochRaw": "StochasticAvailability.csv",
+            "maxRegHydroGenRaw": "HydroGenMaxSeasonalProduction.csv",
+        },
+    }
+    load_data_from_files(data, model, input_data_dir, stochastic_filename_dict)
+    breakpoint()
+    # model.genLifetime["Liginiteexisting"]
+    
+
+
+
+    # logger.info("Reading parameters for General...")
+    # data.load(filename=str(tab_file_path / 'General_seasonScale.tab'), param=model.seasScale, format="table") 
+
+    # if EMISSION_CAP:
+    #     data.load(filename=str(tab_file_path / 'General_CO2Cap.tab'), param=model.CO2cap, format="table")
+    # else:
+    #     data.load(filename=str(tab_file_path / 'General_CO2Price.tab'), param=model.CO2price, format="table")
 
     logger.info("Constructing parameter values...")
     if LOADCHANGEMODULE:
@@ -334,10 +378,11 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_
     def prepInvCost_rule(model):
         #Build investment cost for generators, storages and transmission. Annual cost is calculated for the lifetime of the generator and discounted for a year.
         #Then cost is discounted for the investment period (or the remaining lifetime). CCS generators has additional fixed costs depending on emissions. 
-
+        
         #Generator 
         for g in model.Generator:
             for i in model.PeriodActive:
+                breakpoint()
                 costperyear=(model.WACC/(1-((1+model.WACC)**(-model.genLifetime[g]))))*model.genCapitalCost[g,i]+model.genFixedOMCost[g,i]
                 costperperiod=costperyear*1000*(1-(1+model.discountrate)**-(min(value((len(model.PeriodActive)-i+1)*LeapYearsInvestment), value(model.genLifetime[g]))))/(1-(1/(1+model.discountrate)))
                 if ('CCS',g) in model.GeneratorsOfTechnology:
