@@ -1,34 +1,39 @@
-"""Convert Excel files from Data Handler to CSV files in input_data folder."""
-
 import os
 import logging
+import shutil
+import argparse
 import pandas as pd
 from pathlib import Path
-import argparse 
-import shutil
 
-# input dataset from parameter
-parser = argparse.ArgumentParser(description="Convert Excel files to CSV.")
+# --------------------------------------------------------------------------------------
+# Argument Parsing
+# --------------------------------------------------------------------------------------
+
+parser = argparse.ArgumentParser(description="Convert and clean Data Handler dataset.")
 parser.add_argument(
     "-d",
     "--dataset",
     type=str,
     required=False,
     default="europe_v51",
-    help="Name of the dataset folder in Data Handler to convert.",
+    help="Dataset name under Data Handler/ to process."
 )
 args = parser.parse_args()
 DATASET = args.dataset
 
+# --------------------------------------------------------------------------------------
+# Configuration
+# --------------------------------------------------------------------------------------
+
 SOURCE_DIR = Path(f"Data Handler/{DATASET}")
-TARGET_DIR = Path(f"input_data/{DATASET}")
-
-
+INTERMEDIATE_DIR = Path(f"input_data_intermediate/{DATASET}")
+CLEAN_DIR = Path(f"input_data/{DATASET}")
+EXTRA_DIR = Path(f"input_data_extra/{DATASET}")
 
 FILE_SUFFIX = ".csv"
 ENCODING = "utf-8"
 
-# skiprows before header
+# skiprows per sheet
 HEADER_ROWS = {
     "Sets.xlsx": {
         "Nodes": 0,
@@ -96,6 +101,79 @@ HEADER_ROWS = {
     },
 }
 
+# columns to retain
+RELEVANT_COLUMNS = {
+    "Sets": {
+        "Nodes": None,
+        "OffshoreNodes": None,
+        "Horizon": None,
+        "LineType": None,
+        "Technology": None,
+        "Storage": None,
+        "Generators": None,
+        "StorageOfNodes": [0, 1],
+        "GeneratorsOfNode": [0, 1],
+        "GeneratorsOfTechnology": [0, 1],
+        "DirectionalLines": [0, 1],
+        "LineTypeOfDirectionalLines": [0, 1, 2],
+    },
+    "Generator": {
+        "FixedOMCosts": [0, 1, 2],
+        "CapitalCosts": [0, 1, 2],
+        "VariableOMCosts": [0, 1],
+        "FuelCosts": [0, 1, 2],
+        "CCSCostTSVariable": [0, 1],
+        "Efficiency": [0, 1, 2],
+        "RefInitialCap": [0, 1, 2],
+        "ScaleFactorInitialCap": [0, 1, 2],
+        "InitialCapacity": [0, 1, 2, 3],
+        "MaxBuiltCapacity": [0, 1, 2, 3],
+        "MaxInstalledCapacity": [0, 1, 2],
+        "RampRate": [0, 1],
+        "GeneratorTypeAvailability": [0, 1],
+        "CO2Content": [0, 1],
+        "Lifetime": [0, 1],
+    },
+    "Transmission": {
+        "lineEfficiency": [0, 1, 2],
+        "MaxInstallCapacityRaw": [0, 1, 2, 3],
+        "MaxBuiltCapacity": [0, 1, 2, 3],
+        "Length": [0, 1, 2],
+        "TypeCapitalCost": [0, 1, 2],
+        "TypeFixedOMCost": [0, 1, 2],
+        "InitialCapacity": [0, 1, 2, 3],
+        "Lifetime": [0, 1, 2],
+    },
+    "Node": {
+        "ElectricAnnualDemand": [0, 1, 2],
+        "NodeLostLoadCost": [0, 1, 2],
+        "HydroGenMaxAnnualProduction": [0, 1],
+    },
+    "General": {
+        "seasonScale": [0, 1],
+        "CO2Cap": [0, 1],
+        "CO2Price": [0, 1],
+    },
+    "Storage": {
+        "StorageBleedEfficiency": [0, 1],
+        "StorageChargeEff": [0, 1],
+        "StorageDischargeEff": [0, 1],
+        "StoragePowToEnergy": [0, 1],
+        "StorageInitialEnergyLevel": [0, 1],
+        "InitialPowerCapacity": [0, 1, 2, 3],
+        "PowerCapitalCost": [0, 1, 2],
+        "PowerFixedOMCost": [0, 1, 2],
+        "PowerMaxBuiltCapacity": [0, 1, 2, 3],
+        "EnergyCapitalCost": [0, 1, 2],
+        "EnergyFixedOMCost": [0, 1, 2],
+        "EnergyInitialCapacity": [0, 1, 2, 3],
+        "EnergyMaxBuiltCapacity": [0, 1, 2, 3],
+        "EnergyMaxInstalledCapacity": [0, 1, 2],
+        "PowerMaxInstalledCapacity": [0, 1, 2],
+        "Lifetime": [0, 1],
+    },
+}
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
@@ -103,12 +181,14 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# --------------------------------------------------------------------------------------
+# Excel Conversion
+# --------------------------------------------------------------------------------------
 
 def read_excel_with_header(excel: pd.ExcelFile, sheet: str, skiprows: int) -> pd.DataFrame:
-    """Read Excel sheet with proper header and cleaning."""
     df = excel.parse(sheet, header=skiprows)
-    df = df.dropna(how="all")  # remove empty rows
-    df = df.replace(r"\s+", "", regex=True)  # clean whitespace
+    df = df.dropna(how="all")
+    df = df.replace(r"\s+", "", regex=True)
     df.columns = (
         df.columns.astype(str)
         .str.strip()
@@ -120,7 +200,6 @@ def read_excel_with_header(excel: pd.ExcelFile, sheet: str, skiprows: int) -> pd
 
 
 def convert_excel_to_subfolder(excel_path: Path, target_root: Path):
-    """Convert one Excel file into a subfolder with one CSV per sheet."""
     subfolder = target_root / excel_path.stem
     subfolder.mkdir(parents=True, exist_ok=True)
     logger.info(f"Processing {excel_path.name} → {subfolder}")
@@ -133,66 +212,123 @@ def convert_excel_to_subfolder(excel_path: Path, target_root: Path):
 
     config = HEADER_ROWS.get(excel_path.name, {})
     for sheet in excel.sheet_names:
+        skiprows = config.get(sheet, 0)
         try:
-            skiprows = config.get(sheet, 0)
             df = read_excel_with_header(excel, sheet, skiprows)
-
             if df.empty:
-                logger.warning(f"{excel_path.name} [{sheet}] is empty — skipped.")
                 continue
-
-            safe_name = f"{sheet.replace(' ', '_')}{FILE_SUFFIX}"
-            output_file = subfolder / safe_name
-            df.to_csv(output_file, index=False, encoding=ENCODING)
-
-            logger.info(f"Saved {output_file.relative_to(target_root)} (header row {skiprows})")
-
+            df.to_csv(subfolder / f"{sheet.replace(' ', '_')}{FILE_SUFFIX}", index=False, encoding=ENCODING)
         except Exception as e:
             logger.error(f"Error converting {excel_path.name} [{sheet}]: {e}")
 
 
 def copy_scenario_data():
-    # # copy the csv files in SOURCE_DIR/ScenarioData to TARGET_DIR/ScenarioData
-    scenario_src = SOURCE_DIR / "ScenarioData"
-    scenario_dest = TARGET_DIR / "ScenarioData"
-    scenario_dest.mkdir(parents=True, exist_ok=True)
-    for csv_file in scenario_src.glob("*.csv"):
-        dest_file = scenario_dest / csv_file.name
-        pd.read_csv(csv_file).to_csv(dest_file, index=False, encoding=ENCODING)
-        logger.info(f"Copied scenario file {dest_file.relative_to(TARGET_DIR)}")
-    return 
+    src = SOURCE_DIR / "ScenarioData"
+    dst = CLEAN_DIR / "ScenarioData"
+    dst.mkdir(parents=True, exist_ok=True)
+    for f in src.glob("*.csv"):
+        pd.read_csv(f).to_csv(dst / f.name, index=False, encoding=ENCODING)
+    logger.info("Copied ScenarioData.")
+
 
 def copy_sources_file():
-    # copy everything in SOURCE_DIR/Sources to TARGET_DIR/Sources, by zipping sources and copying 
-    sources_src = SOURCE_DIR / "Sources"
-    sources_dest = TARGET_DIR / "Sources"
-    sources_dest.mkdir(parents=True, exist_ok=True)
+    src = SOURCE_DIR / "Sources"
+    dst = CLEAN_DIR / "Sources"
+    dst.mkdir(parents=True, exist_ok=True)
+    zip_path = dst / "sources.zip"
+    shutil.make_archive(str(zip_path.with_suffix('')), 'zip', src)
+    shutil.unpack_archive(zip_path, dst)
+    logger.info("Copied and unpacked Sources.")
 
-    zip_path = sources_dest / "sources.zip"
-    shutil.make_archive(str(zip_path.with_suffix('')), 'zip', sources_src)
-    logger.info(f"Copied sources to {zip_path.relative_to(TARGET_DIR)}")
-    # unzip sources in sources_dest
-    shutil.unpack_archive(zip_path, sources_dest)
-    logger.info(f"Unzipped sources to {sources_dest.relative_to(TARGET_DIR)}")
-    return 
+# --------------------------------------------------------------------------------------
+# Cleaning Phase
+# --------------------------------------------------------------------------------------
+
+def _unique_preserve_order(seq):
+    seen, out = set(), []
+    for x in seq:
+        if x not in seen:
+            seen.add(x)
+            out.append(x)
+    return out
+
+def clean_input_data(src_folder: Path, clean_folder: Path, extra_folder: Path):
+    if clean_folder.exists():
+        shutil.rmtree(clean_folder)
+    if extra_folder.exists():
+        shutil.rmtree(extra_folder)
+
+    for category, files in RELEVANT_COLUMNS.items():
+        src_dir = src_folder / category
+        if not src_dir.exists():
+            continue
+        clean_dir = clean_folder / category
+        extra_dir = extra_folder / category
+        clean_dir.mkdir(parents=True, exist_ok=True)
+        extra_dir.mkdir(parents=True, exist_ok=True)
+
+        for filename, usecols in files.items():
+            csv_path = src_dir / f"{filename}.csv"
+            if not csv_path.exists():
+                continue
+
+            # special-case: split Sets/Generators and Sets/Storage
+            if category == "Sets" and filename in ["Generators", "Storage"]:
+                df = pd.read_csv(csv_path, dtype=str, keep_default_na=False)
+                df = df.map(lambda v: v.strip() if isinstance(v, str) else v)
+                for col in df.columns:
+                    vals = df[col].replace("", pd.NA).dropna()
+                    if not vals.empty:
+                        unique_vals = _unique_preserve_order(list(vals))
+                        pd.DataFrame({col: unique_vals}).to_csv(
+                            clean_dir / f"{col}.csv", index=False
+                        )
+                continue
+
+            df = pd.read_csv(csv_path, dtype=str, keep_default_na=False)
+            df = df.map(lambda v: v.strip() if isinstance(v, str) else v)
+
+            if usecols is None:
+                df.to_csv(clean_dir / f"{filename}.csv", index=False)
+                # No need to create empty extra file
+                continue
+
+            df_relevant = df.iloc[:, usecols]
+            df_relevant.to_csv(clean_dir / f"{filename}.csv", index=False)
+
+            extra_cols = [c for c in df.columns if c not in df_relevant.columns]
+            if extra_cols:
+                df_extra = df[extra_cols].dropna(how="all")
+                if not df_extra.empty:
+                    df_extra.to_csv(extra_dir / f"{filename}_extra.csv", index=False)
+# --------------------------------------------------------------------------------------
+# Main Pipeline
+# --------------------------------------------------------------------------------------
 
 def main():
-    TARGET_DIR.mkdir(parents=True, exist_ok=True)
-    pattern = "*.xlsx"
-    excel_files = list(SOURCE_DIR.glob(pattern))
+    INTERMEDIATE_DIR.mkdir(parents=True, exist_ok=True)
 
+    excel_files = list(SOURCE_DIR.glob("*.xlsx"))
     if not excel_files:
-        logger.warning("No Excel files found.")
+        logger.warning(f"No Excel files found in {SOURCE_DIR}")
         return
 
-    logger.info(f"Found {len(excel_files)} Excel file(s) in {SOURCE_DIR}")
+    logger.info(f"Converting {len(excel_files)} Excel files...")
+    for f in excel_files:
+        convert_excel_to_subfolder(f, INTERMEDIATE_DIR)
 
-    for excel_file in excel_files:
-        convert_excel_to_subfolder(excel_file, TARGET_DIR)
 
-    logger.info("Conversion complete.")
+
+    logger.info("Starting cleaning step...")
+    clean_input_data(INTERMEDIATE_DIR, CLEAN_DIR, EXTRA_DIR)
     copy_scenario_data()
     copy_sources_file()
+    shutil.rmtree("input_data_intermediate")     # remove intermediate folder
+    # remove the intermediate folder itself, not only the contents
+
+
+
+    logger.info("All steps complete.")
 
 
 if __name__ == "__main__":
