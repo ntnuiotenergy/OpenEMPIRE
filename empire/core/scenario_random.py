@@ -454,6 +454,8 @@ def generate_random_scenario(
     moment_matching = empire_config.moment_matching
     n_tree_compare = empire_config.n_tree_compare
 
+    tab_file_path.mkdir(parents=True, exist_ok=True)
+
     if fix_sample:
         logger.info("Generating scenarios according to key...")
     else:
@@ -1096,41 +1098,40 @@ def generate_random_scenario(
     logger.info("Saving 'sampling_key.csv'.")
     sampling_key.to_csv(tab_file_path / "sampling_key.csv", header=True, index=None, mode="w")
 
-    logger.info("Saving 'Stochastic_StochasticAvailability.tab'.")
+    logger.info("Saving 'StochasticAvailability.csv'.")
     genAvail.to_csv(
-        tab_file_path / "Stochastic_StochasticAvailability.tab", header=True, index=None, sep="\t", mode="w"
+        tab_file_path / "StochasticAvailability.csv", header=True, index=None, mode="w"
     )
-    logger.info("Saving 'Stochastic_ElectricLoadRaw.tab'.")
-    elecLoad.to_csv(tab_file_path / "Stochastic_ElectricLoadRaw.tab", header=True, index=None, sep="\t", mode="w")
+    logger.info("Saving 'ElectricLoadRaw.csv'.")
+    elecLoad.to_csv(tab_file_path / "ElectricLoadRaw.csv", header=True, index=None, mode="w")
 
-    logger.info("Saving 'Stochastic_HydroGenMaxSeasonalProduction.tab'.")
+    logger.info("Saving 'HydroGenMaxSeasonalProduction.csv'.")
     hydroSeasonal.to_csv(
-        tab_file_path / "Stochastic_HydroGenMaxSeasonalProduction.tab", header=True, index=None, sep="\t", mode="w"
+        tab_file_path / "HydroGenMaxSeasonalProduction.csv", header=True, index=None, mode="w"
     )
 
     if LOADCHANGEMODULE:
         if not os.path.exists(tab_file_path + "/LoadchangeModule"):
             os.makedirs(tab_file_path + "/LoadchangeModule")
         elecLoadMod.to_csv(
-            tab_file_path + "/LoadchangeModule/Stochastic_ElectricLoadMod" + ".tab",
+            tab_file_path + "/LoadchangeModule/Stochastic_ElectricLoadMod" + ".csv",
             header=True,
             index=None,
-            sep="\t",
             mode="w",
         )
 
 
 def check_scenarios_exist_and_copy(run_config: EmpireRunConfiguration):
     """
-    Checks that the .tab files for the scenarios exist in scenario data folder and copys to the tab folder of the run.
+    Checks that the .csv files for the scenarios exist in scenario data folder and copys to the tab folder of the run.
 
     :param run_config: Empire run configuration
     :raises ValueError: If files are missing in scenario data.
     """
     scenario_files = [
-        "Stochastic_StochasticAvailability.tab",
-        "Stochastic_ElectricLoadRaw.tab",
-        "Stochastic_HydroGenMaxSeasonalProduction.tab",
+        "Stochastic_StochasticAvailability.csv",
+        "Stochastic_ElectricLoadRaw.csv",
+        "Stochastic_HydroGenMaxSeasonalProduction.csv",
     ]
 
     for file in scenario_files:
@@ -1149,15 +1150,15 @@ def check_scenarios_exist_and_copy(run_config: EmpireRunConfiguration):
 
 def check_scenarios_exist(scenario_data_path: Path) -> bool:
     """
-    Checks that the .tab files for the scenarios exist in scenario data folder.
+    Checks that the .csv files for the scenarios exist in scenario data folder.
 
     :param scenario_data_path: Path to ScenarioData folder.
     :returns: True if exist, false if not.
     """
     scenario_files = [
-        "Stochastic_StochasticAvailability.tab",
-        "Stochastic_ElectricLoadRaw.tab",
-        "Stochastic_HydroGenMaxSeasonalProduction.tab",
+        "Stochastic_StochasticAvailability.csv",
+        "Stochastic_ElectricLoadRaw.csv",
+        "Stochastic_HydroGenMaxSeasonalProduction.csv",
     ]
 
     for file in scenario_files:
