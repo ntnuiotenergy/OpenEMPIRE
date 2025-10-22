@@ -102,11 +102,12 @@ def run_empire_model(
         if empire_config.use_fixed_sample and not (scenario_data_path / "sampling_key.csv").exists():
             raise ValueError("Missing 'sampling_key.csv' in ScenarioData folder.")
         else:
+            stochastic_data_path = workbook_path / "Stochastic"
             generate_random_scenario(
                 empire_config=empire_config,
                 dict_countries=dict_countries,
                 scenario_data_path=scenario_data_path,
-                tab_file_path=tab_file_path,
+                tab_file_path=stochastic_data_path,
             )
 
     else:
@@ -121,7 +122,7 @@ def run_empire_model(
         generate_tab_from_csv(csv_root=workbook_path, tab_file_path=tab_file_path)
     else:
         generate_tab_files(file_path=workbook_path, tab_file_path=tab_file_path)
-        
+
     if not test_run:
         obj_value = run_empire(
             name=run_config.run_name,
