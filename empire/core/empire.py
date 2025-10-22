@@ -349,22 +349,10 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_
             "maxRegHydroGenRaw": "HydroGenMaxSeasonalProduction.csv",
         },
     }
-    load_data_from_files(data, model, input_data_dir, stochastic_filename_dict)
-    breakpoint()
-    # model.genLifetime["Liginiteexisting"]
-    
-
-
     stochastic_input_data = (input_data_dir if not OUT_OF_SAMPLE else sample_file_path)
 
-    # logger.info("Reading parameters for General...")
-    # data.load(filename=str(tab_file_path / 'General_seasonScale.tab'), param=model.seasScale, format="table") 
     load_data_from_files(data, model, stochastic_input_data, stochastic_filename_dict)
 
-    # if EMISSION_CAP:
-    #     data.load(filename=str(tab_file_path / 'General_CO2Cap.tab'), param=model.CO2cap, format="table")
-    # else:
-    #     data.load(filename=str(tab_file_path / 'General_CO2Price.tab'), param=model.CO2price, format="table")
 
     logger.info("Constructing parameter values...")
     if LOADCHANGEMODULE:
@@ -385,7 +373,6 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_
         #Generator 
         for g in model.Generator:
             for i in model.PeriodActive:
-                breakpoint()
                 costperyear=(model.WACC/(1-((1+model.WACC)**(-model.genLifetime[g]))))*model.genCapitalCost[g,i]+model.genFixedOMCost[g,i]
                 costperperiod=costperyear*1000*(1-(1+model.discountrate)**-(min(value((len(model.PeriodActive)-i+1)*LeapYearsInvestment), value(model.genLifetime[g]))))/(1-(1/(1+model.discountrate)))
                 if ('CCS',g) in model.GeneratorsOfTechnology:
