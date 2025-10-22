@@ -35,7 +35,7 @@ if (run_path / "Output/results_objective.csv").exists() and not args.force:
     raise ValueError("There already exists results for this analysis run.")
 
 if empire_config.csv_input_flag:
-    input_data_dir = "input_data"
+    input_data_dir = "input_data_clean"
     input_data_format = "csv"
 else:
     input_data_dir = "Data Handler"
