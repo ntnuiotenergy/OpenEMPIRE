@@ -341,6 +341,7 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_
     else:
         filename_dict["General"]["CO2price"] = "CO2Price.csv"
 
+    load_data_from_files(data, model, input_data_dir, filename_dict)
     stochastic_filename_dict = {
         "Stochastic": {
             "sloadRaw": "ElectricLoadRaw.csv",
@@ -354,9 +355,11 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_
     
 
 
+    stochastic_input_data = (input_data_dir if not OUT_OF_SAMPLE else sample_file_path)
 
     # logger.info("Reading parameters for General...")
     # data.load(filename=str(tab_file_path / 'General_seasonScale.tab'), param=model.seasScale, format="table") 
+    load_data_from_files(data, model, stochastic_input_data, stochastic_filename_dict)
 
     # if EMISSION_CAP:
     #     data.load(filename=str(tab_file_path / 'General_CO2Cap.tab'), param=model.CO2cap, format="table")
