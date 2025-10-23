@@ -1,3 +1,29 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:ad415be956171025c9c39bab34fb22d329bfb2b261a8f5f443b0b3dff8358456
-size 465
+GeneratorTechnology,generatorLifetime
+Liginiteexisting,40
+Lignite,40
+LigniteCCSadv,40
+Coalexisting,40
+Coal,40
+CoalCCSadv,40
+Gasexisting,30
+GasOCGT,30
+GasCCGT,30
+GasCCSadv,30
+Oilexisting,40
+Bioexisting,40
+Bio10cofiring,40
+Nuclear,60
+Wave,80
+Geo,30
+Hydroregulated,60
+Hydrorun-of-the-river,50
+Bio,40
+Windonshore,25
+Windoffshoregrounded,25
+Windoffshorefloating,25
+Solar,25
+Bio10cofiringCCS,40
+LigniteCCSsup,40
+CoalCCS,40
+GasCCS,30
+Waste,20

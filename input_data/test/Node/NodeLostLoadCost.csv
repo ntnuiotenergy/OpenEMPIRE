@@ -1,3 +1,4 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:1be0d962c5350afd83b2a6e0fafc8f383ff051ca96623d6683b48be822e763d6
-size 81
+Nodes,Period,NodeLostLoadCost
+Germany,1,22000
+Denmark,1,22000
+France,1,22000

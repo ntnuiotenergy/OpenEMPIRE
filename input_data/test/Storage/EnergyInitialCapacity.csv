@@ -1,3 +1,7 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:8ee973ffa228b4bf6bd97b6b2bc39cf3bac70e7d1e35ce02ad1b2e82a7cbd1e9
-size 253
+Nodes,StorageTypes,Period,EnergyInitialCapacity
+Germany,HydroPumpStorage,1,38626
+France,HydroPumpStorage,1,184296
+Germany,HydroPumpStorage,2,38626
+France,HydroPumpStorage,2,184296
+Germany,HydroPumpStorage,3,38626
+France,HydroPumpStorage,3,184296

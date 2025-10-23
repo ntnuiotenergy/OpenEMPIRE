@@ -1,3 +1,29 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:6c3b2217874da8a95f08e43ad42c4db827b566045492c13b8a1062ad94efd44b
-size 633
+GeneratorTechnology,CO2Content_in_tCO2/GJ
+Liginiteexisting,0.101
+Lignite,0.101
+LigniteCCSadv,0.010100000000000001
+LigniteCCSsup,0.010100000000000001
+Coalexisting,0.0983
+Coal,0.0983
+CoalCCSadv,0.00983
+CoalCCS,0.00983
+Gasexisting,0.056100000000000004
+GasOCGT,0.056100000000000004
+GasCCGT,0.056100000000000004
+GasCCSadv,0.00561
+GasCCS,0.00561
+Oilexisting,0.07740000000000001
+Bioexisting,0.0
+Bio10cofiring,0.0885
+Bio10cofiringCCS,0.00885
+Nuclear,0.0
+Wave,0.0
+Geo,0.0
+Hydroregulated,0.0
+Hydrorun-of-the-river,0.0
+Bio,0.0
+Windonshore,0.0
+Windoffshoregrounded,0.0
+Windoffshorefloating,0.0
+Solar,0.0
+Waste,0.037

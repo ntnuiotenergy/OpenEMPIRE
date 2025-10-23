@@ -1,3 +1,5 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:8b80d4bbb89b1a4c35d039620b8197c9a0930c52f7127cda7dd7bcbd6d1e6986
-size 96
+Season,seasonScale
+winter,25.928571428571427
+spring,25.928571428571427
+peak1,1.0
+peak2,1.0

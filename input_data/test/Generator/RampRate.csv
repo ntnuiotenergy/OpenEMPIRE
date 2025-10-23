@@ -1,3 +1,22 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:c3eb7e3de205c4f42c9efab336ac9af95edd35c4b401a2a3062156b75365bb4b
-size 354
+ThermalGenerators,RampRate
+Liginiteexisting,0.7
+Lignite,0.7
+LigniteCCSadv,0.7
+Coalexisting,0.7
+Coal,0.7
+CoalCCSadv,0.7
+Gasexisting,0.85
+GasOCGT,1.0
+GasCCGT,0.85
+GasCCSadv,0.85
+Oilexisting,0.85
+Bioexisting,0.85
+Bio10cofiring,0.85
+Nuclear,0.3
+Geo,1.0
+Bio,0.7
+Bio10cofiringCCS,0.85
+LigniteCCSadv,0.7
+CoalCCS,0.7
+GasCCS,0.85
+Waste,0.85

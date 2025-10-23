@@ -1,3 +1,5 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:ee4fa54f71b33d203a494f757535a9825b1f8035346bef95660ad2dc7882fcf4
-size 83
+NodeFrom,NodeTo
+Denmark,Germany
+France,Germany
+Germany,Denmark
+Germany,France

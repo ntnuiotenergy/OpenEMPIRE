@@ -1,3 +1,3 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:e59c76ebe2ef6eebd6c827961826db91cba4577cd48e2cf8f61d0708421156a6
-size 128
+StorageType,StorageInitialEnergyLevel_as_a_percentage_of_StorageInstalledEnergyCapacity
+HydroPumpStorage,0.5
+Li-Ion_BESS,0.5

@@ -1,3 +1,5 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:5f57085bbb350bd08b01522c45c86757de7b8618ba46fc3721a85ac7e75365ac
-size 118
+FromNode,ToNode,lineEfficiency
+Denmark,Germany,0.97
+France,Germany,0.97
+Germany,Denmark,0.97
+Germany,France,0.97

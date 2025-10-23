@@ -1,3 +1,5 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:709262ac1d3371662013eaa41096b95125067d43ff780c0c77b2b06a118964dd
-size 164
+FromNode,ToNode,LineType
+Denmark,Germany,HVAC_OverheadLine
+France,Germany,HVAC_OverheadLine
+Germany,Denmark,HVAC_OverheadLine
+Germany,France,HVAC_OverheadLine

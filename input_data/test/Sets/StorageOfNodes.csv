@@ -1,3 +1,6 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:019b8778bba6ade52c116ee122e34c273a7da6fe5113a773aa0cb99628519e86
-size 127
+Node,Storage
+Germany,HydroPumpStorage
+Germany,Li-Ion_BESS
+Denmark,Li-Ion_BESS
+France,HydroPumpStorage
+France,Li-Ion_BESS

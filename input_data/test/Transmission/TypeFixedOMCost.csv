@@ -1,3 +1,7 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:851806dd80542ced53dfd15eca343c132efe984c9f8eaab940cca70a8244c419
-size 236
+Type,Period,TypeFixedOMCost_in_euro_per_MW
+HVAC_OverheadLine,1,33.08046875
+HVAC_OverheadLine,2,33.08046875
+HVAC_OverheadLine,3,30.223437500000003
+HVDC_Cable,1,138.46153846153845
+HVDC_Cable,2,138.46153846153845
+HVDC_Cable,3,108.0

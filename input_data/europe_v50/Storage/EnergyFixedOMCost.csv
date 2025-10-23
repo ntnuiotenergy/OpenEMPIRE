@@ -1,3 +1,17 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:5eb1df34cc55e02db46122ef67c54d3b90696ab86c8cebb860546fb97a73829c
-size 367
+StorageTypes,Period,EnergyFixedOMCost_in_euro_per_kWh
+HydroPumpStorage,1,0
+HydroPumpStorage,2,0
+HydroPumpStorage,3,0
+HydroPumpStorage,4,0
+HydroPumpStorage,5,0
+HydroPumpStorage,6,0
+HydroPumpStorage,7,0
+HydroPumpStorage,8,0
+Li-Ion_BESS,1,0
+Li-Ion_BESS,2,0
+Li-Ion_BESS,3,0
+Li-Ion_BESS,4,0
+Li-Ion_BESS,5,0
+Li-Ion_BESS,6,0
+Li-Ion_BESS,7,0
+Li-Ion_BESS,8,0
