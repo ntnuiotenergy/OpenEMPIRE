@@ -6,20 +6,6 @@ from pathlib import Path
 import pandas as pd
 
 
-def copy_dataset(src_path: Path, dest_path: Path):
-    """
-    Copy dataset from source to destination folder.
-
-    :param src_path: Folder containing dataset
-    :param dest_path: Folder to copy the dataset
-    """
-    if not src_path.is_dir():
-        raise ValueError(f"'{src_path}' is not a directory!")
-
-    for file in ["General", "Generator", "Node", "Sets", "Storage", "Transmission"]:
-        shutil.copyfile(src_path / f"{file}.xlsx", dest_path / f"{file}.xlsx")
-
-
 def copy_csv_dataset(src_path: Path, dest_path: Path):
     """
     Copy dataset from source to destination folder.

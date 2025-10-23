@@ -9,9 +9,9 @@ from empire.core.config import (EmpireConfiguration, EmpireRunConfiguration,
 from empire.core.scenario_random import (check_scenarios_exist_and_copy,
                                          generate_random_scenario)
 from empire.input_data_manager import IDataManager
-from empire.utils import (copy_csv_dataset, copy_dataset, copy_scenario_data,
+from empire.utils import (copy_csv_dataset, copy_scenario_data,
                           create_if_not_exist, get_run_name)
-from empire.core.csv_reader import generate_tab_from_csv
+
 logger = logging.getLogger(__name__)
 
 
