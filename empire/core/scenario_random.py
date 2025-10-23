@@ -1098,16 +1098,16 @@ def generate_random_scenario(
     logger.info("Saving 'sampling_key.csv'.")
     sampling_key.to_csv(output_path / "sampling_key.csv", header=True, index=None, mode="w")
 
-    logger.info("Saving 'StochasticAvailability.csv'.")
+    logger.info("Saving 'genCapAvailStochRaw.csv'.")
     genAvail.to_csv(
-        output_path / "StochasticAvailability.csv", header=True, index=None, mode="w"
+        output_path / "genCapAvailStochRaw.csv", header=True, index=None, mode="w"
     )
-    logger.info("Saving 'ElectricLoadRaw.csv'.")
-    elecLoad.to_csv(output_path / "ElectricLoadRaw.csv", header=True, index=None, mode="w")
+    logger.info("Saving 'sloadRaw.csv'.")
+    elecLoad.to_csv(output_path / "sloadRaw.csv", header=True, index=None, mode="w")
 
-    logger.info("Saving 'HydroGenMaxSeasonalProduction.csv'.")
+    logger.info("Saving 'maxRegHydroGenRaw.csv'.")
     hydroSeasonal.to_csv(
-        output_path / "HydroGenMaxSeasonalProduction.csv", header=True, index=None, mode="w"
+        output_path / "maxRegHydroGenRaw.csv", header=True, index=None, mode="w"
     )
 
     if LOADCHANGEMODULE:
@@ -1130,9 +1130,9 @@ def check_scenarios_exist(scenario_data_path: Path) -> bool:
     :returns: True if exist, false if not.
     """
     scenario_files = [
-        "Stochastic_StochasticAvailability.csv",
-        "Stochastic_ElectricLoadRaw.csv",
-        "Stochastic_HydroGenMaxSeasonalProduction.csv",
+        "genCapAvailStochRaw.csv",
+        "sloadRaw.csv",
+        "maxRegHydroGenRaw.csv",
     ]
 
     for file in scenario_files:

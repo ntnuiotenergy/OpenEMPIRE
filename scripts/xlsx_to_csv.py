@@ -301,6 +301,98 @@ def clean_input_data(src_folder: Path, clean_folder: Path, extra_folder: Path):
                 df_extra = df[extra_cols].dropna(how="all")
                 if not df_extra.empty:
                     df_extra.to_csv(extra_dir / f"{filename}_extra.csv", index=False)
+
+
+
+
+filename_dict = {
+    "Sets": {
+        "Generator": "Generator.csv",
+        "ThermalGenerators": "ThermalGenerators.csv",
+        "HydroGenerator": "HydroGenerator.csv",
+        "RegHydroGenerator": "HydroGeneratorWithReservoir.csv",
+        "Storage": "Storage.csv",
+        "DependentStorage": "DependentStorage.csv",
+        "Technology": "Technology.csv",
+        "Node": "Nodes.csv",
+        "Period": "Horizon.csv",
+        "DirectionalLink": "DirectionalLines.csv",
+        "TransmissionType": "LineType.csv",
+        "TransmissionTypeOfDirectionalLink": "LineTypeOfDirectionalLines.csv",
+        "GeneratorsOfTechnology": "GeneratorsOfTechnology.csv",
+        "GeneratorsOfNode": "GeneratorsOfNode.csv",
+        "StoragesOfNode": "StorageOfNodes.csv",
+        "OffshoreNode": "OffshoreNodes.csv"
+    },
+    "Generator": {
+        "genCapitalCost": "CapitalCosts.csv",
+        "genFixedOMCost": "FixedOMCosts.csv",
+        "genVariableOMCost": "VariableOMCosts.csv",
+        "genFuelCost": "FuelCosts.csv",
+        "CCSCostTSVariable": "CCSCostTSVariable.csv",
+        "genEfficiency": "Efficiency.csv",
+        "genRefInitCap": "RefInitialCap.csv",
+        "genScaleInitCap": "ScaleFactorInitialCap.csv",
+        "genInitCap": "InitialCapacity.csv",
+        "genMaxBuiltCap": "MaxBuiltCapacity.csv",
+        "genMaxInstalledCapRaw": "MaxInstalledCapacity.csv",
+        "genRampUpCap": "RampRate.csv",
+        "genCapAvailTypeRaw": "GeneratorTypeAvailability.csv",
+        "genCO2TypeFactor": "CO2Content.csv",
+        "genLifetime": "Lifetime.csv",
+    },
+
+    "Transmission": {
+        "transmissionInitCap": "InitialCapacity.csv",
+        "transmissionMaxBuiltCap": "MaxBuiltCapacity.csv",
+        "transmissionMaxInstalledCapRaw": "MaxInstallCapacityRaw.csv",
+        "transmissionLength": "Length.csv",
+        "transmissionTypeCapitalCost": "TypeCapitalCost.csv",
+        "transmissionTypeFixedOMCost": "TypeFixedOMCost.csv",
+        "lineEfficiency": "lineEfficiency.csv",
+        "transmissionLifetime": "Lifetime.csv",
+    },
+
+    "Storage": {
+        "storageBleedEff": "StorageBleedEfficiency.csv",
+        "storageChargeEff": "StorageChargeEff.csv",
+        "storageDischargeEff": "StorageDischargeEff.csv",
+        "storagePowToEnergy": "StoragePowToEnergy.csv",
+        "storENCapitalCost": "EnergyCapitalCost.csv",
+        "storENFixedOMCost": "EnergyFixedOMCost.csv",
+        "storENInitCap": "EnergyInitialCapacity.csv",
+        "storENMaxBuiltCap": "EnergyMaxBuiltCapacity.csv",
+        "storENMaxInstalledCapRaw": "EnergyMaxInstalledCapacity.csv",
+        "storOperationalInit": "StorageInitialEnergyLevel.csv",
+        "storPWCapitalCost": "PowerCapitalCost.csv",
+        "storPWFixedOMCost": "PowerFixedOMCost.csv",
+        "storPWInitCap": "InitialPowerCapacity.csv",
+        "storPWMaxBuiltCap": "PowerMaxBuiltCapacity.csv",   
+        "storPWMaxInstalledCapRaw": "PowerMaxInstalledCapacity.csv",
+        "storageLifetime": "Lifetime.csv",
+    },
+    "Node": {
+        "nodeLostLoadCost": "NodeLostLoadCost.csv",
+        "sloadAnnualDemand": "ElectricAnnualDemand.csv",
+        "maxHydroNode": "HydroGenMaxAnnualProduction.csv",
+    },
+
+    "General": {
+        "seasScale": "seasonScale.csv",
+        "CO2cap": "CO2Cap.csv",
+        "CO2price": "CO2Price.csv",
+    },
+}
+
+def convert_csv_filenames(root_path: Path):
+    for component, fn_dict in filename_dict.items():
+        for var_name, file_name in fn_dict.items():
+            src_path = root_path / component / file_name
+            if src_path.exists():
+                dst_path = root_path / component / f"{var_name}.csv"
+                src_path.rename(dst_path)
+            else:
+                raise FileNotFoundError(f"Expected file {src_path} not found.")
 # --------------------------------------------------------------------------------------
 # Main Pipeline
 # --------------------------------------------------------------------------------------
@@ -325,11 +417,9 @@ def main():
     copy_sources_file()
     shutil.rmtree("input_data_intermediate")     # remove intermediate folder
     # remove the intermediate folder itself, not only the contents
-
+    convert_csv_filenames(CLEAN_DIR)
 
 
     logger.info("All steps complete.")
-
-
 if __name__ == "__main__":
     main()

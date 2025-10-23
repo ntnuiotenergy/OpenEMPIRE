@@ -14,27 +14,30 @@ from pyomo.environ import *
 
 logger = logging.getLogger(__name__)
 
-def load_set(data, model, input_data_dir, component, set_name_dict):
-    for set_name, filename in set_name_dict.items():
+def load_set(data, model, input_data_dir, component, set_name_list):
+    for set_name in set_name_list:
         try:
-            data.load(filename=str(input_data_dir / component / filename), set=getattr(model, set_name), format="set")
+            data.load(filename=str(input_data_dir / component / f"{set_name}.csv"), set=getattr(model, set_name), format="set")
         except Exception as e:
-            raise RuntimeError(f"Error loading {filename} for set {set_name} of component {component}: {e}")
+            raise RuntimeError(f"Error loading {set_name} of component {component}: {e}")
 
-def load_param(data, model, input_data_dir, component, param_name_dict):
-    for param_name, filename in param_name_dict.items():
+def load_param(data, model, input_data_dir, component, param_name_list):
+    for param_name in param_name_list:
         try:
-            data.load(filename=str(input_data_dir / component / filename), param=getattr(model, param_name), format="table")
+            data.load(filename=str(input_data_dir / component / f"{param_name}.csv"), param=getattr(model, param_name), format="table")
         except Exception as e:
-            raise RuntimeError(f"Error loading {filename} for parameter {param_name} of component {component}: {e}")
+            raise RuntimeError(f"Error loading {param_name} of component {component}: {e}")
 
 
-def load_data_from_files(data: DataPortal, model: AbstractModel, input_data_dir: Path, filename_dict: dict) -> None:
-    for component, file_dict in filename_dict.items():
+def load_data_from_files(data: DataPortal, model: AbstractModel, input_data_dir: Path, inputs: dict[str, list[str]]) -> None:
+    """Load paramters or sets from input_data_dir to the data portal. 
+    The filename must be the same as the variable name. 
+    """
+    for component, file_list in inputs.items():
         if component == "Sets":
-            load_set(data, model, input_data_dir, component, file_dict)
+            load_set(data, model, input_data_dir, component, file_list)
         else:
-            load_param(data, model, input_data_dir, component, file_dict)
+            load_param(data, model, input_data_dir, component, file_list)
 
 
 def run_empire(name, result_file_path: Path, scenario_data_path,
@@ -133,26 +136,26 @@ def run_empire(name, result_file_path: Path, scenario_data_path,
     logger.info("Constructing sub sets...")
     input_data_dir = Path(f"Results/basic_run/dataset_test/Input/csv")
 
-    sets_filename_dict = {
-    "Sets": {
-        "Generator": "Generator.csv",
-        "ThermalGenerators": "ThermalGenerators.csv",
-        "HydroGenerator": "HydroGenerator.csv",
-        "RegHydroGenerator": "HydroGeneratorWithReservoir.csv",
-        "Storage": "Storage.csv",
-        "DependentStorage": "DependentStorage.csv",
-        "Technology": "Technology.csv",
-        "Node": "Nodes.csv",
-        "Period": "Horizon.csv",
-        "DirectionalLink": "DirectionalLines.csv",
-        "TransmissionType": "LineType.csv",
-        "TransmissionTypeOfDirectionalLink": "LineTypeOfDirectionalLines.csv",
-        "GeneratorsOfTechnology": "GeneratorsOfTechnology.csv",
-        "GeneratorsOfNode": "GeneratorsOfNode.csv",
-        "StoragesOfNode": "StorageOfNodes.csv",
-    },
+    input_sets = {
+    "Sets": [
+        "Generator",
+        "ThermalGenerators",
+        "HydroGenerator",
+        "RegHydroGenerator",
+        "Storage",
+        "DependentStorage",
+        "Technology",
+        "Node",
+        "Period",
+        "DirectionalLink",
+        "TransmissionType",
+        "TransmissionTypeOfDirectionalLink",
+        "GeneratorsOfTechnology",
+        "GeneratorsOfNode",
+        "StoragesOfNode",
+    ],
     }
-    load_data_from_files(data, model, input_data_dir, sets_filename_dict)
+    load_data_from_files(data, model, input_data_dir, input_sets)
     #Build arc subsets
 
     def NodesLinked_init(model, node):
@@ -275,83 +278,84 @@ def run_empire(name, result_file_path: Path, scenario_data_path,
     logger.info("Reading parameters...")
     logger.info("Reading parameters for Generator...")
     
-    filename_dict = {
-    "Generator": {
-        "genCapitalCost": "CapitalCosts.csv",
-        "genFixedOMCost": "FixedOMCosts.csv",
-        "genVariableOMCost": "VariableOMCosts.csv",
-        "genFuelCost": "FuelCosts.csv",
-        "CCSCostTSVariable": "CCSCostTSVariable.csv",
-        "genEfficiency": "Efficiency.csv",
-        "genRefInitCap": "RefInitialCap.csv",
-        "genScaleInitCap": "ScaleFactorInitialCap.csv",
-        "genInitCap": "InitialCapacity.csv",
-        "genMaxBuiltCap": "MaxBuiltCapacity.csv",
-        "genMaxInstalledCapRaw": "MaxInstalledCapacity.csv",
-        "genRampUpCap": "RampRate.csv",
-        "genCapAvailTypeRaw": "GeneratorTypeAvailability.csv",
-        "genCO2TypeFactor": "CO2Content.csv",
-        "genLifetime": "Lifetime.csv",
-    },
+    input_parameters = {
+    "Generator": [
+        "genCapitalCost",
+        "genFixedOMCost",
+        "genVariableOMCost",
+        "genFuelCost",
+        "CCSCostTSVariable",
+        "genEfficiency",
+        "genRefInitCap",
+        "genScaleInitCap",
+        "genInitCap",
+        "genMaxBuiltCap",
+        "genMaxInstalledCapRaw",
+        "genRampUpCap",
+        "genCapAvailTypeRaw",
+        "genCO2TypeFactor",
+        "genLifetime",
+    ],
 
-    "Transmission": {
-        "transmissionInitCap": "InitialCapacity.csv",
-        "transmissionMaxBuiltCap": "MaxBuiltCapacity.csv",
-        "transmissionMaxInstalledCapRaw": "MaxInstallCapacityRaw.csv",
-        "transmissionLength": "Length.csv",
-        "transmissionTypeCapitalCost": "TypeCapitalCost.csv",
-        "transmissionTypeFixedOMCost": "TypeFixedOMCost.csv",
-        "lineEfficiency": "lineEfficiency.csv",
-        "transmissionLifetime": "Lifetime.csv",
-    },
+    "Transmission": [
+        "transmissionInitCap",
+        "transmissionMaxBuiltCap",
+        "transmissionMaxInstalledCapRaw",
+        "transmissionLength",
+        "transmissionTypeCapitalCost",
+        "transmissionTypeFixedOMCost",
+        "lineEfficiency",
+        "transmissionLifetime",
+    ],
 
-    "Storage": {
-        "storageBleedEff": "StorageBleedEfficiency.csv",
-        "storageChargeEff": "StorageChargeEff.csv",
-        "storageDischargeEff": "StorageDischargeEff.csv",
-        "storagePowToEnergy": "StoragePowToEnergy.csv",
-        "storENCapitalCost": "EnergyCapitalCost.csv",
-        "storENFixedOMCost": "EnergyFixedOMCost.csv",
-        "storENInitCap": "EnergyInitialCapacity.csv",
-        "storENMaxBuiltCap": "EnergyMaxBuiltCapacity.csv",
-        "storENMaxInstalledCapRaw": "EnergyMaxInstalledCapacity.csv",
-        "storOperationalInit": "StorageInitialEnergyLevel.csv",
-        "storPWCapitalCost": "PowerCapitalCost.csv",
-        "storPWFixedOMCost": "PowerFixedOMCost.csv",
-        "storPWInitCap": "InitialPowerCapacity.csv",
-        "storPWMaxBuiltCap": "PowerMaxBuiltCapacity.csv",   
-        "storPWMaxInstalledCapRaw": "PowerMaxInstalledCapacity.csv",
-        "storageLifetime": "Lifetime.csv",
-    },
-    "Node": {
-        "nodeLostLoadCost": "NodeLostLoadCost.csv",
-        "sloadAnnualDemand": "ElectricAnnualDemand.csv",
-        "maxHydroNode": "HydroGenMaxAnnualProduction.csv",
-    },
+    "Storage": [
+        "storageBleedEff",
+        "storageChargeEff",
+        "storageDischargeEff",
+        "storagePowToEnergy",
+        "storENCapitalCost",
+        "storENFixedOMCost",
+        "storENInitCap",
+        "storENMaxBuiltCap",
+        "storENMaxInstalledCapRaw",
+        "storOperationalInit",
+        "storPWCapitalCost",
+        "storPWFixedOMCost",
+        "storPWInitCap",
+        "storPWMaxBuiltCap",
+        "storPWMaxInstalledCapRaw",
+        "storageLifetime",
+    ],
 
-    "General": {
-        "seasScale": "seasonScale.csv",
-    },
+    "Node": [
+        "nodeLostLoadCost",
+        "sloadAnnualDemand",
+        "maxHydroNode",
+    ],
+
+    "General": [
+        "seasScale",
+    ],
     }
     if north_sea:
-        filename_dict['Sets']["OffshoreNode"] = "Sets_OffshoreNode.csv"
+        input_parameters['Sets'].append("Sets_OffshoreNode.csv")
 
     if EMISSION_CAP:
-        filename_dict["General"]["CO2cap"] = "CO2Cap.csv"
+        input_parameters["General"].append("CO2cap")
     else:
-        filename_dict["General"]["CO2price"] = "CO2Price.csv"
+        input_parameters["General"].append("CO2price")
 
-    load_data_from_files(data, model, input_data_dir, filename_dict)
-    stochastic_filename_dict = {
-        "Stochastic": {
-            "sloadRaw": "ElectricLoadRaw.csv",
-            "genCapAvailStochRaw": "StochasticAvailability.csv",
-            "maxRegHydroGenRaw": "HydroGenMaxSeasonalProduction.csv",
-        },
+    load_data_from_files(data, model, input_data_dir, input_parameters)
+    stochastic_variables = {
+        "Stochastic": [
+            "sloadRaw",
+            "genCapAvailStochRaw",
+            "maxRegHydroGenRaw",
+        ],
     }
     stochastic_input_data = (input_data_dir if not OUT_OF_SAMPLE else sample_file_path)
 
-    load_data_from_files(data, model, stochastic_input_data, stochastic_filename_dict)
+    load_data_from_files(data, model, stochastic_input_data, stochastic_variables)
 
 
     logger.info("Constructing parameter values...")
