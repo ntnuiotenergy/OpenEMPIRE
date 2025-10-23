@@ -37,7 +37,7 @@ def load_data_from_files(data: DataPortal, model: AbstractModel, input_data_dir:
             load_param(data, model, input_data_dir, component, file_dict)
 
 
-def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_path,
+def run_empire(name, result_file_path: Path, scenario_data_path,
                solver, temp_dir, FirstHoursOfRegSeason, FirstHoursOfPeakSeason, lengthRegSeason,
                lengthPeakSeason, Period, Operationalhour, Scenario, Season, HoursOfSeason,
                discountrate, WACC, LeapYearsInvestment, IAMC_PRINT, WRITE_LP,

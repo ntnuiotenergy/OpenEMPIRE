@@ -6,8 +6,7 @@ from pathlib import Path
 from empire import run_empire
 from empire.core.config import (EmpireConfiguration, EmpireRunConfiguration,
                                 read_config_file)
-from empire.core.scenario_random import (check_scenarios_exist_and_copy,
-                                         generate_random_scenario)
+from empire.core.scenario_random import generate_random_scenario
 from empire.input_data_manager import IDataManager
 from empire.utils import (copy_csv_dataset, copy_scenario_data,
                           create_if_not_exist, get_run_name)
@@ -44,7 +43,6 @@ def run_empire_model(
     LeapYearsInvestment = empire_config.leap_years_investment
 
     workbook_path = run_config.dataset_path
-    tab_file_path = run_config.tab_file_path
     scenario_data_path = run_config.scenario_data_path
     result_file_path = run_config.results_path
 
@@ -106,7 +104,7 @@ def run_empire_model(
                 empire_config=empire_config,
                 dict_countries=dict_countries,
                 scenario_data_path=scenario_data_path,
-                tab_file_path=stochastic_data_path,
+                output_path=stochastic_data_path,
             )
 
     else:
@@ -115,16 +113,11 @@ def run_empire_model(
                 "Both 'use_scen_generation' and 'use_fixed_sample' are set to False. "
                 "Existing scenarios will be used, thus 'use_fixed_sample' should be True."
             )
-        check_scenarios_exist_and_copy(run_config)
-
-
-    # generate_tab_from_csv(csv_root=workbook_path, tab_file_path=tab_file_path)
 
 
     if not test_run:
         obj_value = run_empire(
             name=run_config.run_name,
-            tab_file_path=tab_file_path,
             result_file_path=result_file_path,
             scenario_data_path=scenario_data_path,
             solver=empire_config.optimization_solver,
@@ -183,7 +176,6 @@ def setup_run_paths(
     run_name = get_run_name(empire_config=empire_config, version=version)
     input_path = create_if_not_exist(run_path / "Input")
     input_data_path = create_if_not_exist(input_path / "csv")
-    tab_path = create_if_not_exist(input_path / "Tab")
     scenario_data_path = create_if_not_exist(input_data_path / "ScenarioData")
 
 
@@ -202,7 +194,6 @@ def setup_run_paths(
     return EmpireRunConfiguration(
         run_name=run_name,
         dataset_path=input_data_path,
-        tab_path=tab_path,
         scenario_data_path=scenario_data_path,
         results_path=results_path,
         empire_path=empire_path,
