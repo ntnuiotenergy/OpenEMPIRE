@@ -35,7 +35,7 @@ if (run_path / "Output/results_objective.csv").exists() and not args.force:
     raise ValueError("There already exists results for this analysis run.")
 
 
-input_data_dir = "input_data_clean"
+input_data_dir = "input_data"
 
 run_config = setup_run_paths(version=args.dataset, empire_config=empire_config, run_path=run_path, input_data_dir=input_data_dir)
 logger = get_empire_logger(run_config=run_config)
