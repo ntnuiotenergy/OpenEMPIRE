@@ -376,7 +376,6 @@ filename_dict = {
         "sloadAnnualDemand": "ElectricAnnualDemand.csv",
         "maxHydroNode": "HydroGenMaxAnnualProduction.csv",
     },
-
     "General": {
         "seasScale": "seasonScale.csv",
         "CO2cap": "CO2Cap.csv",
@@ -392,7 +391,7 @@ def convert_csv_filenames(root_path: Path):
                 dst_path = root_path / component / f"{var_name}.csv"
                 src_path.rename(dst_path)
             else:
-                raise FileNotFoundError(f"Expected file {src_path} not found.")
+                logger.warning(f"Expected file {src_path} not found.")
 # --------------------------------------------------------------------------------------
 # Main Pipeline
 # --------------------------------------------------------------------------------------
