@@ -57,6 +57,7 @@ Content
 
    contributors
    license
+   release_notes
 
 
 Indices and tables

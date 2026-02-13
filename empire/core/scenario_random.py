@@ -1,7 +1,10 @@
+import json
 import logging
 import os
+import random
 import shutil
 from pathlib import Path
+from typing import Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -10,57 +13,31 @@ from scipy.stats import kurtosis, skew, wasserstein_distance
 from sklearn.cluster import KMeans
 
 from empire.core.config import EmpireConfiguration, EmpireRunConfiguration
+from empire.core.constants import COPULA_TO_LABEL_MAPPING
+from empire.core.voronoi_sgr import compute_voronoi_clusters, extract_candidate_windows, make_voronoi_filter
+from empire.core.scenario_utils import make_datetime, year_season_filter, remove_time_index, season_month
 
 logger = logging.getLogger(__name__)
 
-
-def season_month(season: str):
-    if season == "winter":
-        return [1, 2, 3]
-    if season == "spring":
-        return [4, 5, 6]
-    if season == "summer":
-        return [7, 8, 9]
-    if season == "fall":
-        return [10, 11, 12]
-
-    raise ValueError(f"{season} is not a valid season.")
-
-
-def year_season_filter(data, sample_year, season):
-    data = data.loc[data.year.isin([sample_year]), :]
-    data = data.loc[data.month.isin(season_month(season)), :]
-    return data
-
-
-def remove_time_index(data):
-    data = data.reset_index(drop=True)
-    data = data.drop(["time", "year", "month", "dayofweek", "hour"], axis=1)
-    return data
-
-
-def make_datetime(data, time_format):
-    data["time"] = pd.to_datetime(data["time"], format=time_format, exact=False)
-    data["year"] = data["time"].dt.year
-    data["month"] = data["time"].dt.month
-    data["hour"] = data["time"].dt.hour
-    data["dayofweek"] = data["time"].dt.dayofweek
-    return data
-
-
 def gather_regular_sample(data, season, seasons, regularSeasonHours, sample_hour):
     data = data.reset_index(drop=True)
+    
+    # Ensure we have enough hours remaining for a full window
+    if sample_hour + regularSeasonHours > len(data):
+        raise ValueError(f"Not enough hours remaining in season {season}. Need {regularSeasonHours} hours but only {len(data) - sample_hour} available.")
+    
     sample_data = data.iloc[sample_hour : sample_hour + regularSeasonHours, :]
-
     # Sort sample_data to start on midnight monday (INACTIVE)
     # sample_data = sample_data.sort_values(by=['dayofweek','hour'])
 
+    
     # Drop non-country columns
     sample_data = remove_time_index(sample_data)
 
-    hours = list(
-        range(1 + regularSeasonHours * seasons.index(season), regularSeasonHours * (seasons.index(season) + 1) + 1)
-    )
+    # Generate hours list
+    start_hour = 1 + regularSeasonHours * seasons.index(season)
+    hours = list(range(start_hour, start_hour + regularSeasonHours))
+    
     return [sample_data, hours]
 
 
@@ -558,6 +535,86 @@ def make_mean(data, regularSeasonHours, seasons):
     return ws
 
 
+def _calculate_rank_values(data: pd.DataFrame) -> pd.DataFrame:
+    df = data.copy().reset_index(drop=True)
+    df["rank"] = df[["Value"]].rank(method="first")
+
+    # Transform to uniform distribution
+    df["rank_value"] = df["rank"] / len(df)
+    return df
+
+
+def make_copula_filter(
+        data: list[pd.DataFrame],
+        nodes: list[str],
+        copulas: list[str],            
+        regularSeasonHours: int, 
+        seasons: list[str],
+        n_cluster: int,
+        filepath: Path = Path.cwd()
+) -> None:
+    
+    filepath = filepath / "CopulaClusters" 
+
+    if not os.path.exists(filepath):
+        os.makedirs(filepath)
+
+    # Calculate mean values for all possible sampling hours
+    mean_dfs = [make_mean(df, regularSeasonHours, seasons) for df in data]
+
+    frames = []
+    for s in seasons:
+        # Filter by season for each dataset
+        season_dfs = [df[df["Season"] == s] for df in mean_dfs]
+
+        # Calculate rank values for each dataset
+        season_dfs = [_calculate_rank_values(df) for df in season_dfs]
+
+        # Pick first of dfs as base
+        base_df = season_dfs[0]
+        base_df["Value1"] = base_df["rank_value"]
+
+        # Add other rank values to base df
+        if len(season_dfs) > 1: 
+            for i in range(1, len(season_dfs)):
+                base_df.insert(len(base_df.columns), f"Value{i+1}", season_dfs[i]["rank_value"])
+
+        kmeans = KMeans(init="k-means++", n_clusters=n_cluster, n_init=100)
+        fit_predict_cols = [f"Value{i+1}" for i in range(len(season_dfs))]
+
+        kmeans.fit(base_df[fit_predict_cols])
+        group = kmeans.predict(base_df[fit_predict_cols])
+        base_df.insert(len(base_df.columns), "ClusterGroup", group)
+
+        if len(season_dfs) == 3:
+            # Create a 3D scatter plot
+            plt.rcParams.update({'font.size': 20})
+            fig = plt.figure(figsize=(10, 8))
+            ax = fig.add_subplot(projection='3d')
+            ax.scatter(xs=base_df["Value1"], ys=base_df["Value2"], zs=base_df["Value3"], c=base_df["ClusterGroup"], s=0.5)
+            ax.set_xlabel(f"{COPULA_TO_LABEL_MAPPING[copulas[0]]} {nodes[0]}", labelpad=15, rotation_mode='anchor')
+            ax.set_ylabel(f"{COPULA_TO_LABEL_MAPPING[copulas[0]]} {nodes[1]}", labelpad=20, rotation_mode='anchor')
+            ax.set_zlabel(f"{COPULA_TO_LABEL_MAPPING[copulas[0]]} {nodes[2]}", labelpad=20, rotation_mode='anchor')
+            ax.set_title(f"Season = {s}")
+
+            # Adjust axis label positions and angles
+            ax.tick_params(axis='x', pad=12)
+            ax.tick_params(axis='y', pad=3)
+            ax.tick_params(axis='z', pad=-1)
+
+            ticks = ["0.0", "0.0", "0.2", "0.4", "0.6", "0.8", "1.0"]
+            ax.set_xticklabels(ticks, verticalalignment='baseline', horizontalalignment='left')
+            ax.set_yticklabels(ticks, verticalalignment='baseline', horizontalalignment='left')
+            ax.set_zticklabels(ticks, verticalalignment='baseline', horizontalalignment='left')
+
+            plt.savefig(filepath / f"{s}")
+
+        frames.append(base_df)
+    copula_clusters = pd.concat(frames)
+    copula_clusters = copula_clusters.drop(columns=["Value", "rank", "rank_value"]).reset_index(drop=True)
+    copula_clusters.to_csv(filepath / "copula_clusters.csv", index=False)
+
+
 def make_filter_result(data1, data2, regularSeasonHours, seasons, n_cluster, filepath: Path):
     data1_ws = make_ws(data1, regularSeasonHours, seasons)
     data2_ws = make_mean(data2, regularSeasonHours, seasons)
@@ -574,6 +631,8 @@ def make_filter_result(data1, data2, regularSeasonHours, seasons, n_cluster, fil
         plt.title(str(n_cluster) + " clusters of data for season " + str(s))
         plt.xlabel("WS distance, total electricity load")
         plt.ylabel("Mean, total electricity load")
+        # Save the plot to a file
+        plt.savefig(filepath / f"filter_scatter_{s}.png")
         plt.show()
         frames.append(ws_1)
     filter_result = pd.concat(frames)
@@ -631,7 +690,11 @@ def generate_random_scenario(
     LOADCHANGEMODULE = empire_config.load_change_module
     filter_make = empire_config.filter_make
     filter_use = empire_config.filter_use
+    copulas_to_use = empire_config.copulas_to_use
+    copula_clusters_make = empire_config.copula_clusters_make
+    copula_clusters_use = empire_config.copula_clusters_use
     n_cluster = empire_config.n_cluster
+    VORONOI_N_CLUSTER = 100
     moment_matching = empire_config.moment_matching
     n_tree_compare = empire_config.n_tree_compare
 
@@ -667,6 +730,9 @@ def generate_random_scenario(
     hydroseasonal_data = pd.read_csv(scenario_data_path / "hydroseasonal.csv")
     electricload_data = pd.read_csv(scenario_data_path / "electricload.csv")
 
+    # Unique nodes; for copula-based SGR
+    unique_nodes = [col for col in solar_data.columns if col != "time"]
+
     if LOADCHANGEMODULE:
         elecLoadMod_data = pd.read_csv(scenario_data_path / "LoadchangeModule/elec_load_mod.csv")
 
@@ -699,6 +765,24 @@ def generate_random_scenario(
             MaxReduction_data[DLCType] = make_datetime(MaxReduction_data[DLCType], time_format)
             MaxDispatch_data[DLCType] = make_datetime(MaxDispatch_data[DLCType], time_format)
             
+    # ===== BEGIN VORONOI SGR BRANCH =====
+    if getattr(empire_config, "voronoi_sgr_make", False):
+        print("Making Voronoi clusters...")
+        make_voronoi_filter(scenario_data_path, len_of_regular_season, time_format, n_cluster = VORONOI_N_CLUSTER, 
+                          mu_percentile=getattr(empire_config, "voronoi_mu_percentile", 80))
+
+    if getattr(empire_config, "voronoi_sgr_use", False):
+        print("Using existing Voronoi clusters...")
+        voronoi_filter = pd.read_csv(Path.cwd() / "VoronoiClusters" / "voronoi_filter.csv")
+        # Calculate cluster weights per season
+        sizes = (voronoi_filter.groupby(["Season","ClusterGroup"]).size()
+                 .unstack(fill_value=0)
+                 .reindex(columns=range(VORONOI_N_CLUSTER), fill_value=0))
+        weights_by_season = sizes.div(sizes.sum(axis=1), axis=0)
+        print(f"Cluster sizes by season:\n{sizes}")
+        print(f"Cluster weights by season:\n{weights_by_season}")
+    # ===== END VORONOI SGR BRANCH =====
+
     if filter_make:
         print("Making stratified filter...")
         make_filter_result(
@@ -709,6 +793,34 @@ def generate_random_scenario(
     if filter_use:
         print("Using stratified filter...")
         filter_result = pd.read_csv(scenario_data_path / "filter_result.csv")
+        cluster = n_cluster - 1
+
+    COPULA_TO_DF_MAPPING = dict({
+            "electricload": electricload_data,
+            "solar": solar_data,
+            "windonshore": windonshore_data,
+            "windoffshore": windoffshore_data,
+            "hydroror": hydroror_data,
+            "hydroseasonal": hydroseasonal_data,
+        })
+    
+    if copula_clusters_make: 
+        print("Making copula clusters...")
+        data = [make_datetime(COPULA_TO_DF_MAPPING[copula][[node, "time"]], time_format) for copula in copulas_to_use for node in unique_nodes]
+        filepath = Path.cwd() / "Copulas"
+
+        make_copula_filter(data=data,
+                           nodes=unique_nodes,
+                           copulas=copulas_to_use,
+                           regularSeasonHours=len_of_regular_season, 
+                           seasons=seasons, 
+                           n_cluster=n_cluster, 
+                           filepath=filepath)
+
+    if copula_clusters_use:
+        print("Using copula clusters...")
+        filepath = Path.cwd() / "Copulas" / "CopulaClusters" 
+        copula_filter = pd.read_csv(filepath / "copula_clusters.csv")
         cluster = n_cluster - 1
 
     if moment_matching:
@@ -751,15 +863,26 @@ def generate_random_scenario(
 
                     # Get sample year for each season/scenario
 
-                    if filter_use:
-                        if cluster == n_cluster - 1:
-                            cluster = 0
-                        else:
-                            cluster += 1
-                        valid_pick = filter_result[filter_result["ClusterGroup"] == cluster]
+                    if filter_use or copula_clusters_use or getattr(empire_config, "voronoi_sgr_use", False):
+                        if filter_use or copula_clusters_use:
+                            if cluster == n_cluster - 1:
+                                cluster = 0
+                            else:
+                                cluster += 1
+                        else:  # voronoi_sgr_use
+                            # Use size-aware rotation for Voronoi clusters
+                            cluster = np.random.choice(np.arange(VORONOI_N_CLUSTER), p=weights_by_season.loc[s].values)
+                        
+                        if filter_use:
+                            valid_pick = filter_result[filter_result["ClusterGroup"] == cluster]
+                        elif copula_clusters_use:
+                            valid_pick = copula_filter[copula_filter["ClusterGroup"] == cluster]
+                        else:  # voronoi_sgr_use
+                            valid_pick = voronoi_filter[voronoi_filter["ClusterGroup"] == cluster]
                         valid_pick = valid_pick[valid_pick["Season"] == s]
                         sample_year = np.random.choice(valid_pick["Year"])
                         valid_pick = valid_pick[valid_pick["Year"] == sample_year]
+                        sample_hour = np.random.choice(valid_pick["SampleIndex"])
                     else:
                         sample_year = np.random.choice(solar_data["time"].dt.year.unique())
 
@@ -792,8 +915,9 @@ def generate_random_scenario(
                     
                     # Filter the sample range by K-means if filter_sample=True
 
-                    if filter_use:
-                        sample_hour = np.random.choice(valid_pick["SampleIndex"])
+                    if filter_use or copula_clusters_use or getattr(empire_config, "voronoi_sgr_use", False):
+                        # sample_hour already selected above, no need to select again
+                        pass
                     else:
                         window = solar_season.shape[0] - len_of_regular_season - 1
                         if window <= 0:
@@ -1028,9 +1152,21 @@ def generate_random_scenario(
                 # Peak1: The highest load when all loads are summed together
                 electricload_data_year_notime = remove_time_index(electricload_data_year)
                 overall_sample = electricload_data_year_notime.sum(axis=1).idxmax()
+                if not fix_sample:
+                    df = pd.DataFrame(
+                        data={"Period": i, "Scenario": scenario, "Season": "peak1", "Year": sample_year, "Hour": overall_sample},
+                        index=[0],
+                        )
+                    sampling_key = pd.concat([sampling_key, df], ignore_index=True)
                 # Peak2: The highest load of a single country
                 max_load_country = electricload_data_year_notime.max().idxmax()
                 country_sample = electricload_data_year_notime[max_load_country].idxmax()
+                if not fix_sample:
+                    df = pd.DataFrame(
+                        data={"Period": i, "Scenario": scenario, "Season": "peak2", "Year": sample_year, "Hour": country_sample},
+                        index=[0],
+                        )
+                    sampling_key = pd.concat([sampling_key, df], ignore_index=True)
 
                 # Sample generator availability for peak seasons
                 genAvail = pd.concat(
@@ -1391,7 +1527,10 @@ def check_scenarios_exist_and_copy(run_config: EmpireRunConfiguration):
                 run_config.tab_file_path,
             )
         else:
-            shutil.copyfile(run_config.scenario_data_path / file, run_config.tab_file_path / file)
+            try:
+                shutil.copyfile(run_config.scenario_data_path / file, run_config.tab_file_path / file)
+            except shutil.SameFileError:
+                pass
 
 
 def check_scenarios_exist(scenario_data_path: Path) -> bool:

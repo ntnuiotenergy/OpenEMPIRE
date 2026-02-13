@@ -27,8 +27,8 @@ dependencies:
   - sphinx
 
   # Dev tools
-  - black
   - pytest
+  - ruff
   
   - pip
   - pip:

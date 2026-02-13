@@ -30,7 +30,7 @@ def copy_scenario_data(base_scenario_dataset, scenario_data_path, use_scenario_g
     :param use_fixed_sample: Use fixed samples or not.
     """
     for csv_file in (base_scenario_dataset).glob("*.csv"):
-        if csv_file.name == "samling_key.csv" and not use_fixed_sample:
+        if csv_file.name == "sampling_key.csv" and not use_fixed_sample:
             continue
 
         shutil.copyfile(csv_file, scenario_data_path / csv_file.name)
@@ -93,6 +93,8 @@ def restricted_float(x) -> float:
         raise ArgumentTypeError(f"{x} not in range [0.0, 1.0]")
     return x
 
+def get_name_of_last_folder_in_path(path: Path) -> str:
+    return str(path).split("/")[-1]
 
 def scale_and_shift_series(profile: pd.Series, scale: float, shift: float):
     """

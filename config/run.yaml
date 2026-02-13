@@ -15,6 +15,9 @@ use_fixed_sample: True              # Specifies if fixed scenario samples should
 load_change_module: False           #
 filter_make : False                 #
 filter_use : False                  #
+copula_clusters_make: False         # Make copula clusters (for copula-strata SGR)
+copula_clusters_use: False          # Copula-based scenario generation (strata/filter approach)
+copulas_to_use: ["electricload"]    #
 n_cluster : 10                      #
 moment_matching : False             #
 n_tree_compare : 20                 #
@@ -25,3 +28,5 @@ write_in_lp_format: False           # Problem should be written in Linear Progra
 serialize_instance: False           # Serialize the data structure or model for later use
 north_sea: True                     # Whether the north sea is modelled or not
 DLC_module: False                   # True: Activate Direct Load Control (DLC) module; False: Deactivate DLC module.
+leap_years_investment: 5            # Number of years per period (default: 5)
+time_format: "%d/%m/%Y %H:%M"       # Time format for scenario data files

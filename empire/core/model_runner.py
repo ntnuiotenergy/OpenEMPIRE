@@ -1,15 +1,17 @@
 #!/usr/bin/env python
 import json
 import logging
-import pprint
 from pathlib import Path
 
 from empire import run_empire
-from empire.core.config import EmpireConfiguration, EmpireRunConfiguration, read_config_file
+from empire.core.config import (EmpireConfiguration, EmpireRunConfiguration,
+                                read_config_file)
 from empire.core.reader import generate_tab_files
-from empire.core.scenario_random import check_scenarios_exist_and_copy, generate_random_scenario
+from empire.core.scenario_random import (check_scenarios_exist_and_copy,
+                                         generate_random_scenario)
 from empire.input_data_manager import IDataManager
-from empire.utils import copy_dataset, copy_DLC_dataset, copy_scenario_data, create_if_not_exist, get_run_name
+from empire.utils import (copy_dataset, copy_DLC_dataset, copy_scenario_data,
+                          create_if_not_exist, get_run_name)
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +21,9 @@ def run_empire_model(
     run_config: EmpireRunConfiguration,
     data_managers: list[IDataManager],
     test_run: bool,
-):
+    OUT_OF_SAMPLE: bool = False, 
+    sample_file_path: Path | None = None
+    ) -> None | float:
     for manager in data_managers:
         manager.apply()
 
@@ -118,7 +122,7 @@ def run_empire_model(
     generate_tab_files(file_path=workbook_path, tab_file_path=tab_file_path, DLCMODULE=empire_config.DLC_module, DataFilters=DataFilters)
 
     if not test_run:
-        run_empire(
+        obj_value = run_empire(
             name=run_config.run_name,
             tab_file_path=tab_file_path,
             result_file_path=result_file_path,
@@ -147,13 +151,16 @@ def run_empire_model(
             LOADCHANGEMODULE=empire_config.load_change_module,
             DLCMODULE=empire_config.DLC_module,
             OPERATIONAL_DUALS=empire_config.compute_operational_duals,
-        )
+            north_sea=empire_config.north_sea,
+            OUT_OF_SAMPLE=OUT_OF_SAMPLE, 
+            sample_file_path=sample_file_path
+            )
 
     config_path = run_config.dataset_path / "config.txt"
     logger.info("Writing config to: %s", config_path)
     with open(config_path, "w", encoding="utf-8") as file:
         json.dump(empire_config.to_dict(), file, ensure_ascii=False, indent=4)
-
+    return obj_value
 
 def setup_run_paths(
     version: str,
@@ -222,6 +229,8 @@ def runner(data_managers):
 
     if version == "test":
         config = read_config_file(Path("config/testmyrun.yaml"))
+    elif version == "europe_agg_v50":
+        config = read_config_file(Path("config/aggrun.yaml"))
     else:
         config = read_config_file(Path("config/myrun.yaml"))
 

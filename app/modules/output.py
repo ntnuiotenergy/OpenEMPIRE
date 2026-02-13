@@ -27,11 +27,25 @@ def profile_function(func):
     return wrapper
 
 
+# active_results = Path("/Users/martihj/gitsource/OpenEMPIRE/Results/1_node_baseload/ncc_5000_co2_150_scale_1.0_shift-10")
+# active_results = Path("/Users/martihj/gitsource/OpenEMPIRE/Results/norway_analysis/ncc3800.0_na0.95_w0.0_wog0.0_pTrue")
+
+
 # @profile_function
 def output(active_results: Path) -> None:
     st.title("Results")
-    output_client = EmpireOutputClient(output_path=active_results / "Output")
-    input_client = EmpireInputClient(dataset_path=active_results / "Input/Xlsx")
+
+    @st.cache_resource
+    def get_output_client(active_results):
+        return EmpireOutputClient(output_path=active_results / "Output")
+
+    output_client = get_output_client(active_results)
+
+    @st.cache_resource
+    def get_input_client(active_results):
+        return EmpireInputClient(dataset_path=active_results / "Input/Xlsx")
+
+    input_client = get_input_client(active_results)
 
     # config_file = active_results / "Input/Xlsx/config.txt"
     config_file = Path.cwd() / "config/run.yaml"
@@ -203,11 +217,7 @@ def output(active_results: Path) -> None:
     nodes = operational_results.get_nodes()
     node = st.selectbox("Select node: ", nodes, index=nodes.index("NO2") if "NO2" in nodes else 0)
 
-    @st.cache_data
-    def get_operational_all(_output_client):
-        return _output_client.get_node_operational_values()
-
-    df_operational_node_all = get_operational_all(output_client)
+    df_operational_node_all = output_client.get_node_operational_values()
     discount_prices = st.sidebar.toggle("Discount prices to present value", value=True)
     if not discount_prices:
         years_to_period_mapping = {
@@ -224,11 +234,7 @@ def output(active_results: Path) -> None:
 
     scenario = st.selectbox("Select scenario: ", df_operational_node["Scenario"].unique())
 
-    @st.cache_data
-    def get_transmission_operational_all(_output_client, node):
-        return _output_client.get_transmission_operational(node)
-
-    df_operational_trans = get_transmission_operational_all(output_client, node)
+    df_operational_trans = output_client.get_transmission_operational(node)
 
     col1, col2 = st.columns(2)
     col1.plotly_chart(
@@ -300,6 +306,10 @@ def output(active_results: Path) -> None:
     st.markdown("Import(+)/Export(-) [TWh/h]")
     flow_df = key_metrics_results.total_flow(df_operational_node_all) / 1e6
     st.dataframe(flow_df[selected_nodes].style.format("{:.2f}").background_gradient(cmap="Blues"))
+
+    st.markdown("Marginal prices for generators")
+    df_mc = key_metrics_results.compute_discounted_marginal_cost()
+    st.dataframe(df_mc.style.format("{:.2f}").background_gradient(cmap="Blues"))
 
     st.markdown("Marginal prices for generators")
     df_mc = key_metrics_results.compute_discounted_marginal_cost()
