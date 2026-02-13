@@ -9,8 +9,8 @@ length_of_regular_season: 168                          # Number of hours in a re
 discount_rate: 0.05                                    # Rate used to discount future cash flows to present value
 wacc: 0.05                                             # Weighted average cost of capital
 optimization_solver: "Gurobi"                          # Mathematical solver used for optimization tasks
-use_scenario_generation: False                         # Indicates if scenarios should be generated dynamically
-use_fixed_sample: True                                 # Specifies if fixed scenario samples should be used
+use_scenario_generation: True                          # Indicates if scenarios should be generated dynamically
+use_fixed_sample: False                                # Specifies if fixed scenario samples should be used
 load_change_module: False                              #
 filter_make : False                                    #
 filter_use : False                                     #
