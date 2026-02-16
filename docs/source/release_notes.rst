@@ -11,6 +11,8 @@ Please add descriptive release notes like in `OpenEMPIRE <https://github.com/ntn
 
 **Minor Changes and bug-fixing**
 
+ * Add HPC cluster testing scripts and improved configuration for running EMPIRE on SGE clusters (`#XX <https://github.com/ntnuiotenergy/OpenEMPIRE/pull/XX>`__).
+
  * Removed authentication for streamlit app.
  
  * Fix issue with config.txt not being written for test runs.
