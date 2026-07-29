@@ -152,8 +152,16 @@ def run_empire_model(
             DLCMODULE=empire_config.DLC_module,
             OPERATIONAL_DUALS=empire_config.compute_operational_duals,
             north_sea=empire_config.north_sea,
-            OUT_OF_SAMPLE=OUT_OF_SAMPLE, 
-            sample_file_path=sample_file_path
+            OUT_OF_SAMPLE=OUT_OF_SAMPLE,
+            sample_file_path=sample_file_path,
+            RAMPING=empire_config.use_ramping,
+            solver_method=empire_config.solver_method,
+            solver_crossover=empire_config.solver_crossover,
+            solver_presolve=empire_config.solver_presolve,
+            solver_threads=empire_config.solver_threads,
+            solver_scaleflag=empire_config.solver_scaleflag,
+            solver_numericfocus=empire_config.solver_numericfocus,
+            solver_barhomogeneous=empire_config.solver_barhomogeneous,
             )
 
     config_path = run_config.dataset_path / "config.txt"

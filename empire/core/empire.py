@@ -18,10 +18,15 @@ logger = logging.getLogger(__name__)
 
 def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_path,
                solver, temp_dir, FirstHoursOfRegSeason, FirstHoursOfPeakSeason, lengthRegSeason,
-               NoOfRegSeason, lengthPeakSeason, NoOfPeakSeason, Period, Operationalhour, Scenario, 
-               Season, HoursOfSeason, discountrate, WACC, LeapYearsInvestment, IAMC_PRINT, WRITE_LP,
-               PICKLE_INSTANCE, EMISSION_CAP, USE_TEMP_DIR, LOADCHANGEMODULE, DLCMODULE, OPERATIONAL_DUALS, north_sea, 
-               OUT_OF_SAMPLE: bool = False, sample_file_path: Path | None = None) -> None | float:
+               lengthPeakSeason, Period, Operationalhour, Scenario, Season, HoursOfSeason,
+               discountrate, WACC, LeapYearsInvestment, IAMC_PRINT, WRITE_LP,
+               PICKLE_INSTANCE, EMISSION_CAP, USE_TEMP_DIR, LOADCHANGEMODULE, DLCMODULE, OPERATIONAL_DUALS, north_sea,
+               OUT_OF_SAMPLE: bool = False, sample_file_path: Path | None = None,
+               RAMPING: bool = True,
+               solver_method: int = 2, solver_crossover: int | None = None,
+               solver_presolve: int | None = -1, solver_threads: int | None = None,
+               solver_scaleflag: int | None = None, solver_numericfocus: int | None = None,
+               solver_barhomogeneous: int | None = None) -> None | float:
 
     if USE_TEMP_DIR:
         TempfileManager.tempdir = temp_dir
@@ -720,15 +725,18 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_
 
     #################################################################
 
-    def ramping_rule(model, n, g, h, i, w):
-        if h in model.FirstHoursOfRegSeason or h in model.FirstHoursOfPeakSeason:
-            return Constraint.Skip
-        else:
-            if g in model.ThermalGenerators:
-                return model.genOperational[n,g,h,i,w]-model.genOperational[n,g,(h-1),i,w] - model.genRampUpCap[g]*model.genInstalledCap[n,g,i] <= 0   #
-            else:
+    if RAMPING:
+        def ramping_rule(model, n, g, h, i, w):
+            if h in model.FirstHoursOfRegSeason or h in model.FirstHoursOfPeakSeason:
                 return Constraint.Skip
-    model.ramping = Constraint(model.GeneratorsOfNode, model.Operationalhour, model.PeriodActive, model.Scenario, rule=ramping_rule)
+            else:
+                if g in model.ThermalGenerators:
+                    return model.genOperational[n,g,h,i,w]-model.genOperational[n,g,(h-1),i,w] - model.genRampUpCap[g]*model.genInstalledCap[n,g,i] <= 0   #
+                else:
+                    return Constraint.Skip
+        model.ramping = Constraint(model.GeneratorsOfNode, model.Operationalhour, model.PeriodActive, model.Scenario, rule=ramping_rule)
+    else:
+        logger.info("Ramping constraints disabled (use_ramping=False)...")
 
     #################################################################
 
@@ -893,9 +901,20 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_
     #################################################################
 
     if EMISSION_CAP:
+        # Emissions are accumulated per node (in tonnes CO2) before being summed in the cap.
+        # A single cap row over all generators x hours is a dense row that causes severe
+        # fill-in in the barrier solver, and the former /1e6 (Mt) scaling put 5e-8
+        # coefficients in the matrix. Domain is Reals: CCS generators can have negative
+        # CO2 factors and the cap itself goes negative in later periods.
+        model.nodeEmission = Var(model.Node, model.PeriodActive, model.Scenario, domain=Reals)
+
+        def node_emission_rule(model, n, i, w):
+            return sum(model.seasScale[s]*model.genCO2TypeFactor[g]*(3.6/model.genEfficiency[g,i])*model.genOperational[n,g,h,i,w] for g in model.Generator if (n,g) in model.GeneratorsOfNode for (s,h) in model.HoursOfSeason) \
+                - model.nodeEmission[n,i,w] == 0
+        model.node_emission = Constraint(model.Node, model.PeriodActive, model.Scenario, rule=node_emission_rule)
+
         def emission_cap_rule(model, i, w):
-            return sum(model.seasScale[s]*model.genCO2TypeFactor[g]*(3.6/model.genEfficiency[g,i])*model.genOperational[n,g,h,i,w] for (n,g) in model.GeneratorsOfNode for (s,h) in model.HoursOfSeason)/1000000 \
-                - model.CO2cap[i] <= 0   #
+            return sum(model.nodeEmission[n,i,w] for n in model.Node) - 1e6*model.CO2cap[i] <= 0   #
         model.emission_cap = Constraint(model.PeriodActive, model.Scenario, rule=emission_cap_rule)
 
     #################################################################
@@ -1084,8 +1103,20 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_
         #instance.display('outputs_xpress.txt')
     if solver == "Gurobi":
         opt = SolverFactory('gurobi', Verbose=True)
-        opt.options["Crossover"]=0
-        opt.options["Method"]=2
+        opt.options["Method"] = solver_method          # 2 = barrier (interior point), best for large LPs
+        if solver_crossover is not None:
+            opt.options["Crossover"] = solver_crossover  # 0 = skip crossover tail (interior solution only)
+        if solver_presolve is not None:
+            opt.options["Presolve"] = solver_presolve    # 2 = aggressive presolve to shrink the matrix
+        if solver_threads is not None:
+            opt.options["Threads"] = solver_threads      # cap at physical cores to avoid hyperthread/NUMA contention
+        if solver_scaleflag is not None:
+            opt.options["ScaleFlag"] = solver_scaleflag      # matrix scaling (internal; results returned in original units)
+        if solver_numericfocus is not None:
+            opt.options["NumericFocus"] = solver_numericfocus  # 1-3: more effort on numerical accuracy (helps interior duals)
+        if solver_barhomogeneous is not None:
+            opt.options["BarHomogeneous"] = solver_barhomogeneous  # 1: robust barrier variant for ill-conditioned models
+        logger.info("Gurobi options: %s", dict(opt.options))
     if solver == "GLPK":
         opt = SolverFactory("glpk", Verbose=True)
 
@@ -1350,7 +1381,7 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_
             my_string=[inv_per[int(i-1)],w, 
             value(sum(instance.seasScale[s]*instance.genOperational[n,g,h,i,w]*instance.genCO2TypeFactor[g]*(3.6/instance.genEfficiency[g,i]) for (n,g) in instance.GeneratorsOfNode for (s,h) in instance.HoursOfSeason))]
             if EMISSION_CAP:
-                my_string.extend([value(instance.dual[instance.emission_cap[i,w]]/(instance.operationalDiscountrate*instance.sceProbab[w]*1e6)),value(instance.CO2cap[i]*1e6)])
+                my_string.extend([value(instance.dual[instance.emission_cap[i,w]]/(instance.operationalDiscountrate*instance.sceProbab[w])),value(instance.CO2cap[i]*1e6)])
             else:
                 my_string.extend([value(instance.CO2price[i]),0])
             my_string.extend([value(sum(instance.seasScale[s]*instance.genOperational[n,g,h,i,w]/1000 for (n,g) in instance.GeneratorsOfNode for (s,h) in instance.HoursOfSeason)), 
@@ -1651,12 +1682,14 @@ def run_empire(name, tab_file_path: Path, result_file_path: Path, scenario_data_
 
         f = open(result_file_path / 'results_co2_price_resolved.csv', 'w', newline='')
         writer = csv.writer(f)
-        writer.writerow(["Period","Scenario","AnnualCO2emission_Ton","CO2Price_EuroPerTon"])
+        writer.writerow(["Period","Scenario","AnnualCO2emission_Ton","CO2Price_EuroPerTon","CO2Cap_Ton"])
         for i in instance.PeriodActive:
             for w in instance.Scenario:
-                my_string=[inv_per[int(i-1)],w, 
+                my_string=[inv_per[int(i-1)],w,
                 value(sum(instance.seasScale[s]*instance.genOperational[n,g,h,i,w]*instance.genCO2TypeFactor[g]*(3.6/instance.genEfficiency[g,i]) for (n,g) in instance.GeneratorsOfNode for (s,h) in instance.HoursOfSeason))]
                 if EMISSION_CAP:
-                    my_string.extend([value(instance.dual[instance.emission_cap[i,w]]/(instance.operationalDiscountrate*instance.sceProbab[w]*1e6)),value(instance.CO2cap[i]*1e6)])
+                    my_string.extend([value(instance.dual[instance.emission_cap[i,w]]/(instance.operationalDiscountrate*instance.sceProbab[w])),value(instance.CO2cap[i]*1e6)])
                 else:
                     my_string.extend([value(instance.CO2price[i]),0])
+                writer.writerow(my_string)
+        f.close()

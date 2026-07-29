@@ -49,6 +49,14 @@ class EmpireConfiguration:
         n_peak_seasons: int = 2,
         leap_years_investment: int = 5,
         time_format: str = "%d/%m/%Y %H:%M",
+        use_ramping: bool = True,
+        solver_method: int = 2,
+        solver_crossover: int | None = None,
+        solver_presolve: int | None = -1,
+        solver_threads: int | None = None,
+        solver_scaleflag: int | None = None,
+        solver_numericfocus: int | None = None,
+        solver_barhomogeneous: int | None = None,
         **kwargs,
     ):
         """
@@ -81,6 +89,22 @@ class EmpireConfiguration:
         :param leap_years_investment: Years between investment decisions
         :param time_format: Time format
         :param DLC_module: True --> Activate Direct Load Control (DLC) module; False --> Deactivate DLC module.
+        :param use_ramping: If true (default), thermal generator ramp-rate constraints are included. Setting it to
+            false removes the inter-hour ramping constraints (fewer rows, less temporal coupling for thermal units);
+            only do this if ramping is non-binding at your time resolution, as it is a physical modelling assumption.
+        :param solver_method: Gurobi 'Method' parameter (algorithm). 2 = barrier, best for large LPs.
+        :param solver_crossover: Gurobi 'Crossover' parameter. 0 skips the crossover tail for faster
+            barrier solves (interior-point solution only; duals/prices become approximate). None leaves the solver default.
+        :param solver_presolve: Gurobi 'Presolve' parameter. -1 = automatic (default), 0 = off,
+            1 = conservative, 2 = aggressive. None leaves the option unset.
+        :param solver_threads: Gurobi 'Threads' parameter (max threads). Cap at physical core count to avoid
+            hyperthread/NUMA contention on multi-socket machines. None leaves the solver default (all logical cores).
+        :param solver_scaleflag: Gurobi 'ScaleFlag' parameter (matrix scaling). 0=off, 1/2/3 increasingly aggressive,
+            -1=auto. Scaling is internal; results are returned in original units. None leaves the solver default.
+        :param solver_numericfocus: Gurobi 'NumericFocus' parameter. 0=auto, 1-3 spend more effort on numerical
+            accuracy (recommended when reading interior-point duals with crossover off). None leaves the solver default.
+        :param solver_barhomogeneous: Gurobi 'BarHomogeneous' parameter. 1 enables the homogeneous barrier variant,
+            more robust on ill-conditioned models. None leaves the solver default (-1, auto).
         """
         # Model parameters
         self.use_temporary_directory = use_temporary_directory
@@ -119,6 +143,16 @@ class EmpireConfiguration:
         self.n_peak_seasons = n_peak_seasons
         self.leap_years_investment = leap_years_investment
         self.time_format = time_format
+        self.use_ramping = use_ramping
+
+        # Solver (Gurobi) performance options
+        self.solver_method = solver_method
+        self.solver_crossover = solver_crossover
+        self.solver_presolve = solver_presolve
+        self.solver_threads = solver_threads
+        self.solver_scaleflag = solver_scaleflag
+        self.solver_numericfocus = solver_numericfocus
+        self.solver_barhomogeneous = solver_barhomogeneous
 
         # Computed attributes
         self.n_reg_season = len(regular_seasons)
