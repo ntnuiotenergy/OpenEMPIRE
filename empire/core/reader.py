@@ -21,8 +21,17 @@ def read_file(excelfile: pd.ExcelFile, sheet: str, columns: list,
     logger.info("Reading %s sheet from %s.xlsx", sheet, filename)
 
     input_sheet = excelfile[sheet]
+
+    # Modify the columns' header
+    input_sheet.columns = pd.Series(input_sheet.iloc[skipheaders-1]).str.replace(' ', '_')
+
+    # Remove the extra rows and columns
     data_table = input_sheet.iloc[skipheaders:, columns]
-    data_table.columns = pd.Series(data_table.columns).str.replace(' ', '_')
+
+    # Filter the dataframe to remove unwanted investment periods and nodes.
+    data_table = filter_input(data_table)
+
+    # Remove the rows that contains NULL values
     data_nonempty = data_table.dropna()
 
     save_csv_frame = pd.DataFrame(data_nonempty)
@@ -43,7 +52,11 @@ def read_sets(excelfile: pd.ExcelFile, sheet: str, tab_file_path: Path,
     """
     logger.info("Reading %s sheet from %s.xlsx", sheet, filename)
 
+    # Read the Excel sheet passed to this function from the input files
     input_sheet = excelfile[sheet]
+
+    # Filter the input to remove unwanted investment periods and nodes.
+    input_sheet = filter_input(input_sheet)
 
     for ind, column in enumerate(input_sheet.columns):
         data_table = input_sheet.iloc[0:, ind]
@@ -54,8 +67,23 @@ def read_sets(excelfile: pd.ExcelFile, sheet: str, tab_file_path: Path,
         tab_file_path.mkdir(parents=True, exist_ok=True)
         save_csv_frame.to_csv(tab_file_path / f"{filename}_{column}.tab", header=True, index=None, sep='\t', mode='w')        
 
+def filter_input(df):
+    """
+    Arg: DataFrame with parameter/set information + selection/slicing criteria
+    Returns: filtered DataFrame
+    """
+    
+    remove_periods = filter_input_glo["remove_periods"]
+    if remove_periods:
+        if 'Period' in df.columns:
+            df = df[~df.Period.isin(remove_periods)]
+        elif 'Periods' in df.columns:
+            df = df[~df.Periods.isin(remove_periods)]
+        elif 'Horizon' in df.columns:
+            df = df[~df.Horizon.isin(remove_periods)]
+    return df
 
-def generate_tab_files(file_path, tab_file_path):
+def generate_tab_files(file_path, tab_file_path, DLCMODULE, DataFilters):
     """
     Read column value from excel sheet and save as .tab file "sheet.tab"
 
@@ -64,6 +92,10 @@ def generate_tab_files(file_path, tab_file_path):
     """
     
     logger.info("Generating .tab-files...")
+
+    # Creating global variable for filtering the inputs
+    global filter_input_glo
+    filter_input_glo = DataFilters
 
     # Reading Excel workbooks using our function read_file
 
@@ -126,7 +158,7 @@ def generate_tab_files(file_path, tab_file_path):
     #Reading Season
     logger.info("Reading General.xlsx")
     GeneralExcelData = pd.read_excel(file_path / "General.xlsx", sheet_name=None)
-    read_file(GeneralExcelData, 'seasonScale', [0, 1], tab_file_path, "General", skipheaders=2)
+    # read_file(GeneralExcelData, 'seasonScale', [0, 1], tab_file_path, "General", skipheaders=2)
     read_file(GeneralExcelData, 'CO2Cap', [0, 1], tab_file_path, "General", skipheaders=2)
     read_file(GeneralExcelData, 'CO2Price', [0, 1], tab_file_path, "General", skipheaders=2)
     
@@ -149,3 +181,30 @@ def generate_tab_files(file_path, tab_file_path):
     read_file(StorageExcelData, 'EnergyMaxInstalledCapacity', [0, 1, 2], tab_file_path, "Storage", skipheaders=2)
     read_file(StorageExcelData, 'PowerMaxInstalledCapacity', [0, 1, 2], tab_file_path, "Storage", skipheaders=2)
     read_file(StorageExcelData, 'Lifetime', [0, 1], tab_file_path, "Storage", skipheaders=2)
+
+    if DLCMODULE:
+        logger.info("Reading DLCSets.xlsx")
+        # Reading DLC sets
+        DLCSetExcelData = pd.read_excel(file_path / "DLCModule/DLCSets.xlsx", sheet_name=None)
+        read_sets(DLCSetExcelData, 'Storage', tab_file_path / "DLCModule", "DLCSets")
+        read_file(DLCSetExcelData, 'StorageOfNodes', [0, 1], tab_file_path / "DLCModule", "DLCSets", skipheaders=2)
+        # Reading DR storage specifications
+        logger.info("Reading DLCStorage.xlsx")
+        DLCSetExcelData = pd.read_excel(file_path / "DLCModule/DLCStorage.xlsx", sheet_name=None)
+        read_file(DLCSetExcelData, 'StorageBleedEfficiency', [0, 1], tab_file_path / "DLCModule", "DLCStorage", skipheaders=2)
+        read_file(DLCSetExcelData, 'StorageChargeEff', [0, 1], tab_file_path / "DLCModule", "DLCStorage", skipheaders=2)
+        read_file(DLCSetExcelData, 'StorageDischargeEff', [0, 1], tab_file_path / "DLCModule", "DLCStorage", skipheaders=2)
+        read_file(DLCSetExcelData, 'StoragePowToEnergy', [0, 1], tab_file_path / "DLCModule", "DLCStorage", skipheaders=2)
+        read_file(DLCSetExcelData, 'StorageInitialEnergyLevel', [0, 1], tab_file_path / "DLCModule", "DLCStorage", skipheaders=2)
+        read_file(DLCSetExcelData, 'InitialPowerCapacity', [0, 1, 2, 3], tab_file_path / "DLCModule", "DLCStorage", skipheaders=2)
+        read_file(DLCSetExcelData, 'PowerCapitalCost', [0, 1, 2], tab_file_path / "DLCModule", "DLCStorage", skipheaders=2)
+        read_file(DLCSetExcelData, 'PowerFixedOMCost', [0, 1, 2], tab_file_path / "DLCModule", "DLCStorage", skipheaders=2)
+        read_file(DLCSetExcelData, 'PowerMaxBuiltCapacity', [0, 1, 2, 3], tab_file_path / "DLCModule", "DLCStorage", skipheaders=2)
+        read_file(DLCSetExcelData, 'EnergyCapitalCost', [0, 1, 2], tab_file_path / "DLCModule", "DLCStorage", skipheaders=2)
+        read_file(DLCSetExcelData, 'EnergyFixedOMCost', [0, 1, 2], tab_file_path / "DLCModule", "DLCStorage", skipheaders=2)
+        read_file(DLCSetExcelData, 'EnergyInitialCapacity', [0, 1, 2, 3], tab_file_path / "DLCModule", "DLCStorage", skipheaders=2)
+        read_file(DLCSetExcelData, 'EnergyMaxBuiltCapacity', [0, 1, 2, 3], tab_file_path / "DLCModule", "DLCStorage", skipheaders=2)
+        read_file(DLCSetExcelData, 'EnergyMaxInstalledCapacity', [0, 1, 2], tab_file_path / "DLCModule", "DLCStorage", skipheaders=2)
+        read_file(DLCSetExcelData, 'PowerMaxInstalledCapacity', [0, 1, 2], tab_file_path / "DLCModule", "DLCStorage", skipheaders=2)
+        read_file(DLCSetExcelData, 'Lifetime', [0, 1], tab_file_path / "DLCModule", "DLCStorage", skipheaders=2)
+        read_file(DLCSetExcelData, 'ActivationCost', [0, 1, 2, 3], tab_file_path / "DLCModule", "DLCStorage", skipheaders=2)

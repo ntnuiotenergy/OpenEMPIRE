@@ -10,7 +10,7 @@ from empire.core.reader import generate_tab_files
 from empire.core.scenario_random import (check_scenarios_exist_and_copy,
                                          generate_random_scenario)
 from empire.input_data_manager import IDataManager
-from empire.utils import (copy_dataset, copy_scenario_data,
+from empire.utils import (copy_dataset, copy_DLC_dataset, copy_scenario_data,
                           create_if_not_exist, get_run_name)
 
 logger = logging.getLogger(__name__)
@@ -85,6 +85,8 @@ def run_empire_model(
         )
     ]
     HoursOfSeason = HoursOfRegSeason + HoursOfPeakSeason
+    DataFilters=dict()
+    DataFilters['remove_periods'] = [x for x in [x for x in range(int(1 + (horizon - 2020) / LeapYearsInvestment), 9)]]
     with open(run_config.empire_path / "config/countries.json", "r", encoding="utf-8") as file:
         dict_countries = json.load(file)
 
@@ -117,7 +119,7 @@ def run_empire_model(
             )
         check_scenarios_exist_and_copy(run_config)
 
-    generate_tab_files(file_path=workbook_path, tab_file_path=tab_file_path)
+    generate_tab_files(file_path=workbook_path, tab_file_path=tab_file_path, DLCMODULE=empire_config.DLC_module, DataFilters=DataFilters)
 
     if not test_run:
         obj_value = run_empire(
@@ -130,7 +132,9 @@ def run_empire_model(
             FirstHoursOfRegSeason=FirstHoursOfRegSeason,
             FirstHoursOfPeakSeason=FirstHoursOfPeakSeason,
             lengthRegSeason=len_reg_season,
+            NoOfRegSeason = NoOfRegSeason,
             lengthPeakSeason=len_peak_season,
+            NoOfPeakSeason = NoOfPeakSeason,
             Period=Period,
             Operationalhour=Operationalhour,
             Scenario=Scenario,
@@ -145,6 +149,7 @@ def run_empire_model(
             EMISSION_CAP=empire_config.use_emission_cap,
             USE_TEMP_DIR=empire_config.use_temporary_directory,
             LOADCHANGEMODULE=empire_config.load_change_module,
+            DLCMODULE=empire_config.DLC_module,
             OPERATIONAL_DUALS=empire_config.compute_operational_duals,
             north_sea=empire_config.north_sea,
             OUT_OF_SAMPLE=OUT_OF_SAMPLE,
@@ -194,11 +199,23 @@ def setup_run_paths(
     # Copy base dataset to input folder
     copy_dataset(base_dataset, xlsx_path)
     copy_scenario_data(
-        base_dataset=base_dataset,
+        base_scenario_dataset=base_dataset / "ScenarioData",
         scenario_data_path=scenario_data_path,
         use_scenario_generation=empire_config.use_scenario_generation,
         use_fixed_sample=empire_config.use_fixed_sample,
     )
+
+  # Create DLC input folders and copy related dataset to input folder
+    if empire_config.DLC_module:
+        create_if_not_exist(xlsx_path / "DLCModule")
+        copy_DLC_dataset(base_dataset / "DLCModule", xlsx_path / "DLCModule")
+        create_if_not_exist(xlsx_path / "DLCModule/DLCScenarioData")
+        copy_scenario_data(
+            base_scenario_dataset=base_dataset / "DLCModule/DLCScenarioData",
+            scenario_data_path=scenario_data_path / "../DLCModule/DLCScenarioData",
+            use_scenario_generation=empire_config.use_scenario_generation,
+            use_fixed_sample=empire_config.use_fixed_sample,
+        )
 
     # Output folders
     results_path = create_if_not_exist(run_path / "Output")
