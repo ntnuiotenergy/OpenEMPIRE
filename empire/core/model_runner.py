@@ -55,7 +55,7 @@ def run_empire_model(
 
     FirstHoursOfRegSeason = [len_reg_season * i + 1 for i in range(NoOfRegSeason)]
     FirstHoursOfPeakSeason = [len_reg_season * NoOfRegSeason + len_peak_season * i + 1 for i in range(NoOfPeakSeason)]
-    Period = [i + 1 for i in range(int((horizon - 2020) / LeapYearsInvestment))]
+    Period = [i + 1 for i in range(int((horizon - 2025) / LeapYearsInvestment))]
     Scenario = ["scenario" + str(i + 1) for i in range(NoOfScenarios)]
     peak_seasons = ["peak" + str(i + 1) for i in range(NoOfPeakSeason)]
     Season = regular_seasons + peak_seasons

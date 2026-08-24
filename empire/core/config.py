@@ -153,7 +153,7 @@ class EmpireConfiguration:
 
         # Computed attributes
         self.n_reg_season = len(regular_seasons)
-        self.periods = [i + 1 for i in range(int((self.forecast_horizon_year - 2020) / self.leap_years_investment))]
+        self.periods = [i + 1 for i in range(int((self.forecast_horizon_year - 2025) / self.leap_years_investment))]
         self.n_periods = len(self.periods)
 
         # Validate the configuration

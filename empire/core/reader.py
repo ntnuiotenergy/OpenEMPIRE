@@ -98,9 +98,11 @@ def generate_tab_files(file_path, tab_file_path):
     read_file(GeneratorExcelData, 'ScaleFactorInitialCap', [0, 1, 2], tab_file_path, "Generator", skipheaders=2)
     read_file(GeneratorExcelData, 'InitialCapacity', [0, 1, 2, 3], tab_file_path, "Generator", skipheaders=2)
     read_file(GeneratorExcelData, 'MaxBuiltCapacity', [0, 1, 2, 3], tab_file_path, "Generator", skipheaders=2)
+    read_file(GeneratorExcelData, 'MinBuiltCapacity', [0, 1, 2, 3], tab_file_path, "Generator", skipheaders=2)
     read_file(GeneratorExcelData, 'MaxInstalledCapacity', [0, 1, 2], tab_file_path, "Generator", skipheaders=2)
     read_file(GeneratorExcelData, 'RampRate', [0, 1], tab_file_path, "Generator", skipheaders=2)
     read_file(GeneratorExcelData, 'GeneratorTypeAvailability', [0, 1], tab_file_path, "Generator", skipheaders=2)
+    read_file(GeneratorExcelData, 'YearlyAvailability', [0, 1, 2, 3], tab_file_path, "Generator", skipheaders=2)
     read_file(GeneratorExcelData, 'CO2Content', [0, 1], tab_file_path, "Generator", skipheaders=2)
     read_file(GeneratorExcelData, 'Lifetime', [0, 1], tab_file_path, "Generator", skipheaders=2)
 
@@ -122,6 +124,7 @@ def generate_tab_files(file_path, tab_file_path):
     read_file(NodeExcelData , 'ElectricAnnualDemand', [0, 1, 2],tab_file_path,  "Node", skipheaders=2)
     read_file(NodeExcelData , 'NodeLostLoadCost', [0, 1, 2],tab_file_path,  "Node", skipheaders=2)
     read_file(NodeExcelData , 'HydroGenMaxAnnualProduction', [0, 1],tab_file_path,  "Node", skipheaders=2)
+    read_file(NodeExcelData , 'BiomassMaxAnnualActivity', [0, 1, 2], tab_file_path,  "Node", skipheaders=2)
 
     #Reading Season
     logger.info("Reading General.xlsx")

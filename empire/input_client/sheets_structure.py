@@ -26,13 +26,15 @@ sheets = {
         "ScaleFactorInitialCap",
         "InitialCapacity",
         "MaxBuiltCapacity",
+        "MinBuiltCapacity",
         "MaxInstalledCapacity",
         "RampRate",
         "GeneratorTypeAvailability",
         "CO2Content",
         "Lifetime",
+        "YearlyAvailability"
     ],
-    "Node": ["ElectricAnnualDemand", "NodeLostLoadCost", "HydroGenMaxAnnualProduction"],
+    "Node": ["ElectricAnnualDemand", "NodeLostLoadCost", "HydroGenMaxAnnualProduction", "BiomassMaxAnnualActivity"],
     "Transmission": [
         "lineEfficiency",
         "MaxBuiltCapacity",
