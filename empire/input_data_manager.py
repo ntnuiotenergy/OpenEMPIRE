@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from empire.input_client.client import EmpireInputClient
+from empire.input_client.csv_client import EmpireInputClient
 from empire.utils import scale_and_shift_series
 
 logger = logging.getLogger(__name__)

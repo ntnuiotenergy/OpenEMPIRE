@@ -14,7 +14,7 @@ readme = "README.md"
 line-length = 120
 
 [tool.poetry.dependencies]
-python = ">=3.7"
+python = ">=3.11"
 cloudpickle = ">=1.0.0"
 openpyxl = ">=3.0.0"
 pandas = ">=1.2"

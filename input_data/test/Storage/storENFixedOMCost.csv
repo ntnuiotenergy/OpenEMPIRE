@@ -1,0 +1,7 @@
+StorageTypes,Period,EnergyFixedOMCost_in_euro_per_kWh
+HydroPumpStorage,1,0
+HydroPumpStorage,2,0
+HydroPumpStorage,3,0
+Li-Ion_BESS,1,0
+Li-Ion_BESS,2,0
+Li-Ion_BESS,3,0

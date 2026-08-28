@@ -425,7 +425,7 @@ def generate_random_scenario(
     empire_config: EmpireConfiguration,
     dict_countries: dict,
     scenario_data_path: Path,
-    tab_file_path: Path,
+    output_path: Path,
 ):
     """
     Method to generate random scenarios. Can also read existing samples if fix_sample is True.
@@ -453,6 +453,8 @@ def generate_random_scenario(
     VORONOI_N_CLUSTER = 100
     moment_matching = empire_config.moment_matching
     n_tree_compare = empire_config.n_tree_compare
+
+    output_path.mkdir(parents=True, exist_ok=True)
 
     if fix_sample:
         logger.info("Generating scenarios according to key...")
@@ -1086,78 +1088,51 @@ def generate_random_scenario(
         elecLoadMod = elecLoadMod[["Node", "Operationalhour", "Scenario", "Period", "ElectricLoadRaw_in_MW"]]
 
     # Make file_path (if it does not exist) and print .tab-files
-    if not os.path.exists(tab_file_path):
-        os.makedirs(tab_file_path)
+    if not os.path.exists(output_path):
+        os.makedirs(output_path)
 
     # Save sampling key
     if fix_sample:
         sampling_key = sampling_key.reset_index(level=["Period", "Scenario", "Season"])
 
     logger.info("Saving 'sampling_key.csv'.")
-    sampling_key.to_csv(tab_file_path / "sampling_key.csv", header=True, index=None, mode="w")
+    sampling_key.to_csv(output_path / "sampling_key.csv", header=True, index=None, mode="w")
 
-    logger.info("Saving 'Stochastic_StochasticAvailability.tab'.")
+    logger.info("Saving 'genCapAvailStochRaw.csv'.")
     genAvail.to_csv(
-        tab_file_path / "Stochastic_StochasticAvailability.tab", header=True, index=None, sep="\t", mode="w"
+        output_path / "genCapAvailStochRaw.csv", header=True, index=None, mode="w"
     )
-    logger.info("Saving 'Stochastic_ElectricLoadRaw.tab'.")
-    elecLoad.to_csv(tab_file_path / "Stochastic_ElectricLoadRaw.tab", header=True, index=None, sep="\t", mode="w")
+    logger.info("Saving 'sloadRaw.csv'.")
+    elecLoad.to_csv(output_path / "sloadRaw.csv", header=True, index=None, mode="w")
 
-    logger.info("Saving 'Stochastic_HydroGenMaxSeasonalProduction.tab'.")
+    logger.info("Saving 'maxRegHydroGenRaw.csv'.")
     hydroSeasonal.to_csv(
-        tab_file_path / "Stochastic_HydroGenMaxSeasonalProduction.tab", header=True, index=None, sep="\t", mode="w"
+        output_path / "maxRegHydroGenRaw.csv", header=True, index=None, mode="w"
     )
 
     if LOADCHANGEMODULE:
-        if not os.path.exists(tab_file_path + "/LoadchangeModule"):
-            os.makedirs(tab_file_path + "/LoadchangeModule")
+        if not os.path.exists(output_path + "/LoadchangeModule"):
+            os.makedirs(output_path + "/LoadchangeModule")
         elecLoadMod.to_csv(
-            tab_file_path + "/LoadchangeModule/Stochastic_ElectricLoadMod" + ".tab",
+            output_path + "/LoadchangeModule/Stochastic_ElectricLoadMod" + ".csv",
             header=True,
             index=None,
-            sep="\t",
             mode="w",
         )
 
 
-def check_scenarios_exist_and_copy(run_config: EmpireRunConfiguration):
-    """
-    Checks that the .tab files for the scenarios exist in scenario data folder and copys to the tab folder of the run.
-
-    :param run_config: Empire run configuration
-    :raises ValueError: If files are missing in scenario data.
-    """
-    scenario_files = [
-        "Stochastic_StochasticAvailability.tab",
-        "Stochastic_ElectricLoadRaw.tab",
-        "Stochastic_HydroGenMaxSeasonalProduction.tab",
-    ]
-
-    for file in scenario_files:
-        if not (run_config.scenario_data_path / file).exists():
-            raise ValueError(
-                "Existing scenarios have to be provided when running without scenario generation. %s is missing from %s",
-                file,
-                run_config.tab_file_path,
-            )
-        else:
-            try:
-                shutil.copyfile(run_config.scenario_data_path / file, run_config.tab_file_path / file)
-            except shutil.SameFileError:
-                pass
-
 
 def check_scenarios_exist(scenario_data_path: Path) -> bool:
     """
-    Checks that the .tab files for the scenarios exist in scenario data folder.
+    Checks that the .csv files for the scenarios exist in scenario data folder.
 
     :param scenario_data_path: Path to ScenarioData folder.
     :returns: True if exist, false if not.
     """
     scenario_files = [
-        "Stochastic_StochasticAvailability.tab",
-        "Stochastic_ElectricLoadRaw.tab",
-        "Stochastic_HydroGenMaxSeasonalProduction.tab",
+        "genCapAvailStochRaw.csv",
+        "sloadRaw.csv",
+        "maxRegHydroGenRaw.csv",
     ]
 
     for file in scenario_files:

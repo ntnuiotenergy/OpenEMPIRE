@@ -9,7 +9,7 @@ from app.modules.results.key_metrics import KeyMetricsResults
 from app.modules.results.node import NodeResults
 from app.modules.results.operational import OperationalResults
 from empire.core.config import EmpireConfiguration, read_config_file
-from empire.input_client.client import EmpireInputClient
+from empire.input_client.csv_client import EmpireInputClient
 from empire.output_client.client import EmpireOutputClient
 from empire.results.maps import plot_built_transmission_capacity
 
@@ -43,7 +43,7 @@ def output(active_results: Path) -> None:
 
     @st.cache_resource
     def get_input_client(active_results):
-        return EmpireInputClient(dataset_path=active_results / "Input/Xlsx")
+        return EmpireInputClient(dataset_path=active_results / "Input/csv")
 
     input_client = get_input_client(active_results)
 

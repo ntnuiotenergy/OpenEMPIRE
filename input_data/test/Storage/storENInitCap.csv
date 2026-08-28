@@ -1,0 +1,7 @@
+Nodes,StorageTypes,Period,EnergyInitialCapacity
+Germany,HydroPumpStorage,1,38626
+France,HydroPumpStorage,1,184296
+Germany,HydroPumpStorage,2,38626
+France,HydroPumpStorage,2,184296
+Germany,HydroPumpStorage,3,38626
+France,HydroPumpStorage,3,184296

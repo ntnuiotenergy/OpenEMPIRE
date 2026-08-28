@@ -1,0 +1,17 @@
+StorageTypes,Period,EnergyCapitalCost_in_euro_per_kWh
+HydroPumpStorage,1,100.0
+HydroPumpStorage,2,100.0
+HydroPumpStorage,3,100.0
+HydroPumpStorage,4,100.0
+HydroPumpStorage,5,100.0
+HydroPumpStorage,6,100.0
+HydroPumpStorage,7,100.0
+HydroPumpStorage,8,100.0
+Li-Ion_BESS,1,246.3054187192118
+Li-Ion_BESS,2,198.4126984126984
+Li-Ion_BESS,3,198.4126984126984
+Li-Ion_BESS,4,198.4126984126984
+Li-Ion_BESS,5,198.4126984126984
+Li-Ion_BESS,6,198.4126984126984
+Li-Ion_BESS,7,198.4126984126984
+Li-Ion_BESS,8,198.4126984126984

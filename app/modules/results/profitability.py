@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from empire.input_client.client import EmpireInputClient
+from empire.input_client.csv_client import EmpireInputClient
 from empire.output_client.client import EmpireOutputClient
 
 if __name__ == "__main__":

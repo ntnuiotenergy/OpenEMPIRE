@@ -1,0 +1,7 @@
+StorageTypes,Period,PowerCapitalCost_in_euro_per_kW
+HydroPumpStorage,1,1000
+HydroPumpStorage,2,1000
+HydroPumpStorage,3,1000
+Li-Ion_BESS,1,0
+Li-Ion_BESS,2,0
+Li-Ion_BESS,3,0

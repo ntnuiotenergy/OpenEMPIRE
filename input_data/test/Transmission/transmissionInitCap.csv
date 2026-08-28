@@ -1,0 +1,7 @@
+InterconnectorLinks,ToNode,Period,TransmissionInitialCapacity
+Denmark,Germany,1,1500
+France,Germany,1,2825
+Denmark,Germany,2,1500
+France,Germany,2,2825
+Denmark,Germany,3,1500
+France,Germany,3,2825

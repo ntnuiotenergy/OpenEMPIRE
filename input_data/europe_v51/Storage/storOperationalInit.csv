@@ -1,0 +1,3 @@
+StorageType,StorageInitialEnergyLevel_as_a_percentage_of_StorageInstalledEnergyCapacity
+HydroPumpStorage,0.5
+Li-Ion_BESS,0.5

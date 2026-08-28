@@ -34,7 +34,7 @@ if not check_scenarios_exist(scenario_data_path=scenario_data_path) or args.forc
         empire_config=empire_config,
         dict_countries=dict_countries,
         scenario_data_path=scenario_data_path,
-        tab_file_path=scenario_data_path,
+        output_path=scenario_data_path,
     )
 else:
     logger.warning(

@@ -1,0 +1,13 @@
+GeneratorTechnology,Period,generatorRetirementFactorInitialCap
+Liginiteexisting,2,0.3846153846153846
+Coalexisting,2,0.3846153846153846
+Gasexisting,2,0.3173076923076924
+Oilexisting,2,0.4444444444444441
+Bioexisting,2,0.2857142857142857
+Nuclear,2,0.2857142857142857
+Liginiteexisting,3,0.5865384615384616
+Coalexisting,3,0.5865384615384616
+Gasexisting,3,0.576923076923077
+Oilexisting,3,0.6666666666666665
+Bioexisting,3,0.42857142857142855
+Nuclear,3,0.42857142857142855

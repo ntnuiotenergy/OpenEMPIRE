@@ -1,0 +1,6 @@
+Nodes,StorageTypes,PowerMaxInstalledCapacity
+Germany,HydroPumpStorage,7941.0
+France,HydroPumpStorage,3682.5
+Germany,Li-Ion_BESS,20000000.0
+Denmark,Li-Ion_BESS,20000000.0
+France,Li-Ion_BESS,20000000.0

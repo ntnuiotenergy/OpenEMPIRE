@@ -1,0 +1,5 @@
+FromNode,ToNode,lineEfficiency
+Denmark,Germany,0.97
+France,Germany,0.97
+Germany,Denmark,0.97
+Germany,France,0.97

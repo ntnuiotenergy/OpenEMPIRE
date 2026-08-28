@@ -3,7 +3,8 @@ from pathlib import Path
 
 from empire.core.config import EmpireConfiguration, read_config_file
 from empire.core.model_runner import run_empire_model, setup_run_paths
-from empire.input_client.client import EmpireInputClient
+
+from empire.input_client.csv_client import EmpireInputClient 
 from empire.logger import get_empire_logger
 
 parser = ArgumentParser(description="A CLI script to run the Empire model.")
@@ -33,7 +34,10 @@ run_path = Path.cwd() / f"Results/basic_run/dataset_{args.dataset}"
 if (run_path / "Output/results_objective.csv").exists() and not args.force:
     raise ValueError("There already exists results for this analysis run.")
 
-run_config = setup_run_paths(version=args.dataset, empire_config=empire_config, run_path=run_path)
+
+input_data_dir = "input_data"
+
+run_config = setup_run_paths(version=args.dataset, empire_config=empire_config, run_path=run_path, input_data_dir=input_data_dir)
 logger = get_empire_logger(run_config=run_config)
 
 logger.info("Running EMPIRE Model")

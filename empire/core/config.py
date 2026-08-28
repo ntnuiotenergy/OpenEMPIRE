@@ -156,6 +156,7 @@ class EmpireConfiguration:
         self.periods = [i + 1 for i in range(int((self.forecast_horizon_year - 2020) / self.leap_years_investment))]
         self.n_periods = len(self.periods)
 
+
         # Validate the configuration
         self.validate()
 
@@ -215,7 +216,6 @@ class EmpireRunConfiguration:
         self,
         run_name: str,
         dataset_path: Path | str,
-        tab_path: Path | str,
         scenario_data_path: Path | str,
         results_path: Path | str,
         empire_path: Path | str = Path.cwd(),
@@ -233,7 +233,6 @@ class EmpireRunConfiguration:
 
         self.run_name = run_name
         self.dataset_path = Path(dataset_path)
-        self.tab_file_path = Path(tab_path)
         self.scenario_data_path = Path(scenario_data_path)
         self.results_path = Path(results_path)
         self.empire_path = Path(empire_path)

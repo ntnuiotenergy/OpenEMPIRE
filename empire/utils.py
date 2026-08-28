@@ -6,7 +6,7 @@ from pathlib import Path
 import pandas as pd
 
 
-def copy_dataset(src_path: Path, dest_path: Path):
+def copy_csv_dataset(src_path: Path, dest_path: Path):
     """
     Copy dataset from source to destination folder.
 
@@ -16,8 +16,15 @@ def copy_dataset(src_path: Path, dest_path: Path):
     if not src_path.is_dir():
         raise ValueError(f"'{src_path}' is not a directory!")
 
-    for file in ["General", "Generator", "Node", "Sets", "Storage", "Transmission"]:
-        shutil.copyfile(src_path / f"{file}.xlsx", dest_path / f"{file}.xlsx")
+    for dir_name in ["General", "Generator", "Node", "Sets", "Storage", "Transmission"]:
+        src_dir = src_path / dir_name
+        dest_dir = dest_path / dir_name
+        dest_dir.mkdir(parents=True, exist_ok=True)
+        files = list(src_dir.glob("*.csv"))
+        if files == []:
+            raise ValueError(f"No CSV files found in '{src_dir}'")
+        for file in files:
+            shutil.copyfile(file, dest_dir / file.name)
 
 
 def copy_scenario_data(base_dataset, scenario_data_path, use_scenario_generation, use_fixed_sample):
