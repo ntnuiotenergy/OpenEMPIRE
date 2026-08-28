@@ -218,8 +218,10 @@ sh scripts/copy_and_run_empire_on_hpc.sh Solstorm
 
 **Usage Windows**: Install "jq" on Windows: 
 ```shell
-curl -L -o /usr/bin/jq.exe https://github.com/stedolan/jq/releases/latest/download/jq-win64.exe
+curl -L -o /usr/bin/jq.exe https://github.com/stedolan/jq/releases/latest/download/jq-win64.exe      
 ```
+jq can alternatively be installed following https://www.geeksforgeeks.org/git/how-to-install-jq-in-git-bash/ 
+
 From the project directory, execute the following command in Git Bash to run on the Solstorm cluster: 
 ```shell
 sh scripts/copy_and_run_empire_on_hpc.sh Solstorm
@@ -228,6 +230,8 @@ sh scripts/copy_and_run_empire_on_hpc.sh Solstorm
 This command copies the EMPIRE code to the Solstorm cluster and performs several runs managed by the SGE task manager. Ensure the "empire_env" conda environment is set up on the cluster with dependencies as listed in `environment.yml`.
 
 The `scripts/run_analysis.py` script demonstrates how to modify input data at execution time using data managers.
+
+
 
 # Contributing
 
